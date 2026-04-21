@@ -29,7 +29,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    protected $redirectTo = '/applications';
 
     /**
      * Create a new controller instance.
@@ -39,6 +39,14 @@ class RegisterController extends Controller
     public function __construct()
     {
         $this->middleware('guest');
+    }
+
+    /**
+     * Show the application registration form.
+     */
+    public function showRegistrationForm()
+    {
+        return view('auth.register-polished');
     }
 
     /**
@@ -64,11 +72,11 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
+        return User::createUserWithRole([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'broker', // Default role for new registrations
-        ]);
+            'password' => $data['password'],
+            'role' => 'applicant',
+        ], []);
     }
 }

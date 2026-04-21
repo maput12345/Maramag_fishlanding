@@ -1,5 +1,5 @@
 {{-- Show Sales Modal --}}
-@if(request('modal') === 'show' && $viewingSales)
+@if(request('modal') === 'show')
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
@@ -196,13 +196,13 @@
                                                             <x-heroicon-o-archive-box class="w-4 h-4 text-blue-600" />
                                                         </div>
                                                         <div>
-                                                            <div class="flex flex-wrap gap-2">
-                                                                @foreach($detail->box_id as $boxId)
-                                                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                                                        Fish Box #{{ $boxId }}
-                                                                    </span>
-                                                                @endforeach
-                                                            </div>
+                                                                <div class="flex flex-wrap gap-2">
+                                                                    @foreach($detail->box_id as $boxId)
+                                                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                                        {{ $detail->fishBox?->name ?? ('Fish Box #' . $boxId) }}
+                                                                        </span>
+                                                                    @endforeach
+                                                                </div>
                                                         </div>
                                                     </div>
                                                 </td>

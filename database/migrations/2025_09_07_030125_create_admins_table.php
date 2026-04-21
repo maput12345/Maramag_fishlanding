@@ -11,17 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('admins', function (Blueprint $table) {
+        Schema::create('buyers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->text('address')->nullable();
-            $table->enum('status', ['active', 'deactivated'])->default('active');
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('contact')->nullable();
             $table->timestamps();
 
-            // Add indexes for better performance
-            $table->index('user_id');
-            $table->index('status');
+            $table->index(['first_name', 'last_name', 'contact']);
         });
     }
 
@@ -30,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('admins');
+        Schema::dropIfExists('buyers');
     }
 };

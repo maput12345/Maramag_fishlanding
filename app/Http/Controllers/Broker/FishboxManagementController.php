@@ -30,6 +30,11 @@ class FishboxManagementController extends Controller
                 $data = $fishTypesController->getIndexData($request);
                 break;
 
+            case 'fishPrices':
+                $fishPricesController = new FishPricesController();
+                $data = $fishPricesController->getIndexData($request);
+                break;
+
             default:
                 $fishBoxController = new FishBoxController();
                 $data = $fishBoxController->getIndexData($request);

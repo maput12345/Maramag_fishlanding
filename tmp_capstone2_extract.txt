@@ -1,0 +1,586 @@
+﻿POINT OF SALE AND INVENTORY SYSTEM FOR MARAMAG FISH LANDING
+JAMES BRIAN M. BARRETTO
+JAMES KEVIN PACULBA
+IAN RICHER AMORTIZADO
+BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY
+MAY 2025
+CHAPTER I: INTRODUCTION
+1. Background of the Study
+Sales tracking and inventory management are crucial to businesses dealing with perishable products like fish. Manual documentation in Maramag Fish Landing has caused inefficiencies like missing boxes of fish, missing or incomplete sales records, and tracking challenges in everyday transactions. Such inefficiencies reduce transparency, undermine accountability, and affect operational efficiency. Monetary and administrative losses are thereby incurred for fish brokers and the Local Economic Enterprise Office (LEEO), which enables market transactions. Literature shows that manual stock systems are prone to errors and lack of efficiency, leading to financial loss and slowing down processes (Kumar & Suresh, 2021).
+Inventory control at Maramag Fish Landing uses handwritten records and manual data input for the inventory management process. This method is, however, very vulnerable to human error. Incomplete records commonly result in disagreements between brokers and buyers, causing the operations to slow down and financial inaccuracies. As per Smith et al. (2022), manual procedures of inventory often lead to inconsistencies in data, which complicates accurate reconciliation of records. In addition, monitoring fish box movements between buyers and brokers is still an issue without a systematic monitoring mechanism, compounding inefficiencies further (Rodriguez & Tan, 2023).
+To overcome these challenges, having an inventory management system in place is crucial. A process-based approach helps ensure that all inventory transactions have a uniform workflow, minimizing inconsistencies (Brown & Williams, 2021). An orderly system captures and monitors each transaction, reflecting up-to-date reports on stock positions, sales, and financial information (Garcia & Lopez, 2022). Accuracy improves through automation, minimizing human errors in calculations and documentation (Davis, 2023). Lastly, transparency enables stakeholders to track all transactions, reducing discrepancies and enhancing accountability (Nguyen & Patel, 2023). This research seeks to develop and design a POS and inventory system to enhance efficiency, accuracy, and transparency in Maramag Fish Landing day-to-day operations. With the modernization of digital technologies, companies across the globe are embracing automated inventory and sales management systems. An optimally integrated system allows data processing and automation to maximize business functions (Lee et al., 2021).
+Inventory and POS systems have been found to be effective in enhancing transaction accuracy, minimizing errors, and supporting better decision-making (Gonzalez & Martinez, 2022). By adopting a POS and inventory system, Maramag Fish Landing can enhance process efficiency, minimize operational inefficiencies, and provide more reliable and transparent market transactions.
+2. Statement of the Problem
+Maramag Fish Landing does not yet have an automated inventory and sales tracking system in place, resulting in enormous operational inefficiencies. The main problems lie in the dependence on manual recording of transactions by brokers, the following main problems arising therefrom:
+First, the implementation of inventory management system for brokers and LEEO relied on manual recording transactions. A manual process often results in lost or missed records, complicating the process, and slightly lowering accountability, since this method has a high volume of buyers daily.
+Second, manual input of sales data can cause lots of errors since the workers are dealing with a busy environment whereby too many transactions occur daily. These circumstances multiply the probability of the human error entering a wrong amount or missing the sale note. Consequently, the sales figures become unreliable, making it difficult for the business to develop valid financial reports or determine its actual financial performance.
+Third, there is no system yet to monitor who bought the fish and how many were sold daily. These boxes are costly and have a major determining factor in brokers' revenues as their pay relies on the number of boxes sold per day. But since there is no monitoring, brokers always experience cases of missing or unaccounted boxes. When this occurs, they cannot determine whether the buyer or get back the missing boxes and therefore treat the boxes as lost. Consequently, such missing boxes are regarded as lost, and brokers are compelled to buy new ones further, lowering their daily earnings and instigating a shortage of transparency and accountability in the fish landing operations. Based on a survey of the eight brokers at Maramag Fish Landing, these tracking problems are common and a cause for concern.
+If these inefficiencies are not addressed, brokers will struggle to track sales accurately, prepare correct financial reports, and maintain proper inventory levels. To resolve these issues, this research proposes developing a POS and inventory management system that automates processes, enhances transparency, and provides data analysis for tracking fish boxes and tracing sales transactions.
+3. Objectives of the Study
+General Objective:This study aims to design and implement a POS and inventory management system for Maramag Fish Landing to enhance efficiency, accuracy, and transparency in fish box tracking and sales recording.
+Specific Objectives:
+Conduct a need assessment to determine primary challenges related to loss of inventory, sales tracking, and record management.
+To design, develop and implement a centralized system of sales and management supported by structured databases.
+To design, develop and implement a tracking system for fish boxesusing unique identifiers and QR code.
+To design, develop and implement a dashboard feature for brokers and LEEO administrators to monitor sales activity.
+To design and develop automated reports and analytical insights.
+Scope and Limitations
+Scope of the Study
+This study focuses on the development and implementation of a web-based Point-of-Sale (POS) and Inventory Management System for Maramag Fish Landing. The system is designed to support the daily sales and inventory operations of brokers and staff by digitizing transaction recording, fish box tracking, and report generation.
+Each fish box will be assigned a unique identifier represented by a QR code. When scanned using a mobile device or web browser, the code will display relevant details such as the buyer’s name, quantity, and type of fish associated with the box. This feature aims to improve accuracy in monitoring fish box distribution, returns, and status.
+The system will be accessible online, allowing authorized users to obtain real-time updates of sales and inventory records. Data security will be maintained through user authentication and privilege-based access control, where each user is assigned specific permissions according to their role. Only verified users will be allowed to access sensitive information, which helps prevent unauthorized access and ensures proper handling of data.
+The system will assist brokers and staff in recording sales transactions, managing buyer information, monitoring outstanding balances, and tracking fish boxes that have not yet been returned. It will also generate daily sales reports and inventory summaries to support operational monitoring.
+Administrative access will be granted to the Local Economic Enterprise Office (LEEO) of Maramag. As system administrators, LEEO personnel will be able to view consolidated sales records, monitor broker activities, and track the number of fish boxes sold or distributed by each broker. The system will include a dashboard that presents key information such as sales performance, inventory status, and basic analytics (e.g., most sold fish per day).
+The system is intended exclusively for Maramag Fish Landing and is designed to support the fast-paced trading environment of the area. Buyers will not have direct access to the system; their information will be recorded by brokers during transactions.
+Limitations of the Study
+The system is tailored specifically to the operational structure, workflow, and requirements of Maramag Fish Landing. As such, it may not be directly applicable to other fish markets, companies, or organizations with different processes or business models without further modification.
+The application focuses on essential operational functions such as sales recording, inventory management, and fish box tracking. Advanced features such as demand forecasting, artificial intelligence–based analytics, or predictive decision-making tools are beyond the scope of this study.
+The system requires a stable internet connection to provide real-time synchronization of data. Its performance may be affected in areas with unreliable connectivity. Additionally, only authorized brokers, staff, and LEEO administrators will be allowed to access the system, while buyers will have no direct interaction with it.
+5. Significance of the Study
+This study is significant as it developed a Point-of-Sale (POS) and Inventory Management System that improved the operational efficiency of Maramag Fish Landing. By automating essential processes such as transaction recording, fish box tracking, real-time inventory updating, and report generation, the system enhanced accuracy, transparency, and efficiency in daily operations while reducing manual errors and disputes.
+For brokers and staff, the system simplified sales recording, inventory monitoring, and fish box management. It reduced reliance on manual methods, minimized human error, and improved the speed of transactions, enabling personnel to handle high-volume trading more effectively.
+For the Local Economic Enterprise Office (LEEO) of Maramag, the system provided centralized access to sales data, broker activities, and inventory information. This supported better supervision, data-driven decision-making, and improved monitoring of fish landing operations.
+For the buyers, although they did not directly access the system, they benefited indirectly through faster transactions, more accurate records, and improved accountability in fish box tracking and balance monitoring.
+For future researchers and system developers, this study serves as a reference for designing digital solutions for community-based markets and industries dealing with perishable goods. It demonstrates how information technology can be applied to address operational inefficiencies in a fast-paced trading environment.
+CHAPTER II: REVIEW RELATED LITERATURE
+1. Introduction
+This chapter presents the related literature and studies relevant to the development of the Point-of-Sale (POS) and Inventory Management System for Maramag Fish Landing. It focuses on studies about digital inventory systems, POS-supported transaction processing, information and communication technology (ICT) adoption in small and medium-sized enterprises (SMEs), QR code-based traceability, and fishery-related monitoring systems. These works provide the conceptual and practical foundation for understanding how digital tools can improve efficiency, accuracy, and transparency in operational environments that still rely on manual procedures.
+The review also includes local and international studies that discuss the common limitations of manual systems, such as delayed reporting, data inconsistency, weak traceability, and poor visibility of inventory movement. Since Maramag Fish Landing operates in a fast-moving environment where fish boxes, payments, and daily transactions must be monitored accurately, the reviewed literature helps establish the relevance of developing a system tailored to its operational setting.
+2. Thematic Review of Related Literature
+i. Digital Inventory and POS Systems in Small Business Operations
+Inventory management and POS systems play a major role in improving business operations, especially in environments where rapid transaction handling and stock visibility are important. Tian and Wang (2022) found that IT capability has a positive effect on inventory strategy and inventory operation process, while also reducing out-of-stock levels. Their findings support the view that digital systems do not merely automate record-keeping; they also improve actual inventory performance.
+In a broader SME context, Yuwono et al. (2024) explained that ICT adoption among small and medium-sized enterprises continues to grow, but many SMEs still face barriers such as limited financial resources, lack of ICT knowledge, and reluctance to change. This is relevant to Maramag Fish Landing because small-scale trading environments often need affordable, easy-to-use systems rather than highly complex enterprise platforms.
+Muchaendepi et al. (2019) further noted that SMEs that still rely on non-computerized methods experience communication delays, stock-related inefficiencies, and difficulty in maintaining consistent supply visibility. This supports the need for a web-based system in settings where manual tracking is still dominant and where operational delays directly affect daily transactions.
+ii. QR Codes and Traceability in Food and Fish Supply Chains
+Traceability is a critical issue in food and fish supply chains because it improves transparency, accountability, and response capability in case of product problems or inventory disputes. Oliveira et al. (2021) described a traceability platform for the fishery and aquaculture value chain that allowed fish and fishery products to be tracked from source to market through a digital platform. Their work emphasized that digital traceability improves recall capability, information access, and quality monitoring across the value chain.
+Parreño-Marchante et al. (2014) also showed that electronic traceability systems in aquaculture can significantly reduce processing time and improve supply chain efficiency. Their study is important because it demonstrates that digital traceability is useful even in fish-related industries where products are perishable and operational timing is critical.
+For QR-specific applications, Li et al. (2024) explained that QR codes have become highly suitable for food information transmission because of their large data storage capacity, fast accessibility, and practical role in traceability. Their review highlighted that QR codes are widely used in food traceability, anti-counterfeiting, and information sharing, making them suitable for affordable operational systems.
+Jose et al. (2024) proposed a QR code-based traceability system for the dry fish supply chain of micro and small enterprises in India. Their study showed that QR code integration can provide real-time access to information and improve quality and safety monitoring in fish-related small enterprise settings. This is highly relevant to Maramag Fish Landing because it demonstrates that QR-based solutions are feasible in resource-conscious fish product environments.
+In addition, Rodriguez-Salvador and Calvo-Dopico (2020) found that consumers value traceability in fishery products because it helps them understand product origin, verify producer claims, and improve confidence in food quality and safety. Although the current study does not focus on consumer-facing traceability, this literature still supports the importance of transparent tracking in fish-related operations.
+Wet Markets, Local Trading Environments, and Operational Monitoring
+Local market systems have unique characteristics that make digitalization both important and challenging. Carmen et al. (2023) found that public wet markets in Iloilo City remain highly important to the local economy, but many vendors still rely on manual accounting systems, do not regularly prepare financial reports, and face limitations in formal operational management. This finding strongly supports the need for tailored digital systems in Philippine wet-market-like environments.
+APEC (2024) also emphasized that fisheries traceability systems in Asia-Pacific economies remain uneven, particularly among small-scale operations that face technological and infrastructure constraints. The report pointed out that the digital divide remains a major issue in implementing effective traceability systems in fisheries. This is relevant to the present study because Maramag Fish Landing operates in a local trading environment where affordability and practicality are essential system design considerations.
+3. Past Studies
+i. Local Studies
+Carmen et al. (2023), in their study on the public wet market system of Iloilo City, found that many wet market enterprises still use manual accounting systems and do not consistently prepare financial reports. Their study highlighted that traditional market operations remain vulnerable to weak documentation and limited formal monitoring. This is closely related to the setting of Maramag Fish Landing, where manual recording also creates operational inefficiencies.
+Mangmang (2018) developed and implemented a POS system for a retail business and found that the developed software improved monitoring of overdue payments and out-of-stock items. The study concluded that technological adoption can improve business operations, particularly in environments where monitoring and reporting are essential. This supports the use of POS systems not only for selling but also for better transaction and payment control.
+Dalida et al. (2023) developed a POS and inventory system for Ticar-Nuñez Supermart and reported that the system was highly acceptable based on ISO 25010 criteria. Their study showed that digital transaction and inventory systems can improve the monitoring of stock movement and support the generation of accurate reports. This local evidence supports the acceptability of similar systems in practical business settings.
+Valencia et al. (2023) developed an inventory system for a drug store in Capiz and incorporated barcode-based functionality together with a POS component that could generate daily, monthly, and yearly sales reports. Their study is relevant because it demonstrates that even in local business settings, code-based identification and POS-supported reporting can strengthen stock monitoring and transaction control.
+Bastan et al. (2004) developed a computerized sales and inventory system for a satellite canteen and found that the proposed system could fully monitor transactions, improve report generation, support barcode-based retrieval, and apply user authentication with different access levels. Although the setting differs from a fish landing, the study is still useful because it shows that role-based access and coded item identification can improve operational efficiency.
+Magbanua et al. (2007) proposed an automated POS system for Mang Inasal and reported that automation could improve transaction speed, reduce manual errors, and simplify receipt and report preparation. Their study also used the Waterfall model, making it useful as a local example of sequential software development in business transaction systems.
+ii. International Studies
+Parreño-Marchante et al. (2014) developed an advanced traceability system in the aquaculture supply chain by combining digital traceability and environmental monitoring technologies. Their study demonstrated major time reductions in traceability-related processes and showed that electronic traceability can improve efficiency even in fish-related SMEs.
+Oliveira et al. (2021) designed a traceability system for quality monitoring in the fishery and aquaculture value chain. The study emphasized the usefulness of a centralized digital platform for improving monitoring, recall capability, and access to fish product traceability information. This study is closely related to the proposed system because it supports the value of structured digital monitoring in fisheries.
+Rodriguez-Salvador and Calvo-Dopico (2020) examined fishery product traceability from a consumer perspective and found that consumers associate traceability with origin, process transparency, safety, and accountability. Their findings suggest that traceability is not only operationally valuable but also important in building trust in fish-related value chains.
+Jose et al. (2024) proposed a QR code-based traceability system for the dry fish supply chain of micro and small enterprises in India. The study showed that QR code technology can be adopted in fish-related small-enterprise environments to support information access, tracking, and quality management. This directly supports the practicality of QR code use in the present study.
+Li et al. (2024) reviewed the use of QR codes in food information systems and concluded that QR codes perform well in traceability, information access, and supply chain integrity. Their work supports the use of QR codes as a practical and efficient digital identification mechanism for food-related operations.
+Tian and Wang (2022) found that stronger IT capability improves inventory management performance and lowers out-of-stock levels. Their findings support the inclusion of integrated inventory features in systems that must manage time-sensitive and frequently changing stock conditions.
+Yuwono et al. (2024), through a systematic literature review, found that SMEs continue to adopt ICT tools, but implementation is often constrained by resource limitations and capability gaps. This supports the need to design systems that are not only functional but also simple and realistic for local operational settings.
+Muchaendepi et al. (2019) found that SMEs without computerized inventory systems often struggle with delays, poor supply visibility, and inefficient communication. Their study provides further support for replacing manual inventory recording with structured digital systems.
+4. Methods Used
+The reviewed studies applied different methods depending on the nature of their research problem and system objectives. Local development-oriented studies such as Mangmang (2018), Dalida et al. (2023), and Valencia et al. (2023) generally used developmental or evaluative approaches in designing and assessing POS and inventory systems. These studies often relied on user evaluation instruments, acceptability testing, and structured questionnaires.
+Local contextual studies such as Carmen et al. (2023) used descriptive design and interviews to examine the operational condition of wet markets. This is useful for the present study because it shows that local market conditions are often best understood through direct observation and respondent-based data collection.
+International studies on inventory and ICT, such as Tian and Wang (2022) and Yuwono et al. (2024), used empirical analysis and systematic review methods to assess the role of technology in inventory and SME operations. On the other hand, fishery and traceability studies such as Oliveira et al. (2021), Parreño-Marchante et al. (2014), and Jose et al. (2024) focused on system architecture, platform development, applied testing, and evaluation in real or semi-real operational settings.
+Overall, the reviewed literature shows that system development studies commonly combine requirement gathering, implementation, and user-based or performance-based evaluation. This supports the present study's use of developmental research, interviews, observation, and User Acceptance Testing.
+5. Findings and Gaps
+The reviewed literature consistently shows that digital systems improve transaction monitoring, inventory visibility, and operational efficiency. Studies on POS and inventory systems indicate that automation reduces delays, improves record accuracy, and supports better reporting. Studies on traceability further show that digital identification methods such as QR codes improve accountability and transparency in food and fish supply chains.
+However, several gaps remain.
+First, many POS and inventory studies focus on retail, restaurants, warehouses, or supermarkets rather than community-based fish landing operations. While these systems are relevant, they do not fully address the operational realities of fish landing environments where reusable fish boxes, buyer balances, and return accountability are central concerns.
+Second, many advanced fishery traceability studies use architectures involving RFID, sensors, or other more complex technologies. Although effective, these approaches may be too costly or impractical for smaller local trading environments. This creates a gap for affordable, web-based, and QR-supported systems designed for small-scale fishery operations.
+Third, local studies confirm that many Philippine market environments still depend on manual processes. Yet there remains limited documented research focused specifically on integrating POS, inventory, fish box tracking, and administrative oversight in a fish landing context such as Maramag Fish Landing.
+6. Synthesis and Critical Evaluation
+The reviewed literature provides strong support for the development of the proposed system. Studies on POS and inventory systems show that digitalization improves transaction handling, stock monitoring, and report generation. Studies on ICT in SMEs further show that integrated systems can improve business performance when designed in a practical and context-appropriate way.
+Studies on fishery and food traceability demonstrate that digital identification and traceability systems are valuable in improving transparency, quality monitoring, and accountability. QR code-based approaches, in particular, are relevant because they are more affordable and easier to deploy than more advanced alternatives such as RFID- or blockchain-heavy systems.
+At the same time, the literature also shows that implementation barriers remain important. SMEs and local trading environments often face financial, technical, and organizational constraints. This means that the most appropriate system for Maramag Fish Landing is not necessarily the most technologically advanced one, but the one that best fits its operational reality.
+From a critical standpoint, many existing studies provide useful models, but only a few are directly tailored to fish landing operations involving brokers, reusable containers, balance monitoring, and local government oversight. For this reason, the current study contributes by adapting digital POS and inventory principles to a very specific local operational context.
+7. Link to the Current Study
+The present study is directly supported by the reviewed literature in several ways. First, the literature on POS and inventory systems confirms that automation improves transaction accuracy, stock monitoring, and reporting efficiency. Second, the literature on QR code-based traceability supports the use of affordable digital identification for inventory and fish box tracking. Third, the literature on SMEs and wet markets shows that local trading environments need systems that are both practical and easy to adopt.
+The current study addresses the gaps identified in the literature by developing a web-based Point-of-Sale and Inventory Management System specifically for Maramag Fish Landing. Unlike generic retail systems, the proposed system includes features aligned with its operational setting, such as fish type and fish price management, QR-based fish box identification, buyer recording, payment monitoring, receipt printing, broker analytics, and tracking of returned and missing fish boxes.
+In this way, the study extends existing literature by providing a localized and operationally grounded system design for a community-based fish landing environment.
+In conclusion, the reviewed literature and studies show that digital POS, inventory, and traceability systems can significantly improve efficiency, accuracy, and transparency. However, the literature also reveals a lack of affordable and context-specific systems designed for local fish landing operations. This gap justifies the development of the proposed Point-of-Sale and Inventory Management System for Maramag Fish Landing.
+CHAPTER III: TECHNICAL BACKGROUND
+1. Overview of the System
+The proposed project is a web-based Point-of-Sale (POS) and Inventory Management System developed for Maramag Fish Landing. The system was designed to address the problems observed in the existing manual process, particularly in sales recording, fish box tracking, payment monitoring, and report preparation. Under the manual setup, brokers and administrative personnel relied on handwritten records and manual checking of transactions, which made the process time-consuming, prone to error, and difficult to monitor consistently.
+The developed system provides a centralized digital platform for recording sales transactions, managing fish-related inventory information, monitoring customer payments, and tracking fish boxes through QR codes. It supports faster transaction processing, better record organization, and improved transparency in daily operations. The system is intended for two major user groups: broker users and authorized administrative users under the Local Economic Enterprise Office (LEEO), specifically admin and staff accounts.
+For broker users, the system provides modules for fish type management, fish price management, fish box registration, QR-based fish box identification, sales recording, payment entry, receipt printing, and fish box tracking. For administrative users, the system provides centralized monitoring of users, broker activities, sales summaries, and fish box tracking records. Through these modules, the system helps improve efficiency, accuracy, and accountability in Maramag Fish Landing operations.
+2. Technologies Involved
+i. Back End
+The system was developed using PHP and the Laravel framework. Laravel was selected because it provides a structured and maintainable framework for developing secure web applications. It follows the Model-View-Controller (MVC) architectural pattern, which separates the business logic, presentation layer, and data access layer. This structure made the system easier to organize, maintain, and expand during development.
+MySQL was used as the database management system for storing user information, broker profiles, buyer records, fish types, fish prices, fish boxes, sales transactions, payments, and fish box movement logs. Laravel migrations were used to define and manage the database structure, while Eloquent ORM was used to simplify database operations and model relationships.
+XAMPP was used as the local development environment to run Apache and MySQL during development and testing. Composer was used to install and manage PHP package dependencies required by the Laravel application. The back-end implementation also used Laravel authentication, validation, middleware, route grouping, and CSRF protection to support secure access and transaction handling.
+ii. Front End
+The user interface of the system was developed using Laravel Blade templates, Tailwind CSS, HTML, CSS, and JavaScript. Blade was used as the server-side templating engine for constructing reusable page layouts and dynamic views. Tailwind CSS was used as the main styling framework for building a responsive and clean user interface suitable for desktop and mobile browser use.
+Alpine.js was used in the interface for lightweight reactive behavior, such as modal state handling, form interaction, sidebar control, and filtering components. JavaScript was used to support client-side interaction and dynamic processing. Axios was included for HTTP requests, while SweetAlert2 and Toastr were used for user notifications and confirmation dialogs.
+For QR-related functionality, the system used QR code generation and QR scanning libraries to support fish box identification and return processing. Laravel Mix and Node Package Manager (NPM) were used to compile and bundle front-end assets such as JavaScript and CSS files.
+3. Architecture and Design Concepts
+The system follows a client-server architecture in which the client side consists of browser-based user interfaces and the server side processes requests, applies business logic, and stores data in the database. Users interact with the system through a web browser, while the application server processes transactions and retrieves the necessary data from the MySQL database.
+The implementation follows the Model-View-Controller (MVC) architecture. The models represent the application data and database relationships, the views provide the user interface, and the controllers handle user requests and system logic. This architectural approach was suitable for the project because it improved code organization and allowed the developers to manage the system in modular form.
+The system also uses role-based access control. Broker users are allowed to access modules related to inventory, pricing, sales, payments, and fish box tracking. Administrative users under the LEEO office, specifically admin and staff accounts, are allowed to access account management, centralized monitoring, sales analysis, and fish box tracking views. This design helps protect sensitive information and ensures that each user can only access the features relevant to their role.
+4. Existing Solutions or Benchmarks
+Existing Point-of-Sale and inventory management systems are commonly used in retail and service-based businesses. These systems generally support transaction recording, inventory monitoring, and report generation. However, most available solutions are designed for general retail environments and do not specifically address the operational workflow of a fish landing facility that relies on reusable fish boxes, box-return monitoring, and broker-based transaction handling.
+The developed system differs from generic POS applications because it was customized for the operational setting of Maramag Fish Landing. In addition to sales recording, it supports fish type management, fish price management, fish box registration, QR-based identification, partial payment monitoring, fish box return processing, and missing box monitoring. These functions directly support the needs of brokers and LEEO administrative users in the local fish landing environment.
+The system was designed as a practical and low-cost web-based solution. Instead of using more complex technologies such as RFID, IoT, or blockchain, the project uses QR code identification and browser-based access to achieve a balance between usability, affordability, and operational effectiveness.
+CHAPTER IV: Methodology
+1. Conceptual Framework
+Figure 1. Conceptual Framework
+In Figure 1, the data flow and interaction among the primary actors and system components involved in the Point-of-Sale (POS) and Inventory System for Maramag Fish Landing are presented. The framework highlights the roles of the Customer, Broker/Staff, Broker Computer, QR-coded fish boxes, Web Server, Database, and the Local Economic Enterprise Office (LEEO).
+The process begins when a customer places an order with the broker or staff. The order details are received and encoded into the Broker Computer through the POS interface operated by the broker or staff. During the transaction, QR codes attached to fish boxes are scanned to uniquely identify each box associated with the customer’s order. This scanning mechanism ensures accurate identification and proper tracking of fish boxes, minimizing errors and duplication.
+Once the order and corresponding box information are recorded, the Broker Computer transmits the data to the Web Server through HTTP requests. The Web Server processes the transaction by applying the system’s business logic, validating the data, computing totals, updating order status, and preparing the information for storage.
+The Web Server then interacts with the Database, where transaction records, fish box records, and inventory data are securely stored. This centralized database ensures data integrity, consistency, and long-term record keeping. After the data is successfully saved, the Web Server sends updated information back to the Broker Computer. The system then generates a receipt for the customer, confirming that the order has been served. At the same time, inventory records are automatically updated in real time to reflect the completed transaction.
+Furthermore, the fish box records stored in the database are accessible to the LEEO Computer for administrative monitoring and verification purposes. This allows the Local Economic Enterprise Office (LEEO) to supervise transactions, review reports, and ensure transparency in fish landing operations.
+2. Research Approach
+This study employed a mixed-method developmental research design. Qualitative methods were used during the requirement gathering stage, while quantitative evaluation was applied after system development through User Acceptance Testing (UAT).
+The qualitative component consisted of interviews and direct observation. Interviews were conducted to gather information from intended users regarding the difficulties they encountered in manual sales recording, fish box accountability, and payment monitoring. Direct observation was also used to examine the actual workflow at Maramag Fish Landing, including how sales were recorded, how fish boxes were monitored, and how payment records were handled under the manual system. These methods helped identify the operational problems that guided the development of the proposed system.
+The quantitative component consisted of User Acceptance Testing using a structured evaluation instrument based on a 5-point Likert scale. The developed system was evaluated in terms of functionality, usability, accuracy, efficiency, and overall satisfaction. This research approach was appropriate because the study involved both the development of a software solution and the measurement of its acceptability among intended users.
+3. Software Development Model
+Figure 2. Waterfall Methodology
+The development of the system followed the Waterfall Model. The Waterfall Model was used because it provided a clear and organized sequence of activities from requirement gathering up to testing and deployment. Since the study aimed to build a specific system based on identified operational problems, a sequential development model was appropriate for documenting the project from analysis to implementation.
+During the requirements phase, the researchers conducted interviews and direct observation to identify the limitations of the existing manual process in Maramag Fish Landing. The main concerns identified included inconsistent sales recording, difficulty in identifying fish boxes, weak tracking of returned and missing boxes, and challenges in monitoring buyer balances and payments. From these findings, the functional and non-functional requirements of the system were defined.
+The requirements gathered during this phase led to the identification of the major modules of the system, namely user and access management, fish type management, fish price management, fish box registration, sales recording, payment monitoring, receipt printing, analytics, and administrative monitoring. Ethical considerations such as proper data handling and confidentiality of user information were observed during the information-gathering process.
+During the design phase, the structure of the system was planned based on the gathered requirements. The researchers developed the conceptual framework, use case diagram, entity relationship diagram, data flow diagram, and user interface structure. The database design was organized into related tables to support users, roles, employees, brokers, buyers, fish types, broker fish type assignments, fish prices, fish boxes, fish box purchase cycles, fish inventory logs, sales transactions, sales details, and payments.
+The interface design was organized according to user roles. Broker views were designed for operational tasks such as fish box management, sales recording, payment entry, and QR scanning. Administrative views were designed for account management, dashboard reporting, broker monitoring, and fish box tracking. Role-based access and validation rules were incorporated into the design to help secure the application.
+During the implementation phase, the system was built as a Laravel web application. The local development environment was prepared using XAMPP, Composer, Node Package Manager (NPM), and MySQL. The application environment was configured through the `.env` file, after which Laravel migrations were executed to create the database tables needed by the system.
+The development process included the following implementation activities:
+1. Configuration of the Laravel project environment and database connection.
+2. Creation of database migrations for the main system tables.
+3. Development of Eloquent models and model relationships.
+4. Implementation of authentication and role-based middleware.
+5. Development of broker-side modules for fish types, fish prices, fish boxes, sales, payments, analytics, and receipt printing.
+6. Development of administrative modules for dashboards, user management, broker sales analysis, and fish box tracking.
+7. Integration of QR code generation and QR scanning for fish box identification and return processing.
+8. Compilation of front-end assets through Laravel Mix.
+Through this phase, the researchers translated the planned design into a functioning web-based system.
+During the testing phase, the researchers examined the developed system through unit testing, integration testing, system testing, and User Acceptance Testing. The purpose of this phase was to confirm that the system performed according to the specified requirements and that the individual modules worked correctly both independently and when combined.
+Errors and inconsistencies found during testing were corrected before final evaluation. This phase ensured that the developed system was functioning properly and was suitable for actual operational use.
+After successful testing, the system was prepared for deployment in a usable environment. The researchers ensured that the application, database structure, and compiled front-end assets were properly configured. Initial user orientation and familiarization were also considered to support system use by intended users.
+Maintenance refers to the continuous improvement of the system after deployment. This includes correcting discovered issues, refining the interface, and considering additional features in future versions based on user feedback and operational needs.
+4. Requirement Analysis
+Figure 3. Use Case Diagram
+The use case diagram that you see in figure 3 presents the functional interaction between the users and the Point-of-Sale and Inventory Management System for Maramag Fish Landing. It illustrates the major services provided by the system and identifies the users authorized to access each function. Based on the diagram, the system has three primary actors: Broker/Staff, Admin, and LEEO/Staff.
+The Broker/Staff is the primary operational user of the system. This actor performs the day-to-day transaction and inventory-related activities of Maramag Fish Landing. These functions include logging in, viewing the broker dashboard, managing fish types, managing fish boxes, creating new sales, viewing sales records, managing payments, viewing payment and balance information, updating fish box status, scanning QR codes, managing customer information, printing receipts, and accessing reports and analytics. These use cases show that the Broker/Staff is mainly responsible for recording and processing the regular business transactions of the fish landing operation.
+The admin serves as the main administrator of the system. This actor has broader access because the role is responsible for overseeing and monitoring the overall system operation. The admin can access essential operational and supervisory functions such as login, dashboard viewing, monitoring sales records, checking fish box status, reviewing reports and analytics, managing broker receipts, managing accounts, and logging out. The inclusion of these functions indicates that the admin is responsible for ensuring that transactions, fish box movement, and system records are properly supervised and controlled.
+The LEEO/Staff actor is assigned monitoring and support functions within the system. This actor can log in, access reports and analytics, view the LEEO dashboard, view all fish boxes sold, track fish boxes, manage broker receipt records, manage account-related functions, and log out. The role of the LEEO/Staff is focused on assisting in the monitoring of operational activities and supporting the administrative processes of Maramag Fish Landing.
+5. System Requirements Specification
+i. Functional Requirements
+The functional requirements of the system describe the main services and features that must be provided to its users.
+For broker users, the system must allow login and authenticated access, profile viewing and updating, management of fish types, recording of fish prices, registration and updating of fish boxes, QR-based identification of fish boxes, creation and updating of sales transactions, recording of buyer information, recording of payments, computation of remaining balances, receipt printing, and monitoring of fish box status.
+For administrative users, the system must allow login and authenticated access, management of broker and admin or staff accounts, viewing of dashboard summaries, broker sales analysis, and monitoring of fish box movement records, particularly returned and missing fish boxes.
+The system must also generate reports and summary information relevant to daily operations, including sales totals, fish box counts, outstanding balances, and fish box tracking records.
+ii. Non-Functional Requirements
+The non-functional requirements define the quality characteristics of the system.
+In terms of security, the system must require authenticated login before user access is granted. It must enforce role-based access control so that broker users and administrative users only access the modules appropriate to their assigned roles. Input validation and protected request handling must be applied to minimize invalid or unauthorized transactions.
+In terms of usability, the system must provide a responsive and understandable user interface that can be used by intended users with minimal difficulty. The interface must be suitable for both desktop and mobile browser access, especially for modules that use QR code scanning.
+In terms of performance, the system must be capable of processing routine operational transactions such as sales entry, payment recording, and fish box updates within a reasonable time. In terms of maintainability, the system must be organized in modular form using Laravel MVC to support easier future updates and improvement.
+iii. Input Requirements
+The system requires several categories of input from users. For authentication, users must enter valid login credentials such as email and password. For inventory-related activities, broker users must enter fish type information, fish price information, fish box details, and QR-based fish box inputs.
+For transaction processing, broker users must enter sales date, buyer name, optional buyer contact number, selected fish boxes, unit prices, subtotals, and payment information. For account management, administrative users must enter user profile information such as name, email, contact number, role, address, stall name, and position, depending on the account type being created or updated.
+These input requirements support the system's operation in managing accounts, transactions, inventory, and monitoring functions.
+iv. Output Requirements
+The system produces several outputs needed for operational and administrative monitoring. These include dashboard summaries, sales records, payment summaries, remaining balance information, fish box status summaries, fish box tracking records, and printed receipts.
+For broker users, the outputs include recent sales, daily sales summaries, outstanding balance information, payment history, and printed transaction receipts. For administrative users, the outputs include centralized dashboard summaries, broker sales analysis, top broker and fish type information, and records of returned and missing fish boxes.
+These outputs support transaction confirmation, record review, and management decision-making within Maramag Fish Landing.
+v. Software Requirements
+The software requirements of the system include a web server environment capable of running PHP and Laravel, a MySQL database server, and a modern web browser. The application was developed and tested using XAMPP as the local web server package, Composer for PHP dependency management, Node Package Manager for front-end dependencies, and Laravel Mix for compiling JavaScript and CSS assets.
+The system also requires browser support for JavaScript and camera access for QR scanning features. It may be accessed through browsers such as Google Chrome, Microsoft Edge, Mozilla Firefox, and other browser applications compatible with modern web standards.
+6. Design of software, system, productions and process
+i. Entity Relationship Diagram
+Figure 4. Entity Relationship Diagram
+The Entity Relationship Diagram (ERD) of the system presents the major database entities and their relationships. At the center of the system is the `users` table, which stores account credentials and status. User roles are managed through the `roles` and `user_roles` tables. Administrative profile information is stored in the `employees` table, while broker profile information is stored in the `brokers` table.
+The system stores buyer information in the `buyers` table. Sales transactions are stored in the `sales` table and are associated with both brokers and buyers. Each sale may contain multiple entries in the `sales_details` table, and payments related to a sale are stored in the `payments` table.
+Fish classification and pricing are handled using `fish_types`, `broker_fish_type`, and `fish_prices`. The `fish_boxes` table stores the reusable physical fish boxes together with their unique QR codes and status. The `fish_box_purchases` table stores the purchase-cycle details of a fish box, including the active fish type and cost price for a particular stocking cycle. Fish box movement history is recorded in the `fish_inventory` table, which stores the status changes of fish boxes such as In Stock, Sold, Returned, and Missing.
+This relational structure allows the system to manage users, buyers, fish inventory, pricing, sales transactions, payments, and fish box tracking in an organized and consistent manner.
+ii. Data Flow Diagram
+Figure 5. Level 0 Data Flow Diagram
+The figure 5 presents the Level 0 Data Flow Diagram, also known as the Context Diagram, of the Point-of-Sale and Inventory Management System for Maramag Fish Landing. At this level, the system is treated as one major process in order to show its overall interaction with the external users and the general flow of information entering and leaving the system. The external entities shown in the diagram are the Broker, LEEO Admin, and LEEO Staff.
+The Broker is the primary operational user of the system. The Broker sends operational data to the system, which may include transaction-related information, inventory updates, fish box records, and other daily operational inputs. In return, the system provides system output, such as processed transaction results, updated records, and other information needed for day-to-day operations.
+The LEEO Admin interacts with the system through monitoring requests. These requests are related to administrative supervision, monitoring of records, and review of system-generated information. In response, the system provides monitoring reports, which support the LEEO Admin in overseeing the operational activities of Maramag Fish Landing.
+The LEEO Staff also interacts with the system by sending monitoring requests. The system then returns response reports, which allow the staff to review operational information and support monitoring-related activities. This indicates that the LEEO Staff has a supporting role in supervising and reviewing system outputs.
+iii. Data Dictionary
+The following tables were a collection of data that describe its entire content, type, and description. The contents serve the system's database. Each table has a distinct identifier that will serve as the primary key.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+email | varchar(255) | utf8mb4_unicode_ci |  | No | None
+email_verified_at | timestamp |  |  | Yes | NULL
+password | varchar(255) | utf8mb4_unicode_ci |  | No | None
+status | enum(‘active’,’deactivated’) | utf8mb4_unicode_ci |  | No | Active
+remember_token | varchar(100) | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 1. Users
+The `users` table stores the main authentication records of the system. It contains the email address, encrypted password, account status, and timestamp fields for each user. This table serves as the base record for broker and administrative accounts.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+role_name | varchar(255) | utf8mb4_unicode_ci |  | No | None
+description | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 2. Roles
+The `roles` table stores the available user roles in the system. These roles include broker, admin, and staff. The table is used to classify user access privileges.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+user_id | bigint(20) |  | UNSIGNED | No | None
+role_id | bigint(20) |  | UNSIGNED | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 3. User Roles
+The `user_roles` table links users and roles. It supports role-based access control by determining which role is assigned to a specific user account.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+user_id | bigint(20) |  | UNSIGNED | No | None
+first_name | varchar(255) | utf8mb4_unicode_ci |  | No | None
+middle_name | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+last_name | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+contact_number | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+position | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 4. Employees
+The `employees` table stores profile information for administrative users under the LEEO office. It contains name fields, contact number, position, and the linked user account reference.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+user_id | bigint(20) |  | UNSIGNED | No | None
+first_name | varchar(255) | utf8mb4_unicode_ci |  | No | None
+middle_name | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+last_name | text | utf8mb4_unicode_ci |  | Yes | NULL
+address | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+stall_name | timestamp | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+deleted_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 5. Brokers
+The `brokers` table stores the profile information of broker users. It contains the linked user account, broker name fields, address, stall name, and timestamp fields. It identifies the broker responsible for sales and fish box ownership.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+first_name | varchar(255) | utf8mb4_unicode_ci |  | No | None
+middle_name | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+last_name | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+contact | varchar(255) | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 6. Buyers
+The `buyers` table stores buyer information used in sales transactions. It contains first name, middle name, last name, contact information, and timestamps. This allows buyer records to be reused across transactions.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+name | varchar(255) | utf8mb4_unicode_ci |  | No | None
+description | text | utf8mb4_unicode_ci |  | Yes | NULL
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+deleted_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 7. Fish Types
+The `fish_types` table stores the list of fish categories used in the system. It contains the fish type name, description, and timestamp fields. It serves as the master list of fish classifications.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+broker_id | bigint(20) |  | UNSIGNED | No | None
+fish_type_id | bigint(20) |  | UNSIGNED | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 8. Broker Fish Type
+The `broker_fish_type` table links brokers with the fish types assigned to them. It allows fish types to be managed per broker and serves as the basis for price assignment.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+broker_fish_type_id | bigint(20) |  | UNSIGNED | No | None
+price | decimal(10,2) |  |  | No | None
+price_date | timestamp |  |  | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 9. Fish Prices
+The `fish_prices` table stores price records for broker-assigned fish types. It contains the linked broker fish type reference, price, price date, and timestamps. It is used to maintain the current selling prices of fish types.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+broker_id | bigint(20) |  | UNSIGNED | No | None
+qr_code | char(36) | utf8mb4_unicode_ci |  | No | None
+box_status | enum(‘In Stock’,’Returned’,’Missing’) | utf8mb4_unicode_ci |  | No | In Stock
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+deleted_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 10. Fish Boxes
+The `fish_boxes` table stores the reusable physical fish boxes. It contains the broker reference, unique QR code, current box status, timestamps, and soft delete information. Each fish box is uniquely identified within the system.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+fish_box_id | bigint(20) |  | UNSIGNED | No | None
+fish_type_id | bigint(20) |  | UNSIGNED | No | None
+created_by_user_id | bigint(20) |  | UNSIGNED | Yes | NULL
+purchase_date | date |  |  | No | None
+cost_price | decimal(10,2) |  |  | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 11. Fish Box Purchases
+The `fish_box_purchases` table stores the purchase-cycle information of fish boxes. It contains the linked fish box, fish type, created by user reference, purchase date, cost price, and timestamps. This table supports the tracking of fish boxes across stocking cycles.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+fish_box_purchase_id | bigint(20) |  | UNSIGNED | No | None
+created_by_user_id | bigint(20) |  | UNSIGNED | Yes | NULL
+status | enum(‘In Stock’,’Returned’,’Missing’) | utf8mb4_unicode_ci |  | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 12. Fish Inventory
+The `fish_inventory` table stores movement logs for fish boxes. It records the linked fish box purchase cycle, the user who created the record, the status value, and timestamps. It serves as the tracking history for In Stock, Sold, Returned, and Missing statuses.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+sales_date | date |  |  | No | None
+broker_id | bigint(20) |  | UNSIGNED | No | None
+buyer_id | bigint(20) |  | UNSIGNED | No | None
+total_amount | decimal(10,2) |  |  | No | 0.00
+status | enum(‘Deleted’,’Active’,’Partially Paid’,’Paid’) | utf8mb4_unicode_ci |  | No | Active
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 13. Sales
+The `sales` table stores the summary record of each sales transaction. It contains the sales date, broker reference, buyer reference, total amount, status, and timestamps. This table represents the main sales transaction header.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+sales_id | bigint(20) |  | UNSIGNED | No | None
+fish_box_purchase_id | bigint(20) |  | UNSIGNED | No | None
+unit_price | decimal(10,2) |  |  | No | None
+sub_total | decimal(10,2) |  |  | No | None
+discount | decimal(10,2) |  |  | No | 0.00
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 14. Sales Details
+The `sales_details` table stores the itemized records under each sale. It contains the linked sale, fish box purchase reference, unit price, subtotal, discount, and timestamps. It connects each sale to the corresponding fish box and fish type data.
+[TABLE START]
+Name | Type | Collation | Attributes | Null | Default
+id | bigint(20) |  | UNSIGNED | No | None
+sales_id | bigint(20) |  | UNSIGNED | No | None
+paid_amount | decimal(10,2) |  | UNSIGNED | No | None
+payment_date | date |  |  | No | None
+payment_method | varchar(255) | utf8mb4_unicode_ci |  | No | None
+created_at | timestamp |  |  | Yes | NULL
+updated_at | timestamp |  |  | Yes | NULL
+[TABLE END]
+Table 15. Payments
+The `payments` table stores the payment records related to sales transactions. It contains the linked sale, paid amount, payment date, payment method, and timestamps. This table supports partial and full payment monitoring.
+Figure 6. Gantt chart
+Gantt chart in figure 6 illustrates the project schedule between May 2025 and January 2026, and it has been subdivided into monthly and weekly phases. The project will begin with the Proposal Defense in May 2025, then Requirements Gathering between June and early July. System Design phase will be implemented between August and December 2025 when the general outline and features of the system will be developed.
+The project enters the execution and completion phases in January 2026 beginning with Implementation, then Testing and Documentation. The last stage of the project is Final Defense, Deployment, and Maintenance where the Point of Sale and Inventory System is complete, presented, and prepared to be used in the real world at Maramag Fish Landing.
+7. Development and Testing: Levels of Software Testing
+i. Unit Testing
+Unit testing was used to examine individual parts of the system independently. The researchers checked specific components such as login validation, user management logic, fish box registration, sales processing, payment entry, QR scanning response, and fish box status updating. The purpose of this level of testing was to verify that each module performed its intended function correctly before being combined with other modules.
+ii. Integration Testing
+Integration testing was performed after the individual modules had been verified. At this stage, the interaction between connected components was tested. Examples include the connection between sales transactions and fish box status updates, the connection between payment records and computed sales balance, and the connection between fish box movement updates and inventory tracking logs. This testing confirmed that the integrated modules exchanged data correctly and supported the overall workflow of the application.
+iii. System Testing
+System testing was conducted to assess the performance of the complete system as one whole application. The researchers tested the combined operation of authentication, inventory management, QR processing, sales entry, payment recording, dashboard reporting, and account management. This testing was used to verify that the application satisfied both its functional and non-functional requirements.
+iv. User Acceptance Testing (UAT)User Acceptance Testing (UAT) was conducted to evaluate the system from the perspective of actual end users, including brokers, staff, and LEEO administrators. A total of 8 respondents participated in the evaluation. The respondents were asked to perform real operational tasks such as recording sales transactions, managing inventory, scanning QR codes, and generating reports. The evaluation utilized a 5-point Likert scale to measure system performance in terms of functionality, usability, accuracy, efficiency, and overall satisfaction. Likert scales are widely used to quantify user perceptions and system acceptability (Sullivan & Artino, 2013).
+CHAPTER V
+RESULT AND DISCUSSION
+Presentation of the Developed System
+The Point-of-Sale and Inventory Management System for Maramag Fish Landing was successfully developed and implemented as a web-based application. The system was designed to address the operational problems identified during the requirement gathering stage, particularly those related to manual sales recording, inconsistent payment monitoring, difficulty in tracking fish boxes, and delayed preparation of reports.
+The developed system provides a centralized platform for broker users and authorized administrative users. For broker users, the application includes modules for fish type management, fish price management, fish box registration, QR code-based fish box identification, sales recording, payment entry, receipt printing, and dashboard analytics. For administrative users under the LEEO office, the system provides monitoring features such as dashboard summaries, broker sales analysis, fish box tracking, and user account management.
+The implementation of these modules demonstrates that the system was able to translate the identified requirements into actual operational features. The developed application therefore served as a practical digital solution for improving record organization, transparency, and monitoring efficiency in Maramag Fish Landing.
+Results of System Implementation
+i. Broker-Side Operational Functions
+The broker-side functions of the system were successfully implemented. Broker users were able to manage fish types assigned to them, maintain fish prices, register fish boxes, and use QR codes to identify fish boxes during operational processes. These features addressed the problem of manual and inconsistent encoding of fish-related inventory information.
+The fish type and fish price modules made it possible for broker users to maintain organized fish classifications and updated prices inside the system. This improved consistency in transaction processing because fish box records and sales entries could be linked to a defined fish type and corresponding price.
+The fish box module also functioned as intended. Brokers were able to create fish box records, update fish box details, and monitor fish box status. Since each fish box was assigned a unique QR code, identification became faster and more accurate than manual checking. This addressed the earlier problem of difficulty in tracking which fish boxes were in stock, sold, returned, or missing.
+ii. Sales and Payment Processing Results
+The sales module enabled broker users to record sales transactions in a structured manner. During the sales process, the broker could select or scan available fish boxes, encode buyer information, and save the corresponding transaction. The system stored the transaction in the sales records and linked the itemized sale details to the related fish box records. As a result, the process of recording sales became more organized and less prone to manual error.
+The payment module also operated successfully. The system allowed broker users to record payment entries associated with a sale and automatically reflect the corresponding paid amount and remaining balance. This improved the monitoring of unpaid and partially paid transactions. Compared with the manual process, the developed payment module provided a more reliable way of tracking balances and reviewing payment history.
+Receipt printing was also successfully integrated into the system. After recording a sale and its related payments, the system could generate a printable receipt that displayed transaction details, buyer information, payment information, and the remaining balance. This feature improved transaction documentation and supported better record confirmation during daily operations.
+iii. QR Code and Fish Box Tracking Results
+One of the major features of the system is the use of QR codes for fish box identification. The implemented QR code functionality supported two main purposes: retrieving fish box information during sales processing and returning fish boxes through QR-based scanning. This reduced the need for manual fish box identification and helped speed up operational tasks.
+The fish box tracking mechanism also functioned successfully. When fish boxes changed status, such as from In Stock to Sold, Returned, or Missing, the corresponding updates were stored in the tracking records of the system. This improved accountability in fish box movement and allowed users to monitor the current and historical condition of each fish box.
+The availability of fish box tracking records was particularly important for administrative monitoring. It enabled authorized users to review the movement of fish boxes and identify issues involving unreturned or missing units. This directly addressed one of the major operational concerns observed during the requirement analysis stage.
+iv. Dashboard and Administrative Monitoring Results
+The dashboard and monitoring modules were also successfully implemented. For broker users, the dashboard presented summarized operational information such as total sales, outstanding balance, recent sales activity, and trend-based analytics. These outputs provided users with a clearer view of their daily transaction performance and helped improve monitoring of their own operations.
+For authorized administrative users, the system provided centralized monitoring features. The administrative dashboard displayed summarized information such as total brokers, total fish boxes sold, returned fish boxes, missing fish boxes, top brokers, and top fish types sold. The administrative module also supported broker-based sales analysis and fish box tracking history. Through these features, the system improved transparency and gave administrative users better access to records needed for monitoring and supervision.
+The user management component also contributed to administrative control by allowing authorized personnel to create, update, activate, deactivate, and manage user accounts. This improved account organization and supported role-based system access.
+User Interface
+Figure 7. Login
+Figure 7 presents the login interface of the Maramag Fish Landing Information System. It provides the required fields for email and password, together with account access options, so that authorized users such as brokers and administrative personnel can securely enter the system.
+Figure 8. Broker Dashboard
+Figure 8 shows the broker dashboard interface. It summarizes important operational information such as daily sales activity, collections, balances, and reusable fish box status, allowing the broker to quickly monitor ongoing transactions.
+Figure 9. Inventory and Pricing
+Figure 9 presents the Inventory and Pricing page for brokers. This interface allows the user to manage fish-related records in one workspace, including fish types, fish prices, and fish boxes, which improves organization and monitoring.
+Figure 10. add fish type
+Figure 10 shows the add fish type form. This interface allows the broker to encode a new fish classification so that fish records can be organized properly and used consistently in pricing, inventory, and sales transactions.
+Figure 11. Fish type List
+Figure 11 presents the fish type list. It displays the fish types already assigned or recorded in the system, enabling the broker to review, update, and manage available fish classifications.
+Figure 12. set fish price
+Figure 12 shows the set fish price form. This interface is used to assign or update the selling price of a selected fish type, helping ensure that transactions are based on the current recorded price.
+Figure 13. fish price list
+Figure 13 presents the fish price list interface. It shows the existing price records for fish types, allowing the broker to monitor price entries and maintain updated pricing information.
+Figure 14. add fish box
+Figure 14 shows the add fish box form. Through this interface, the broker can register a new reusable fish box in the system and prepare it for tracking and future transactions.
+Figure 15. Fish box list
+Figure 15 presents the fish box list. It displays all recorded fish boxes together with their status, which helps the broker determine whether each box is in stock, sold, returned, or missing.
+Figure 16. Create Sale
+Figure 16 shows the create sale form. This interface enables the broker to record a sales transaction by entering buyer information, selecting fish boxes, and computing the total amount in a structured manner.
+Figure 17. add sales QR scan
+Figure 17 presents the QR scanning interface used during sales entry. This feature allows the broker to scan the QR code of a fish box for faster identification and more accurate recording.
+Figure 18. Create sales by QR scan
+Figure 18 shows the sales creation process using QR scanning. By scanning the fish box code, the system automatically retrieves the corresponding box information, reducing manual encoding and improving transaction speed.
+Figure 19. Sales
+Figure 19 presents the sales list interface. It displays recorded sales transactions and their corresponding details, enabling brokers to review previous transactions and monitor payment status.
+Figure 20. add payment
+Figure 20 shows the add payment form. This interface allows the broker to record payment transactions for a sale, making it easier to update balances and monitor partially paid or fully paid accounts.
+Figure 21. Customer Status
+Figure 21 presents the customer status interface. It shows the standing of a buyer account or transaction, particularly in terms of payment condition, which supports monitoring of unpaid and partially paid sales.
+Figure 22. Sales Details
+Figure 22 shows the sales details interface. It provides a complete view of a selected sales transaction, including buyer information, itemized sale records, amounts, and payment progress.
+figure 23. Receipt details
+Figure 24. Customer Receipt
+Figure 2 presents the customer receipt generated by the system. This serves as the printed transaction record containing the sale details, payment information, and remaining balance, if any.
+figure 25. QR Code Scanner Return Boxes
+Figure 25 presents the QR code scanner used for returning fish boxes. This interface allows the broker or authorized user to scan the QR code attached to a fish box so that the system can quickly identify the box and process its return transaction. This reduces manual searching and improves the speed and accuracy of fish box return operations.
+figure 26. return to in stock
+Figure 26 shows the notification displayed when a returned fish box is successfully changed back to In Stock status. This notification confirms that the box is now available again for future use or sale transactions. It helps users verify that the action was completed correctly.
+figure 27. mark missing box
+Figure 27 presents the notification shown when a fish box is marked as missing. This confirms that the selected fish box has been updated to Missing status in the system. The notification supports better fish box accountability by informing the user that the status change was successfully recorded.
+figure 28. QR code fish box
+Figure 28 shows the QR code assigned to a fish box. This QR code serves as the unique identifier of the box and can be used in scanning operations such as sales processing, fish box verification, and return transactions. Through this feature, the system improves identification accuracy and reduces manual errors.
+figure 29. Sales Analytics
+Figure 29 presents the sales analytics interface. This page displays summarized sales information and visual reports that help users monitor transaction performance, payment activity, and sales trends. It supports decision-making by presenting sales records in a clearer and more interpretable form.
+Figure 30. LEEO/Admin Dashboard
+Figure 30 shows the LEEO or administrator dashboard. This interface provides summarized monitoring information such as broker activity, fish box movement, and overall transaction performance to support supervisory functions.
+figure 31. Profile settings
+Figure 31 shows the profile settings interface. This page allows the logged-in user to view and update personal account information maintained in the system. It supports account maintenance by giving users access to their profile details in an organized and convenient manner.
+Figure 32. Add User
+Figure 32 presents the add user form. This interface enables authorized administrative personnel to create a new user account and assign the proper role for system access.
+Figure 33. LEEO Account Management
+Figure 33 shows the LEEO account management interface. It allows administrative users to review and manage LEEO-related accounts for better access control and record maintenance.
+Figure 34. Broker Account Management
+Figure 34 presents the broker account management interface. Through this page, authorized users can create, update, activate, or deactivate broker accounts within the system.
+Figure 35. Sales and Analytics
+Figure 35 shows the sales and analytics interface. It presents summarized transaction reports and visual data that help administrative users evaluate sales performance and monitor operational trends.
+Figure 36. Fish Boxes Movement and Tracking
+Figure 36 presents the fish box movement and tracking interface. This page records and displays the status history of fish boxes, making it easier to identify boxes that are sold, returned, or missing.
+Figure 37. Broker Receipt
+Figure 37 shows the broker receipt interface. It provides a transaction receipt intended for broker-side documentation and confirmation of completed sales and related payments.
+3. User Acceptance Testing (UAT)
+UAT checks the functionality, usability, accuracy, efficiency, and acceptability of the POS and Inventory Management System developed for Maramag Fish Landing. This test involved eight respondents, namely the different fish brokers, staff, and personnel in the LEEO, representatives of the actual users. The main objective of UAT is to appraise whether the system meets user requirements and is fit for deployment in the real world.
+Figure 38. Likert Scale
+The evaluation was carried out using a 5-point Likert scale figure 38, where 5 indicates Strongly Agree and 1 indicates Strongly Disagree. The respondents assessed the system based on five key criteria: Functionality, Usability, Accuracy, Efficiency, and Overall Satisfaction.
+Table 13. Usability
+[TABLE START]
+Respondents | B1 | B2 | B3 | B4 | Row Mean
+R1 | 5 | 4 | 5 | 5 | 4.75
+R2 | 4 | 5 | 4 | 5 | 4.50
+R3 | 5 | 5 | 4 | 4 | 4.50
+R4 | 5 | 4 | 5 | 5 | 4.75
+R5 | 4 | 5 | 5 | 4 | 4.50
+R6 | 4 | 5 | 5 | 5 | 5.00
+R7 | 4 | 4 | 5 | 5 | 4.50
+R8 | 4 | 4 | 5 | 4 | 4.50
+Mean |  |  |  |  | 4.63
+[TABLE END]
+In table 13, Usability criterion had a mean score of 4.63, meaning that users felt the system was easy to understand and navigate. The outcome reveals that interface design, menu structure, and workflow of the system are appropriate for brokers and staff operating in a fast-moving environment.
+Table 14. Accuracy
+[TABLE START]
+Respondents | C1 | C2 | C3 | Row Mean
+R1 | 5 | 5 | 5 | 5.00
+R2 | 5 | 5 | 4 | 4.67
+R3 | 5 | 5 | 5 | 5.00
+R4 | 4 | 5 | 5 | 4.67
+R5 | 5 | 5 | 5 | 5.00
+R6 | 5 | 5 | 5 | 5.00
+R7 | 5 | 5 | 5 | 5.00
+R8 | 4 | 5 | 5 | 4.67
+Mean |  |  |  | 4.88
+[TABLE END]
+Among the criteria evaluated, Accuracy got the highest mean score of 4.88 in table 14, which supports that the system records sales transactions accurately, updates inventory levels, and tracks fish box movements through QR codes. It further confers that the system generates reliable and consistent data during daily activities.
+Table 15. Efficiency
+[TABLE START]
+Respondents | D1 | D2 | D3 | Row Mean
+R1 | 4 | 5 | 4 | 4.33
+R2 | 5 | 4 | 5 | 4.67
+R3 | 4 | 5 | 4 | 4.33
+R4 | 5 | 4 | 5 | 4.67
+R5 | 4 | 5 | 5 | 4.67
+R6 | 5 | 5 | 5 | 5.00
+R7 | 4 | 4 | 5 | 4.33
+R8 | 5 | 4 | 4 | 4.33
+Mean |  |  |  | 4.50
+[TABLE END]
+In table 15, Efficiency recorded an average score of 4.50, which indicates that the system reduced manual work and increased efficiency in sales recording and inventory tracking as compared to the old manual procedure. The respondents still rated it as Strongly Acceptable, but they suggested some minor enhancements to further improve the flow and ease of use of the system.
+Table 16. Functionality
+[TABLE START]
+Respondents | A1 | A2 | A3 | A4 | A5 | Row Mean
+R1 | 5 | 5 | 5 | 5 | 4 | 4.80
+R2 | 5 | 4 | 5 | 5 | 5 | 4.80
+R3 | 4 | 5 | 5 | 5 | 5 | 4.80
+R4 | 5 | 5 | 4 | 5 | 5 | 4.80
+R5 | 5 | 5 | 5 | 4 | 5 | 4.80
+R6 | 4 | 5 | 5 | 5 | 5 | 4.80
+R7 | 5 | 5 | 5 | 5 | 5 | 5.00
+R8 | 4 | 5 | 5 | 5 | 4 | 4.60
+Mean |  |  |  |  |  | 4.75
+[TABLE END]
+Table 17. Overall Satisfaction
+[TABLE START]
+Respondents | E1 | E2 | E3 | Row Mean
+R1 | 5 | 5 | 5 | 5.00
+R2 | 4 | 5 | 5 | 4.67
+R3 | 5 | 4 | 5 | 4.67
+R4 | 5 | 5 | 4 | 4.67
+R5 | 4 | 5 | 5 | 4.67
+R6 | 5 | 5 | 5 | 5.00
+R7 | 5 | 4 | 5 | 4.67
+R8 | 4 | 5 | 4 | 4.33
+Mean |  |  |  | 4.75
+[TABLE END]
+In table 16 Functionality and table 17 Overall Satisfaction both provided a mean score of 4.75 to show that the system core activities, which include user login, sales creation, QR code scanning, payment management, receipt printing, and report generation functioned well. The users are satisfied with the performance of the overall system and ascertain that it enhances their operation at the fish landing.
+Figure 33. UAT Mean
+The computed result shows that the overall mean score for the system is 4.70, which verbally interprets to be strongly acceptable. This means that the system was able to meet user requirements and showed good performance during actual use.
+The results of User Acceptance Testing confirm that the Point-of-Sale and Inventory Management System for Maramag Fish Landing is highly acceptable to its prospective users. The system satisfactorily supports daily sales transactions, monitoring of inventory, fish boxes, and administrative oversight. While there were some minor suggestions for enhancement, general feedback revealed that the system is reliable, user-friendly, and ready to be deployed at Maramag Fish Landing.
+3. Discussion of the Results
+The implemented results show that the developed system was able to address the problems identified in the earlier chapters of the study. The manual process previously used in Maramag Fish Landing was characterized by slow recording, weak fish box accountability, and difficulty in monitoring balances and reports. Through system development, these concerns were addressed by providing structured digital modules for sales processing, payment monitoring, fish box tracking, and administrative reporting.
+The sales module addressed the problem of incomplete and inconsistent manual sales recording by organizing sales information into structured transaction records. The payment module improved accountability in buyer balances by systematically storing payment records and computing remaining amounts. The fish box module and QR code functionality reduced errors in fish box identification and strengthened monitoring of box status. The dashboards and reports improved operational transparency by providing timely access to summarized information for both brokers and administrative users.
+The results therefore indicate that the developed system was not only technically functional but also operationally relevant to the workflow of Maramag Fish Landing. The system features were aligned with the actual needs identified during interviews and observation, which supports the appropriateness of the developed solution.
+CHAPTER VI
+CONCLUSION AND RECOMMENDATION
+1.Conclusion
+The creation of the Point-of-Sale (POS) and Inventory Management System on Maramag Fish Landing was made, and it was able to accomplish its targeted goals. The system was developed to overcome the predicament of the previous manual process especially in recording the sales transactions, tracking of fish boxes, inventory monitoring and transparency to the administrative view.
+The process of the development was properly planned, analyzed, designed, implemented and tested to make sure that the system is employed as per the requirements of the brokers, staff, and the Local Economic Enterprise Office (LEEO). The system will combine key attributes like user authentication, fish box tracking using QR codes, sales and payments, inventory, generation of a receipt and generation of a report.
+The User Acceptance Testing (UAT) was conducted on eight (8) respondents with an overall mean score of 4.70, which is verbally acceptable as Strongly Acceptable. This is a testimony to the fact that the system is efficient, accurate, user-friendly, and functional. The respondents were involved with the performance of the system and stated that it is in good support of the daily activity of Maramag Fish Landing.
+According to the outcome and user expectations, the system has been found to be a trusted tool that increases the precision of the transactions, cuts down on the manual load, extends inventory management and facilitates transparency within the fish landing activity.
+2. Recommendations
+The Point-of-Sale (POS) and Inventory Management System on Maramag Fish Landing has proven to be acceptable and has provided satisfactory results during testing. However, the proponent would like to make the following recommendations to further enhanced the system's performance and user experience:
+i. Message Alerts for Remaining Balance:
+To improve the overall excellence of the Point-of-Sale (POS) and Inventory Management System on Maramag Fish Landing, it was highly recommended adding a feature that sends message alerts to customers regarding their remaining balance. Since the system collects customers' phone numbers, this functionality will enable the system to send text messages notifying customers about their remaining balance. This served as a helpful reminder for customers to stay informed about their current balance.
+ii. Message Alerts for Payment Confirmation:
+Another valuable recommendation was to implement a message alert system that notifies customers whenever a payment was received at the counter. This feature will greatly benefit customers by providing them with instant notifications, ensuring that they were aware that their payment has been confirmed and recorded.
+By implementing these suggested features, the Point-of-Sale (POS) and Inventory Management System on Maramag Fish Landing was further optimized, enhancing the overall user You sent experience and providing customers with improved convenience and timely updates.
+APPENDIX
+References:
+APEC. (2024). *Review of traceability systems applied to the value chain of fisheries and aquaculture in APEC economies*. https://www.apec.org/publications/2024/04/review-of-traceability-systems-applied-to-the-value-chain-of-fisheries-and-aquaculture-in-apec-economies
+Bastan, N. V., Hopelos, C. V., Jalbuena, J. L. S., Medianero, J. S., Octaviano, C. S. D., & Pescuela, N. A. (2004). *Computerized satellite canteen sales and inventory system* [Unpublished thesis, Central Philippine University]. https://hdl.handle.net/20.500.12852/1523
+Carmen, J. C., Lima, E. F., Te, J. J., Toledo, A. N., & Hernando, C. M. (2023). *The public wet market system of Iloilo City, Philippines*. *Journal of Public Affairs and Development, 7*. https://ovcre.uplb.edu.ph/journals-uplb/index.php/JPAD/article/view/808
+Dalida, A. M., Lacson, A. M. B., Ubales, G. D., & Laguda, J. P. L. (2023). *Point of sale and inventory system of Ticar-Nuñez supermarket* [Undergraduate thesis, Capiz State University Mambusao Satellite College]. https://repository.capsu.edu.ph/handle/123456789/797
+Jose, A., Venkatesan, S. P., & Kumar, B. (2024). A QR code-based traceability system for dry fish supply chain of micro and small enterprises in India. *International Journal of Indian Culture and Business Management, 31*(2), 145-159. https://doi.org/10.1504/IJICBM.2024.136801
+Li, P., Yang, J., Jiménez-Carvelo, A. M., & Erasmus, S. W. (2024). Applications of food packaging quick response codes in information transmission toward food supply chain integrity. *Trends in Food Science & Technology, 146*, 104384. https://doi.org/10.1016/j.tifs.2024.104384
+Magbanua, L., Gealon, J., Lucero, M. G., Mocero, M. E., & Villa, M. C. (2007). *Mang Inasal Incorporated automated point-of-sale system* [Unpublished thesis, Central Philippine University]. https://hdl.handle.net/20.500.12852/1848
+Mangmang, G. B. (2018). Development and implementation of point of sale system (POS): Profitability measurement for retail business. *Journal of Educational and Human Resource Development, 6*(1), 220-226. https://doi.org/10.61569/5tc08q53
+Muchaendepi, W., Mbohwa, C., Hamandishe, T., & Kanyepe, J. (2019). Inventory management and performance of SMEs in the manufacturing sector of Harare. *Procedia Manufacturing, 33*, 454-461. https://doi.org/10.1016/j.promfg.2019.04.056
+Oliveira, J., Lima, J. E., da Silva, D., Kuprych, V., Faria, P. M., Teixeira, C., Cruz, E. F., & da Cruz, A. M. R. (2021). Traceability system for quality monitoring in the fishery and aquaculture value chain. *Journal of Agriculture and Food Research, 5*, 100169. https://doi.org/10.1016/j.jafr.2021.100169
+Parreño-Marchante, A., Alvarez-Melcon, A., Trebar, M., & Filippin, P. (2014). Advanced traceability system in aquaculture supply chain. *Journal of Food Engineering, 122*, 99-109. https://doi.org/10.1016/j.jfoodeng.2013.09.007
+Rodriguez-Salvador, B., & Calvo-Dopico, D. (2020). Understanding the value of traceability of fishery products from a consumer perspective. *Food Control, 112*, 107142. https://doi.org/10.1016/j.foodcont.2020.107142
+Tian, X., & Wang, H. (2022). Impact of IT capability on inventory management: An empirical study. *Procedia Computer Science, 199*, 142-148. https://doi.org/10.1016/j.procs.2022.01.018
+Valencia, J.-M. D., Balusa, M. U. F., & De Pedro, J. F. (2023). *Inventory system of 909 Drug Store in Jamindan, Capiz* [Undergraduate thesis, Capiz State University Mambusao Satellite College]. https://repository.capsu.edu.ph/handle/123456789/241
+Yuwono, T., Suroso, A., & Novandari, W. (2024). Information and communication technology in SMEs: A systematic literature review. *Journal of Innovation and Entrepreneurship, 13*, 31. https://doi.org/10.1186/s13731-024-00392-6

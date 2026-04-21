@@ -13,9 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('fish_boxes', function (Blueprint $table) {
-            $table->string('name')->unique()->after('id');
-        });
+        //
     }
 
     /**
@@ -25,8 +23,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('fish_boxes', function (Blueprint $table) {
-            $table->dropColumn('name');
-        });
+        //
     }
 };

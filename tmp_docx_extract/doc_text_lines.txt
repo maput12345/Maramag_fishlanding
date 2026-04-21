@@ -1,0 +1,33 @@
+User Interface
+Figure 7. Login
+Figure X presents the login interface of the Maramag Fish Landing Information System. The interface uses a split-screen layout to create a clean, professional, and user-friendly first impression. The left panel contains the main login components, including the email field, password field, “Remember me” option, “Forgot your password?” link, and the Sign In button. These elements are arranged clearly so users can easily understand how to access the system. The right panel highlights the identity of the system by showing the Maramag Fish Landing logo and the text MAANYAG MARAMAG!, which strengthens the branding and visual recognition of the application. The color scheme uses deep blue, white, and gold accents to give the interface a formal yet welcoming appearance. Overall, the login page was designed to be simple, organized, and easy to use for both staff and broker users.
+Figure 8. Broker Dashboard
+Figure 9. Inventory and Pricing
+Figure 10. add fish type
+Figure 11. Fish type List
+Figure 12. set fish price
+Figure 12. fish price list
+Figure 12. add fish box
+Figure 13. Fish box list
+Figure 14. Create Sale
+Figure 15. add sales QR scan
+Figure 16. Create sales by QR scan
+Figure 17. Sales
+Figure 18. add payment
+Figure 19. Customer Status
+Figure 20. Sales Details
+figure . Receipt details
+Figure 21. Customer Receipt
+figure . QR Code Scanner Return Boxes
+figure . return to in stock
+figure. mark missing box
+figure . QR code fish box
+figure . Sales Analytics
+Figure 25. LEEO/Admin Dashboard
+figure . Profile settings
+Figure 26. Add User
+Figure 27. LEEO Account Management
+Figure 28. Broker Account Management
+Figure 29. Sales and Analytics
+Figure 30. Fish Boxes Movement and Tracking
+Figure 31. Broker Receipt

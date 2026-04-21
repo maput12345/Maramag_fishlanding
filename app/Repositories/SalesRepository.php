@@ -28,7 +28,7 @@ class SalesRepository
      */
     public function getTopBrokersForAdmin(string $dateFrom, string $dateTo, ?string $status = null, int $limit = 5): Collection
     {
-        $query = Sales::with('broker')
+        $query = Sales::with(['broker', 'salesPayments'])
             ->active()
             ->whereDate('sales_date', '>=', $dateFrom)
             ->whereDate('sales_date', '<=', $dateTo);
@@ -37,18 +37,20 @@ class SalesRepository
             $query->where('status', $status);
         }
 
-        return $query->selectRaw('broker_id, COUNT(*) as sales_count, SUM(paid_amount) as total_sales')
+        return $query->get()
             ->groupBy('broker_id')
-            ->orderByDesc('sales_count')
-            ->limit($limit)
-            ->get()
-            ->map(function ($sale) {
+            ->map(function ($sales) {
+                $firstSale = $sales->first();
+
                 return [
-                    'broker' => $sale->broker,
-                    'sales_count' => $sale->sales_count,
-                    'total_sales' => $sale->total_sales
+                    'broker' => $firstSale?->broker,
+                    'sales_count' => $sales->count(),
+                    'total_sales' => $sales->sum(fn ($sale) => $sale->paid_amount),
                 ];
-            });
+            })
+            ->sortByDesc('sales_count')
+            ->take($limit)
+            ->values();
     }
 
     /**
@@ -74,14 +76,15 @@ class SalesRepository
             $date = $chartStartDate->copy()->addDays($i);
             $dayName = $date->format('D');
 
-            $query = Sales::active()
+            $query = Sales::with('salesPayments')
+                ->active()
                 ->whereDate('sales_date', $date->format('Y-m-d'));
 
             if ($status) {
                 $query->where('status', $status);
             }
 
-            $sales = $query->sum('paid_amount');
+            $sales = $query->get()->sum(fn ($sale) => $sale->paid_amount);
 
             $dailySales[] = [
                 'label' => $dayName,
@@ -145,7 +148,7 @@ class SalesRepository
      */
     public function getRecentOrdersForAdmin(string $dateFrom, string $dateTo, ?string $status = null, int $limit = 5): Collection
     {
-        $query = Sales::with(['broker', 'salesDetails'])
+        $query = Sales::with(['broker.user', 'salesDetails'])
             ->active()
             ->whereDate('sales_date', '>=', $dateFrom)
             ->whereDate('sales_date', '<=', $dateTo);
@@ -172,13 +175,14 @@ class SalesRepository
         $salesStatuses = SalesStatusConstant::getAllActiveStatuses();
 
         foreach ($salesStatuses as $statusValue) {
-            $statusQuery = Sales::active()->whereBetween('sales_date', [$dateFrom, $dateTo]);
+            $statusQuery = Sales::with('salesPayments')->active()->whereBetween('sales_date', [$dateFrom, $dateTo]);
             if ($status) {
                 $statusQuery->where('status', $status);
             }
 
-            $count = $statusQuery->where('status', $statusValue)->count();
-            $totalAmount = $statusQuery->where('status', $statusValue)->sum('paid_amount');
+            $sales = (clone $statusQuery)->where('status', $statusValue)->get();
+            $count = $sales->count();
+            $totalAmount = $sales->sum(fn ($sale) => $sale->paid_amount);
 
             $statusBreakdown[$statusValue] = [
                 'count' => $count,
@@ -264,25 +268,32 @@ class SalesRepository
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
-        // Get aggregated sales data with fishbox count in a single query
-        $brokerSalesData = Sales::active()
+        $brokerSalesData = Sales::with(['broker', 'salesDetails', 'salesPayments'])
+            ->active()
             ->whereBetween('sales_date', [$startOfMonth, $endOfMonth])
-            ->selectRaw('sales.broker_id, COUNT(DISTINCT sales.id) as sales_count, SUM(sales.paid_amount) as total_sales, COUNT(sales_details.id) as fishbox_count')
-            ->leftJoin('sales_details', 'sales.id', '=', 'sales_details.sales_id')
-            ->groupBy('sales.broker_id')
-            ->orderByDesc('sales_count')
-            ->limit(5)
             ->get();
 
-        // Get broker details and return the data
-        return $brokerSalesData->map(function ($brokerData) {
-            $broker = Broker::find($brokerData->broker_id);
+        return $brokerSalesData
+            ->groupBy('broker_id')
+            ->map(function ($sales) {
+                $firstSale = $sales->first();
 
+                return [
+                    'broker' => $firstSale?->broker,
+                    'sales_count' => $sales->count(),
+                    'total_sales' => $sales->sum(fn ($sale) => $sale->paid_amount),
+                    'fishbox_count' => $sales->sum(fn ($sale) => $sale->salesDetails->count()),
+                ];
+            })
+            ->sortByDesc('sales_count')
+            ->take(5)
+            ->values()
+            ->map(function ($brokerData) {
             return [
-                'broker' => $broker,
-                'sales_count' => $brokerData->sales_count,
-                'total_sales' => $brokerData->total_sales,
-                'fishbox_count' => $brokerData->fishbox_count
+                'broker' => $brokerData['broker'],
+                'sales_count' => $brokerData['sales_count'],
+                'total_sales' => $brokerData['total_sales'],
+                'fishbox_count' => $brokerData['fishbox_count']
             ];
         });
     }
@@ -319,13 +330,15 @@ class SalesRepository
         // Apply broker search filter if provided
         if ($brokerSearch) {
             $brokersQuery->where(function ($query) use ($brokerSearch) {
-                $query->where('name', 'like', "%{$brokerSearch}%")
-                      ->orWhere('stall_name', 'like', "%{$brokerSearch}%");
+                $query->where('stall_name', 'like', "%{$brokerSearch}%")
+                    ->orWhereRaw(
+                        "TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?",
+                        ["%{$brokerSearch}%"]
+                    );
             });
         }
 
-        // Order by broker name
-        $brokersQuery->orderBy('name', 'asc');
+        $brokersQuery->orderBy('stall_name', 'asc');
 
         // Paginate the brokers (10 per page)
         return $brokersQuery->paginate(10);
@@ -348,14 +361,16 @@ class SalesRepository
         // Filter by broker search if provided
         if ($brokerSearch) {
             $query->whereHas('broker', function ($brokerQuery) use ($brokerSearch) {
-                $brokerQuery->where('name', 'like', "%{$brokerSearch}%")
-                            ->orWhere('stall_name', 'like', "%{$brokerSearch}%");
+                $brokerQuery->where('stall_name', 'like', "%{$brokerSearch}%")
+                    ->orWhereRaw(
+                        "TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?",
+                        ["%{$brokerSearch}%"]
+                    );
             });
         }
 
-        // Sum the quantity from sales_details for these sales
-        return $query->join('sales_details', 'sales.id', '=', 'sales_details.sales_id')
-            ->sum('sales_details.quantity');
+        return $query->with('salesDetails')->get()
+            ->sum(fn ($sale) => $sale->salesDetails->count());
     }
 
     /**
@@ -366,8 +381,6 @@ class SalesRepository
      */
     public function getTotalFishBoxesSoldCount(): int
     {
-        return SalesDetails::get()->sum(function ($detail) {
-            return is_array($detail->box_id) ? count($detail->box_id) : 0;
-        });
+        return SalesDetails::count();
     }
 }

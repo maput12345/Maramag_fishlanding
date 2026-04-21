@@ -17,18 +17,18 @@
             </div>
         </div>
 
-        <!-- Fish Boxes -->
+        <!-- Inventory -->
         <div>
             <a href="{{ route('broker.inventory.index') }}"
                 class="flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 ease-in-out
                         {{ request()->routeIs('broker.inventory.*') ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-cube class="h-6 w-6 transition-transform duration-200 group-hover:scale-110
                             {{ request()->routeIs('broker.inventory.*') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                <span class="text-xs mt-1 font-medium">Fish Boxes</span>
+                <span class="text-xs mt-1 font-medium">Inventory</span>
             </a>
             <!-- Tooltip -->
             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                Fish Boxes
+                Inventory & Pricing
                 <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>

@@ -1,39 +1,60 @@
 <!-- Profile Modal -->
 @if(request('modal') === 'profile')
-<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full max-w-md mx-auto">
-            <!-- Modal Header -->
-            <div class="bg-white px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900">Profile Settings</h3>
-                    <a href="{{ url()->current() }}" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <x-heroicon-o-x-mark class="w-6 h-6" />
-                    </a>
-                </div>
+    <x-app-modal
+        title="Profile Settings"
+        subtitle="Update your profile details and password options."
+        :close-url="url()->current()"
+        max-width="lg"
+    >
+        <x-slot:icon>
+            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm">
+                <x-heroicon-o-user class="h-5 w-5" />
             </div>
+        </x-slot:icon>
 
-            <!-- Modal Body -->
-            <div class="bg-white px-6 py-6">
-                <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
+        <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
 
-                <!-- Name Field -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                    <input type="text"
-                           id="name"
-                           name="name"
-                           value="{{ old('name', auth()->user()->name) }}"
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-300 @enderror"
-                           required>
-                    @error('name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                <!-- Name Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text"
+                               id="first_name"
+                               name="first_name"
+                               value="{{ old('first_name', auth()->user()->getProfile()?->first_name ?? '') }}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('first_name') border-red-300 @enderror"
+                               required>
+                        @error('first_name')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="middle_name" class="block text-sm font-medium text-gray-700">Middle Name</label>
+                        <input type="text"
+                               id="middle_name"
+                               name="middle_name"
+                               value="{{ old('middle_name', auth()->user()->getProfile()?->middle_name ?? '') }}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('middle_name') border-red-300 @enderror">
+                        @error('middle_name')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text"
+                               id="last_name"
+                               name="last_name"
+                               value="{{ old('last_name', auth()->user()->getProfile()?->last_name ?? '') }}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('last_name') border-red-300 @enderror"
+                               required>
+                        @error('last_name')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <!-- Address Field -->
@@ -137,7 +158,7 @@
                 </div>
 
                     <!-- Modal Footer -->
-                    <div class="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
+                    <div class="flex flex-col sm:flex-row items-center justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-100">
                         <a href="{{ url()->current() }}"
                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-center">
                             Cancel
@@ -148,12 +169,7 @@
                         </button>
                     </div>
                 </form>
-
-
-            </div>
-        </div>
-    </div>
-</div>
+    </x-app-modal>
 @endif
 
 <script>

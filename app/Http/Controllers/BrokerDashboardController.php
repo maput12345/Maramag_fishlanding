@@ -16,7 +16,7 @@ class BrokerDashboardController extends Controller
         $salesController = new SalesController();
         $data = $salesController->getDashboardData();
 
-        return view('broker.dashboard', $data);
+        return view('broker.dashboard-polished', $data);
     }
 
 }

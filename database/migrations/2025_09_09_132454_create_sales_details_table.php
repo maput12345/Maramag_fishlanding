@@ -13,16 +13,12 @@ return new class extends Migration
     {
         Schema::create('sales_details', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('sales_id');
-            $table->unsignedBigInteger('broker_id');
-            $table->unsignedBigInteger('box_id');
-            $table->string('item');
-            $table->text('item_description')->nullable();
+            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
+            $table->foreignId('fish_box_purchase_id')->constrained('fish_box_purchases')->cascadeOnDelete();
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('sub_total', 10, 2);
+            $table->decimal('discount', 10, 2)->default(0);
             $table->timestamps();
-
-            $table->foreign('sales_id')->references('id')->on('sales')->onDelete('cascade');
-            $table->foreign('broker_id')->references('id')->on('brokers')->onDelete('cascade');
-            $table->foreign('box_id')->references('id')->on('fish_boxes')->onDelete('cascade');
         });
     }
 

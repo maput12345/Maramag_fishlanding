@@ -1,9 +1,15 @@
 <!-- Fish Boxes Tab Content -->
 <div>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
-        <h2 class="text-xl font-semibold text-gray-900">Fish Boxes List</h2>
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900">Fish Boxes List</h2>
+        </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <form method="POST" action="{{ route('broker.fish-boxes.return-to-stock') }}" data-swal="return-to-stock" class="inline">
+            <form method="POST"
+                  action="{{ route('broker.fish-boxes.return-to-stock') }}"
+                  data-inventory-async="return-to-stock"
+                  data-confirm-message="This will change all returned fish boxes back to In Stock. Continue?"
+                  class="inline">
                 @csrf
                 <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2">
                     <x-heroicon-o-arrow-uturn-left class="w-4 h-4" />
@@ -20,113 +26,143 @@
         </div>
     </div>
 
-    <!-- Add/Edit Fish Box Modal -->
-    @if(request('modal') === 'create' || request('modal') === 'edit')
-    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <!-- Modal Header -->
-            <div class="bg-white px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        {{ request('modal') === 'edit' ? 'Edit Fish Box' : 'Add New Fish Box' }}
-                    </h3>
-                    <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                        class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <x-heroicon-o-x-mark class="w-6 h-6" />
-                    </a>
-                </div>
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6 summary-strip-wrap">
+        <div class="summary-strip summary-strip--five">
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Boxes</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($fishBoxSummary['total'] ?? 0) }}</p>
             </div>
-
-            <!-- Modal Body -->
-            <div class="bg-white px-6 py-6">
-                <form action="{{ request('modal') === 'edit' ? route('broker.fish-boxes.update', request('edit', 0)) : route('broker.fish-boxes.store') }}" method="POST" class="space-y-6">
-                    @csrf
-                    @if(request('modal') === 'edit')
-                        @method('PUT')
-                    @endif
-
-                     <!-- Fish Type Selection -->
-                     <div>
-                         <label for="fish_type_id" class="block text-sm font-medium text-gray-700 mb-2">
-                             Fish Type <span class="text-red-500">*</span>
-                         </label>
-                         <select id="fish_type_id" name="fish_type_id" required
-                                 class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                             <option value="">Select Fish Type</option>
-                             @foreach($fishTypes as $fishType)
-                                 <option value="{{ $fishType->id }}"
-                                     {{ (request('modal') === 'edit' && $editingFishBox && $editingFishBox->fish_type_id == $fishType->id) ? 'selected' : '' }}>
-                                     {{ $fishType->name }}
-                                 </option>
-                             @endforeach
-                         </select>
-                         @error('fish_type_id')
-                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                         @enderror
-                     </div>
-
-                     @if(request('modal') === 'edit')
-                         <!-- Status Selection (only for editing) -->
-                         <div>
-                             <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
-                                 Status <span class="text-red-500">*</span>
-                             </label>
-                             <select id="status" name="status" required
-                                     class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                                 <option value="">Select Status</option>
-                                 @foreach($fishBoxStatuses as $status)
-                                     <option value="{{ $status }}"
-                                         {{ ($editingFishBox && $editingFishBox->status == $status) ? 'selected' : '' }}>
-                                         {{ ucfirst(str_replace('_', ' ', $status)) }}
-                                     </option>
-                                 @endforeach
-                             </select>
-                             @error('status')
-                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                             @enderror
-                         </div>
-                     @else
-                         <!-- Quantity (only for creating) -->
-                         <div>
-                             <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                                 Quantity <span class="text-red-500">*</span>
-                             </label>
-                             <input type="number"
-                                     id="quantity"
-                                     name="quantity"
-                                     min="1"
-                                     step="1"
-                                     required
-                                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                     onkeydown="return ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.code) || (event.code >= 'Digit0' && event.code <= 'Digit9') || (event.code >= 'Numpad0' && event.code <= 'Numpad9')"
-                                     class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                     placeholder="Enter quantity">
-                             @error('quantity')
-                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                             @enderror
-                         </div>
-                     @endif
-
-                    <!-- Modal Footer -->
-                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
-                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
-                            Cancel
-                        </a>
-                        <button type="submit"
-                                class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-                            {{ request('modal') === 'edit' ? 'Update Fish Box' : 'Create Fish Box' }}
-                        </button>
-                    </div>
-                </form>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">In Stock</p>
+                <p class="mt-2 text-3xl font-bold text-green-600">{{ number_format($fishBoxSummary['in_stock'] ?? 0) }}</p>
+            </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Sold</p>
+                <p class="mt-2 text-3xl font-bold text-blue-600">{{ number_format($fishBoxSummary['sold'] ?? 0) }}</p>
+            </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Returned</p>
+                <p class="mt-2 text-3xl font-bold text-yellow-600">{{ number_format($fishBoxSummary['returned'] ?? 0) }}</p>
+            </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Missing</p>
+                <p class="mt-2 text-3xl font-bold text-red-600">{{ number_format($fishBoxSummary['missing'] ?? 0) }}</p>
             </div>
         </div>
     </div>
-    </div>
+
+    <!-- Add/Edit Fish Box Modal -->
+    @if(request('modal') === 'create' || request('modal') === 'edit')
+        <x-app-modal
+            :title="request('modal') === 'edit' ? 'Edit Fish Box' : 'Add Fish Box'"
+            :subtitle="request('modal') === 'edit' ? 'Update the fish box details and current status.' : 'Register new reusable fish boxes with fish type and cost price.'"
+            :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm">
+                    <x-heroicon-o-archive-box class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            <form action="{{ request('modal') === 'edit' ? route('broker.fish-boxes.update', request('edit', 0)) : route('broker.fish-boxes.store') }}" method="POST" class="space-y-6">
+                @csrf
+                @if(request('modal') === 'edit')
+                    @method('PUT')
+                @endif
+
+                <div>
+                    <label for="fish_type_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Fish Type <span class="text-red-500">*</span>
+                    </label>
+                    <select id="fish_type_id" name="fish_type_id" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <option value="">Select Fish Type</option>
+                        @foreach($fishTypes as $fishType)
+                            <option value="{{ $fishType->id }}"
+                                {{ (string) old('fish_type_id', request('modal') === 'edit' && $editingFishBox ? $editingFishBox->fish_type_id : '') === (string) $fishType->id ? 'selected' : '' }}>
+                                {{ $fishType->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('fish_type_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="cost_price" class="block text-sm font-medium text-gray-700 mb-2">
+                        Cost Price <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-sm text-gray-500">PHP</span>
+                        <input type="number"
+                               id="cost_price"
+                               name="cost_price"
+                               min="0"
+                               step="0.01"
+                               required
+                               value="{{ old('cost_price', request('modal') === 'edit' && $editingFishBox ? $editingFishBox->cost_price : '') }}"
+                               class="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                               placeholder="Enter cost price">
+                    </div>
+                    @error('cost_price')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                @if(request('modal') === 'edit')
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                            Status <span class="text-red-500">*</span>
+                        </label>
+                        <select id="status" name="status" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <option value="">Select Status</option>
+                            @foreach($fishBoxStatuses as $status)
+                                <option value="{{ $status }}"
+                                    {{ old('status', $editingFishBox?->status) === $status ? 'selected' : '' }}>
+                                    {{ ucfirst(str_replace('_', ' ', $status)) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('status')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @else
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
+                            Quantity <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number"
+                                id="quantity"
+                                name="quantity"
+                                min="1"
+                                step="1"
+                                required
+                                value="{{ old('quantity', 1) }}"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                onkeydown="return ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.code) || (event.code >= 'Digit0' && event.code <= 'Digit9') || (event.code >= 'Numpad0' && event.code <= 'Numpad9')"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                placeholder="Enter quantity">
+                        @error('quantity')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
+
+                <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                    <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
+                        class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                        {{ request('modal') === 'edit' ? 'Update Fish Box' : 'Create Fish Box' }}
+                    </button>
+                </div>
+            </form>
+        </x-app-modal>
     @endif
 
     <!-- Fish Boxes Filters -->
@@ -230,7 +266,8 @@
                         @endif
                         @if($fishBox->canBeMarkedAsMissing())
                             <form method="POST" action="{{ route('broker.fish-boxes.mark-missing', $fishBox->id) }}"
-                                  data-swal="mark-missing"
+                                  data-inventory-async="mark-missing"
+                                  data-confirm-message="This will mark {{ $fishBox->name }} as missing. Continue?"
                                   data-record-name="{{ $fishBox->name }}"
                                   class="inline">
                                 @csrf
@@ -244,7 +281,8 @@
                         @endif
                         @if($fishBox->canBeReturned())
                             <form method="POST" action="{{ route('broker.fish-boxes.return', $fishBox->id) }}"
-                                  data-swal="return-fish-box"
+                                  data-inventory-async="return-fish-box"
+                                  data-confirm-message="This will mark {{ $fishBox->name }} as returned. Continue?"
                                   data-record-name="{{ $fishBox->name }}"
                                   class="inline">
                                 @csrf
@@ -270,7 +308,13 @@
                     </div>
                 </div>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $fishBox->name }}</h3>
-                <p class="text-gray-600 text-sm mb-3">{{ $fishBox->fishType->name }}</p>
+                <p class="text-gray-600 text-sm mb-3">{{ $fishBox->fish_type_name ?? 'Unassigned' }}</p>
+                <div class="mb-3 rounded-lg bg-gray-50 px-3 py-2">
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Cost Price</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                        {{ $fishBox->cost_price !== null ? 'PHP ' . number_format((float) $fishBox->cost_price, 2) : 'Not set' }}
+                    </p>
+                </div>
                 <div class="mb-3">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         {{ $fishBox->status === 'In Stock' ? 'bg-green-100 text-green-800' : '' }}

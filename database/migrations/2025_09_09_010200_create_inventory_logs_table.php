@@ -13,11 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('inventory_logs', function (Blueprint $table) {
+        Schema::create('fish_inventory', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('fish_box_id')->constrained('fish_boxes')->onDelete('cascade');
-            $table->enum('action', ['Stocked', 'Sold', 'Returned', 'Missing']);
-            $table->foreignId('broker_id')->constrained('brokers')->onDelete('cascade');
+            $table->foreignId('fish_box_purchase_id')->constrained('fish_box_purchases')->cascadeOnDelete();
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->enum('status', ['In Stock', 'Sold', 'Returned', 'Missing']);
             $table->timestamps();
         });
     }
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('inventory_logs');
+        Schema::dropIfExists('fish_inventory');
     }
 };

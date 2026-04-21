@@ -12,8 +12,8 @@
                 <div class="mb-8">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-3xl font-bold text-gray-900">Sales & Analytics</h1>
-                            <p class="text-gray-600 mt-2">Track your sales performance and analytics from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}</p>
+                            <h1 class="text-3xl font-bold text-gray-900">Sales Analytics</h1>
+                            <p class="text-gray-600 mt-2">Review sales activity, collections, and top-performing items from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
                         </div>
                     </div>
                 </div>
@@ -31,9 +31,9 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                 <select name="status" x-model="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">All Status</option>
-                                    <option value="Active">Pending Payment</option>
-                                    <option value="Paid">Paid</option>
-                                    <option value="Partially Paid">Partially Paid</option>
+                                    <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Pending Payment</option>
+                                    <option value="{{ \App\Constants\SalesStatusConstant::PAID }}">Paid</option>
+                                    <option value="{{ \App\Constants\SalesStatusConstant::PARTIALLY_PAID }}">Partially Paid</option>
                                 </select>
                             </div>
 

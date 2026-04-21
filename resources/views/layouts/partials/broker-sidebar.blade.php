@@ -1,11 +1,14 @@
 <!-- Broker Sidebar Component -->
-<div :class="sidebarOpen ? 'w-64' : 'w-16'" class="hidden md:block bg-white min-h-screen shadow-lg transition-all duration-300 ease-in-out overflow-hidden fixed left-0 top-0 z-40">
-    <div class="p-4 border-b">
+<div :class="sidebarOpen ? 'w-64' : 'w-16'" class="app-sidebar broker-sidebar fixed left-0 top-0 z-40 hidden min-h-screen overflow-hidden transition-all duration-300 ease-in-out md:block">
+    <div class="app-sidebar-brand border-b p-4">
         <div class="flex items-center space-x-2">
-            <div class="w-12 h-12 bg-clear-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-clear-600">
                 <img src="{{ asset('image/logo.png') }}" alt="" class="h-12 w-12 object-contain">
             </div>
-            <span x-show="sidebarOpen" x-transition class="text-xl font-bold text-gray-800 whitespace-nowrap">Broker</span>
+            <div x-show="sidebarOpen" x-transition class="min-w-0 whitespace-nowrap">
+                <span class="app-sidebar-title block text-xl font-bold text-gray-800">Broker</span>
+                <span class="app-sidebar-subtitle block">Market Desk</span>
+            </div>
         </div>
     </div>
 
@@ -13,50 +16,50 @@
     <nav class="mt-8 space-y-2">
         <!-- MENU Section -->
         <div class="space-y-1">
-            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-200">
+            <div class="app-sidebar-section px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200">
                 Menu
             </div>
 
             <!-- Dashboard -->
             <div>
             <a href="{{ route('broker.dashboard') }}"
-               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                      {{ request()->routeIs('broker.dashboard') ? 'bg-green-100 text-green-700 border-r-4 border-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+               class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                      {{ request()->routeIs('broker.dashboard') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <x-heroicon-o-squares-2x2 class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                           {{ request()->routeIs('broker.dashboard') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                           {{ request()->routeIs('broker.dashboard') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
                   <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Dashboard</span>
              </a>
          </div>
-            <!-- Fish Boxes Management -->
+            <!-- Inventory & Pricing -->
             <div>
                 <a href="{{ route('broker.inventory.index') }}"
-                    class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                        {{ request()->routeIs('broker.inventory.*') ? 'bg-green-100 text-green-700 border-r-4 border-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                    class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                        {{ request()->routeIs('broker.inventory.*') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-cube class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                        {{ request()->routeIs('broker.inventory.*') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                        <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Boxes Management</span>
+                        {{ request()->routeIs('broker.inventory.*') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                        <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Inventory & Pricing</span>
                     </a>
                 </div>
             <!-- Sales -->
             <div>
                 <a href="{{ route('broker.sales.sales') }}"
-                class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                        {{ request()->routeIs('broker.sales.sales') ? 'bg-green-100 text-green-700 border-r-4 border-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                        {{ request()->routeIs('broker.sales.sales') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-banknotes class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                            {{ request()->routeIs('broker.sales.sales') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                    <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Sales Management</span>
+                            {{ request()->routeIs('broker.sales.sales') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                    <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Sales</span>
                 </a>
             </div>
-            <!--  Analytics -->
-            <!-- <div>
+            <!-- Analytics -->
+            <div>
                 <a href="{{ route('broker.sales.analytics') }}"
-                class="group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out
-                        {{ request()->routeIs('broker.sales.analytics') ? 'bg-green-100 text-green-700 border-r-4 border-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                        {{ request()->routeIs('broker.sales.analytics') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-chart-bar class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                            {{ request()->routeIs('broker.sales.analytics') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                            {{ request()->routeIs('broker.sales.analytics') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
                     <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Analytics</span>
                 </a>
-            </div> -->
+            </div>
 
      </div>
      </nav>

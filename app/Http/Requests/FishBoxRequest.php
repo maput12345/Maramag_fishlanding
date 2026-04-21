@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Constants\FishBoxStatusConstant;
+use App\Models\Broker;
+use App\Models\FishType;
+use Illuminate\Support\Facades\Auth;
 
 class FishBoxRequest extends FormRequest
 {
@@ -26,8 +29,25 @@ class FishBoxRequest extends FormRequest
     {
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+
         $rules = [
-            'fish_type_id' => 'required|exists:fish_types,id',
+            'fish_type_id' => [
+                'required',
+                'exists:fish_types,id',
+                function ($attribute, $value, $fail) use ($brokerId) {
+                    $isAssigned = FishType::whereKey($value)
+                        ->whereHas('brokers', function ($query) use ($brokerId) {
+                            $query->where('brokers.id', $brokerId);
+                        })
+                        ->exists();
+
+                    if (!$isAssigned) {
+                        $fail('The selected fish type is not assigned to your account.');
+                    }
+                },
+            ],
+            'cost_price' => 'required|numeric|min:0',
         ];
 
         if ($isUpdate) {
@@ -51,6 +71,9 @@ class FishBoxRequest extends FormRequest
         return [
             'fish_type_id.required' => 'Please select a fish type.',
             'fish_type_id.exists' => 'The selected fish type is invalid.',
+            'cost_price.required' => 'Please enter the cost price.',
+            'cost_price.numeric' => 'Cost price must be a valid number.',
+            'cost_price.min' => 'Cost price must be at least 0.',
             'quantity.required' => 'Please enter the quantity.',
             'quantity.integer' => 'Quantity must be a valid number.',
             'quantity.min' => 'Quantity must be at least 1.',
@@ -69,6 +92,7 @@ class FishBoxRequest extends FormRequest
     {
         return [
             'fish_type_id' => 'fish type',
+            'cost_price' => 'cost price',
             'quantity' => 'quantity',
             'status' => 'status',
         ];

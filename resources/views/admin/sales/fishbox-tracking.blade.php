@@ -117,11 +117,11 @@
                                 <span class="md:hidden">{{ $log->created_at->format('M d, H:i') }}</span>
                             </td>
                             <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                                <div class="text-xs md:text-sm font-medium text-gray-900">{{ $log->fishBox->name ?? 'N/A' }}</div>
-                                <div class="text-xs text-gray-500">ID: {{ $log->fish_box_id }}</div>
+                                <div class="text-xs md:text-sm font-medium text-gray-900">{{ $log->fishBox?->name ?? 'N/A' }}</div>
+                                <div class="text-xs text-gray-500">ID: {{ $log->fishBox?->id ?? 'N/A' }}</div>
                             </td>
                             <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                                <div class="text-xs md:text-sm text-gray-900">{{ $log->fishBox->fishType->name ?? 'N/A' }}</div>
+                                <div class="text-xs md:text-sm text-gray-900">{{ $log->fishBox?->fish_type_name ?? 'N/A' }}</div>
                             </td>
                             <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
                                 @php
@@ -136,7 +136,7 @@
                                 </span>
                             </td>
                             <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 font-mono">
-                                {{ Str::limit($log->fishBox->qr_code ?? 'N/A', 12) }}
+                                {{ Str::limit($log->fishBox?->qr_code ?? 'N/A', 12) }}
                             </td>
                             <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500">
                                 {{ $log->broker->name ?? 'System' }}

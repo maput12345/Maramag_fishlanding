@@ -12,7 +12,7 @@ var SALES_CONFIG = {};
 
 /**
  * Initialize sales form
- * @param {Object} config - Configuration object with fishBoxes, fishTypes, and detailIndex
+ * @param {Object} config - Configuration object with fishBoxes, fishTypes, fishPrices, and detailIndex
  */
 function initializeSalesForm(config) {
   SALES_CONFIG = config;
@@ -20,6 +20,8 @@ function initializeSalesForm(config) {
   var addBtn = document.getElementById('add-sales-detail-btn');
   var totalAmountDisplay = document.getElementById('total-amount-display');
   if (!container || !addBtn || !totalAmountDisplay) return;
+  if (container.dataset.salesFormInitialized === 'true') return;
+  container.dataset.salesFormInitialized = 'true';
 
   // Get selected fish boxes (excluding a specific row)
   var getSelectedFishBoxes = function getSelectedFishBoxes() {
@@ -123,6 +125,8 @@ function initializeSalesForm(config) {
     var fishTypeId = fishTypeSelect.value;
     var fishBoxesContainer = row.querySelector('.fish-boxes-container');
     var itemInput = row.querySelector('.item-input');
+    var unitPriceInput = row.querySelector('.unit-price-input');
+    var suggestedPrice = SALES_CONFIG.fishPrices === null || SALES_CONFIG.fishPrices === void 0 ? void 0 : SALES_CONFIG.fishPrices[fishTypeId];
     if (fishTypeId) {
       var availableBoxes = getAvailableFishBoxesForType(fishTypeId, row.dataset.index);
       if (availableBoxes.length > 0) {
@@ -143,6 +147,11 @@ function initializeSalesForm(config) {
           return ft.id == fishTypeId;
         });
         if (fishType && itemInput) itemInput.value = fishType.name;
+        if (unitPriceInput && suggestedPrice && (!unitPriceInput.value || parseFloat(unitPriceInput.value) === 0)) {
+          unitPriceInput.value = Number(suggestedPrice).toFixed(2);
+          calculateSubTotal(unitPriceInput);
+          updateTotalAmount();
+        }
 
         // Only update other rows if not called from updateAllRowsFishBoxAvailability
         if (!skipUpdate) {
@@ -177,7 +186,7 @@ function initializeSalesForm(config) {
     var total = Array.from(document.querySelectorAll('.sub-total-input')).reduce(function (sum, input) {
       return sum + (parseFloat(input.value) || 0);
     }, 0);
-    totalAmountDisplay.textContent = "\u20B1".concat(total.toFixed(2));
+    totalAmountDisplay.textContent = "PHP ".concat(total.toFixed(2));
     var totalAmountInput = document.getElementById('total_amount');
     if (totalAmountInput) totalAmountInput.value = total.toFixed(2);
   }

@@ -30,7 +30,9 @@ class ProfileRequest extends FormRequest
         $passwordOption = $this->input('password_option', 'keep');
 
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:255', 'min:2'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255', 'min:1'],
             'address' => ['nullable', 'string', 'max:500'],
         ];
 
@@ -56,8 +58,10 @@ class ProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The name field is required.',
-            'name.max' => 'The name may not be greater than 255 characters.',
+            'first_name.required' => 'The first name field is required.',
+            'first_name.max' => 'The first name may not be greater than 255 characters.',
+            'last_name.required' => 'The last name field is required.',
+            'last_name.max' => 'The last name may not be greater than 255 characters.',
             'address.max' => 'The address may not be greater than 500 characters.',
             'stall_name.required' => 'The stall name field is required.',
             'stall_name.max' => 'The stall name may not be greater than 255 characters.',

@@ -3,10 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use App\Models\Broker;
-use Illuminate\Support\Facades\Auth;
-
 class FishTypeRequest extends FormRequest
 {
     /**
@@ -26,28 +22,8 @@ class FishTypeRequest extends FormRequest
      */
     public function rules()
     {
-        // Get the fish type ID from route parameter (direct ID)
-        $fishTypeId = $this->route('id');
-
-        // Get the broker ID for the current user
-        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
-
-        $nameRules = ['required', 'string', 'max:255', 'min:2'];
-
-        // Add unique rule scoped to broker_id with proper ignore for updates
-        if ($fishTypeId) {
-            $nameRules[] = Rule::unique('fish_types', 'name')
-                ->ignore($fishTypeId, 'id')
-                ->where('broker_id', $brokerId)
-                ->whereNull('deleted_at');
-        } else {
-            $nameRules[] = Rule::unique('fish_types', 'name')
-                ->where('broker_id', $brokerId)
-                ->whereNull('deleted_at');
-        }
-
         return [
-            'name' => $nameRules,
+            'name' => ['required', 'string', 'max:255', 'min:2'],
             'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -63,7 +39,6 @@ class FishTypeRequest extends FormRequest
             'name.required' => 'The fish type name is required.',
             'name.min' => 'The fish type name must be at least 2 characters.',
             'name.max' => 'The fish type name may not be greater than 255 characters.',
-            'name.unique' => 'This fish type name already exists.',
             'description.max' => 'The description may not be greater than 1000 characters.',
         ];
     }

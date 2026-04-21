@@ -15,13 +15,15 @@
     <title>{{ config('app.name', 'POS System') }} - Broker</title>
 
     <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Compiled CSS -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     <link rel="stylesheet" href="{{ asset('css/filter-layout.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/next-gen-ui.css') }}">
 
 
     <!-- Alpine.js for interactive components -->
@@ -30,27 +32,29 @@
     <!-- POS System Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
-<body class="bg-gray-50 font-sans">
-    <div class="min-h-screen bg-gray-50" x-data="{ reportsOpen: false, sidebarOpen: true }" @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
+<body class="shell-body theme-broker">
+    <div class="shell-frame min-h-screen" x-data="{ reportsOpen: false, sidebarOpen: true }" @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
+        <div class="shell-orb shell-orb-one"></div>
+        <div class="shell-orb shell-orb-two"></div>
         <!-- Sidebar Component -->
         @include('layouts.partials.broker-sidebar')
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-0 min-h-screen main-content" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
+        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-0" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
             <!-- Navbar Component -->
             @include('layouts.partials.broker-navbar')
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-auto p-6 pb-24 md:pb-6">
+            <main class="app-main flex-1 overflow-auto p-6 pb-24 md:pb-6">
                 @yield('content')
             </main>
 
             <!-- Desktop Footer -->
-            @include('layouts.partials.desktop-footer')
+            @include('layouts.partials.desktop-footer-polished')
         </div>
 
         <!-- Mobile Footer Sidebar -->
-        @include('layouts.partials.broker-mobile-footer-sidebar')
+        @include('layouts.partials.broker-mobile-footer-sidebar-polished')
 
         <!-- Profile Modal -->
         @include('auth.profile')

@@ -11,13 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales_details', function (Blueprint $table) {
-            // Drop foreign key constraint first
-            $table->dropForeign(['box_id']);
-
-            // Change box_id column to JSON to store array of fish box IDs
-            $table->json('box_id')->change();
-        });
+        //
     }
 
     /**
@@ -25,12 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sales_details', function (Blueprint $table) {
-            // Revert back to integer
-            $table->integer('box_id')->change();
-
-            // Recreate foreign key constraint
-            $table->foreign('box_id')->references('id')->on('fish_boxes')->onDelete('cascade');
-        });
+        //
     }
 };

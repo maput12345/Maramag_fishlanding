@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('brokers', function (Blueprint $table) {
-            $table->string('stall_name')->default('Maramag Fishmarket')->after('address');
-        });
+        //
     }
 
     /**
@@ -21,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('brokers', function (Blueprint $table) {
-            $table->dropColumn('stall_name');
-        });
+        //
     }
 };

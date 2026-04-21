@@ -10,6 +10,7 @@ use App\Models\Sales;
 use App\Models\SalesDetails;
 use App\Models\SalesPayment;
 use App\Models\FishBox;
+use App\Models\BrokerFishType;
 use App\Models\FishType;
 use App\Constants\SalesStatusConstant;
 use App\Models\Broker;
@@ -45,7 +46,7 @@ class SalesController extends Controller
             $growthPercent = 0; // or handle differently if yesterday was 0
         }
 
-        $paidAmountGrowthPercent = round($growthPercent, 2) . '%';
+        $paidAmountGrowthPercent = round($growthPercent, 2);
 
         $recentSales = Sales::getRecentSales(4, $brokerId);
         $dailySalesData = Sales::getDailySalesLast7Days($brokerId);
@@ -87,6 +88,14 @@ class SalesController extends Controller
         // Filter fish types to only show those with available fish boxes in both create and edit modes
         $availableFishTypeIds = $fishBoxes->pluck('fish_type_id')->unique()->filter()->toArray();
         $fishTypes = $allFishTypes->whereIn('id', $availableFishTypeIds);
+        $fishPriceMap = BrokerFishType::with('latestPrice')
+            ->where('broker_id', $brokerId)
+            ->get()
+            ->mapWithKeys(function ($assignment) {
+                return [$assignment->fish_type_id => (float) ($assignment->latestPrice?->price ?? 0)];
+            })
+            ->all();
+        $salesSummary = Sales::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
 
         $salesStatuses = SalesStatusConstant::getAllStatuses();
         $salesStatusesWithDisplayNames = collect($salesStatuses)->mapWithKeys(function ($status) {
@@ -103,10 +112,10 @@ class SalesController extends Controller
         $printingSales = null;
 
         // Handle modal-specific sales retrieval
-        $editingSales = $this->getModalSales($request, 'edit', 'edit', ['salesDetails', 'salesPayments']);
-        $viewingSales = $this->getModalSales($request, 'show', 'show', ['salesDetails', 'salesPayments']);
+        $editingSales = $this->getModalSales($request, 'edit', 'edit', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
+        $viewingSales = $this->getModalSales($request, 'show', 'show', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
         $saleForPayment = $this->getModalSales($request, 'payment', 'sale');
-        $printingSales = $this->getModalSales($request, 'print', 'print', ['salesDetails', 'salesPayments', 'broker.user', 'broker']);
+        $printingSales = $this->getModalSales($request, 'print', 'print', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments', 'broker.user', 'broker']);
         // Handle fish boxes for editing mode - only include truly available fish boxes
         if ($editingSales) {
             $fishBoxes = $this->prepareFishBoxesForEdit($fishBoxes, $editingSales);
@@ -120,7 +129,7 @@ class SalesController extends Controller
             'fishBoxes', 'fishTypes', 'editingSales',
             'viewingSales', 'salesStatuses',
             'salesStatusesWithDisplayNames', 'salesStatusesWithColorClasses',
-            'saleForPayment', 'printingSales', 'salesDetails'
+            'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap'
         );
     }
 
@@ -163,7 +172,7 @@ class SalesController extends Controller
      * @param SalesRequest $request
      * @return RedirectResponse
      */
-    public function store(SalesRequest $request): RedirectResponse
+    public function store(SalesRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
         $userId = Auth::id();
@@ -176,14 +185,16 @@ class SalesController extends Controller
             'total_amount' => $validated['total_amount'],
             'buyer_name' => $validated['buyer_name'],
             'buyer_contact' => $validated['buyer_contact'] ?? null,
-            'remarks' => $validated['remarks'] ?? null,
-            'details' => $validated['details'] ?? null,
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
 
         // Create sales with details using the model method
         Sales::createSalesWithDetails($salesData, $salesDetails, $brokerId);
+
+        if ($this->shouldReturnJson($request)) {
+            return $this->jsonSuccessResponse('Sale created successfully!');
+        }
 
         return redirect()->route('broker.sales.sales')
             ->with('success', 'Sale created successfully!');
@@ -196,7 +207,7 @@ class SalesController extends Controller
      * @param int $id
      * @return RedirectResponse
      */
-    public function update(SalesRequest $request, $id): RedirectResponse
+    public function update(SalesRequest $request, $id): RedirectResponse|JsonResponse
     {
         $sale = Sales::findOrFail($id);
         $validated = $request->validated();
@@ -205,6 +216,10 @@ class SalesController extends Controller
 
         // Check if the sale belongs to the current broker
         if ($sale->broker_id !== $brokerId) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('You are not authorized to update this sale.', 403);
+            }
+
             return redirect()->route('broker.sales.sales')
                 ->with('error', 'You are not authorized to update this sale.');
         }
@@ -215,14 +230,16 @@ class SalesController extends Controller
             'total_amount' => $validated['total_amount'],
             'buyer_name' => $validated['buyer_name'],
             'buyer_contact' => $validated['buyer_contact'] ?? null,
-            'remarks' => $validated['remarks'] ?? null,
-            'details' => $validated['details'] ?? null,
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
 
         // Update sales with details using the model method
         Sales::updateSalesWithDetails($sale, $salesData, $salesDetails, $brokerId);
+
+        if ($this->shouldReturnJson($request)) {
+            return $this->jsonSuccessResponse('Sale updated successfully!');
+        }
 
         return redirect()->route('broker.sales.sales')
             ->with('success', 'Sale updated successfully!');
@@ -234,7 +251,7 @@ class SalesController extends Controller
      * @param int $id
      * @return RedirectResponse
      */
-    public function destroy($id): RedirectResponse
+    public function destroy(Request $request, $id): RedirectResponse|JsonResponse
     {
         $sale = Sales::findOrFail($id);
         $userId = Auth::id();
@@ -242,6 +259,10 @@ class SalesController extends Controller
 
         // Check if the sale belongs to the current broker
         if ($sale->broker_id !== $brokerId) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('You are not authorized to delete this sale.', 403);
+            }
+
             return redirect()->route('broker.sales.sales')
                 ->with('error', 'You are not authorized to delete this sale.');
         }
@@ -265,6 +286,10 @@ class SalesController extends Controller
             $sale->deleteSales();
         });
 
+        if ($this->shouldReturnJson($request)) {
+            return $this->jsonSuccessResponse('Sale deleted successfully!');
+        }
+
         return redirect()->route('broker.sales.sales')
             ->with('success', 'Sale deleted successfully!');
     }
@@ -275,28 +300,30 @@ class SalesController extends Controller
      * @param SalesPaymentRequest $request
      * @return RedirectResponse
      */
-    public function storePayment(SalesPaymentRequest $request): RedirectResponse
+    public function storePayment(SalesPaymentRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        DB::transaction(function () use ($validated, $brokerId, $userId) {
+        DB::transaction(function () use ($validated) {
             // Create the payment
-            $payment = SalesPayment::create([
-                'sales_id' => $validated['sales_id'],
-                'broker_id' => $brokerId,
+            SalesPayment::create([
+                'sale_id' => $validated['sales_id'],
                 'paid_amount' => $validated['paid_amount'],
                 'payment_date' => $validated['payment_date'],
-                'payment_method' => $validated['payment_method'],
-                'status' => 'Active'
+                'payment_method' => $validated['payment_method']
             ]);
 
             // Update the sales paid amount and status
             $sale = Sales::findOrFail($validated['sales_id']);
             $sale->updatePaidAmount();
-            $sale->updatePaymentStatus();
+             $sale->updatePaymentStatus();
         });
+
+        if ($this->shouldReturnJson($request)) {
+            return $this->jsonSuccessResponse('Payment recorded successfully!');
+        }
 
         return redirect()->route('broker.sales.sales')
             ->with('success', 'Payment recorded successfully!');
@@ -308,7 +335,7 @@ class SalesController extends Controller
      * @param int $id
      * @return RedirectResponse
      */
-    public function destroyPayment($id): RedirectResponse
+    public function destroyPayment(Request $request, $id): RedirectResponse|JsonResponse
     {
         $payment = SalesPayment::findOrFail($id);
         $userId = Auth::id();
@@ -316,6 +343,10 @@ class SalesController extends Controller
 
         // Check if the payment belongs to the current broker
         if ($payment->broker_id !== $brokerId) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('You are not authorized to delete this payment.', 403);
+            }
+
             return redirect()->route('broker.sales.sales')
                 ->with('error', 'You are not authorized to delete this payment.');
         }
@@ -329,6 +360,10 @@ class SalesController extends Controller
              $sale->updatePaidAmount();
              $sale->updatePaymentStatus();
         });
+
+        if ($this->shouldReturnJson($request)) {
+            return $this->jsonSuccessResponse('Payment deleted successfully!');
+        }
 
         return redirect()->route('broker.sales.sales')
             ->with('success', 'Payment deleted successfully!');
@@ -384,7 +419,7 @@ class SalesController extends Controller
                     'name' => $fishBox->name,
                     'qr_code' => $fishBox->qr_code,
                     'fish_type_id' => $fishBox->fish_type_id,
-                    'fish_type' => $fishBox->fishType->name,
+                    'fish_type' => $fishBox->fish_type_name,
                     'status' => $fishBox->status
                 ]
             ]);
@@ -456,7 +491,7 @@ class SalesController extends Controller
         }
 
         $selectedBoxIds = $editingSales->salesDetails->pluck('box_id')->flatten()->unique()->toArray();
-        $selectedFishBoxes = FishBox::with('fishType')->whereIn('id', $selectedBoxIds)->get();
+        $selectedFishBoxes = FishBox::with('currentPurchase.fishType')->whereIn('id', $selectedBoxIds)->get();
         return $selectedFishBoxes->merge($fishBoxes)->unique('id');
     }
 
@@ -492,18 +527,13 @@ class SalesController extends Controller
     private function prepareSalesDetailsForForm(Request $request, ?Sales $editingSales): array
     {
         if ($request->get('modal') === 'edit' && $editingSales) {
-            // Return all sales details without grouping
             return $editingSales->salesDetails->map(function($detail) {
-                // Get fish type ID from the first fish box
-                $fishTypeId = '';
-                if (is_array($detail->box_id) && !empty($detail->box_id)) {
-                    $firstFishBox = FishBox::find($detail->box_id[0]);
-                    $fishTypeId = $firstFishBox ? (string)$firstFishBox->fish_type_id : '';
-                }
+                $fishBoxes = $detail->fishBoxes();
 
                 return [
-                    'box_id' => $detail->box_id ?? [], // box_id is now a JSON array
-                    'fish_type_id' => $fishTypeId,
+                    'box_id' => $detail->box_id ?? [],
+                    'box_labels' => $fishBoxes->map(fn ($fishBox) => $fishBox->name)->values()->all(),
+                    'fish_type_id' => (string) ($detail->fishBox?->fish_type_id ?? ''),
                     'item' => $detail->item,
                     'item_description' => $detail->item_description ?? '',
                     'unit_price' => $detail->unit_price ?? '',
@@ -516,6 +546,7 @@ class SalesController extends Controller
         return old('sales_details') ?: [
             [
                 'box_id' => [],
+                'box_labels' => [],
                 'fish_type_id' => '',
                 'item' => '',
                 'item_description' => '',
@@ -524,5 +555,26 @@ class SalesController extends Controller
                 'sub_total' => ''
             ]
         ];
+    }
+
+    private function shouldReturnJson(Request $request): bool
+    {
+        return $request->expectsJson() || $request->ajax();
+    }
+
+    private function jsonSuccessResponse(string $message): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+        ]);
+    }
+
+    private function jsonErrorResponse(string $message, int $status = 400): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+        ], $status);
     }
 }

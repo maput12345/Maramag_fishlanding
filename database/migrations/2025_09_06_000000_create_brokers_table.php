@@ -15,17 +15,16 @@ return new class extends Migration
     {
         Schema::create('brokers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('address')->nullable();
-            $table->decimal('account_balance', 10, 2)->default(0.00);
-            $table->enum('status', ['active', 'deactivated'])->default('active');
+            $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->text('address')->nullable();
+            $table->string('stall_name')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            // Add indexes for better performance
             $table->index('user_id');
-            $table->index('account_balance');
         });
     }
 

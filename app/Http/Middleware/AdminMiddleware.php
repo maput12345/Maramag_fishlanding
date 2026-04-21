@@ -16,10 +16,10 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (auth()->check() && auth()->user()->role === 'admin') {
+        if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isStaff())) {
             return $next($request);
         }
 
-        abort(403, 'Access denied. Admin privileges required.');
+        abort(403, 'Access denied. Admin or staff privileges required.');
     }
 }

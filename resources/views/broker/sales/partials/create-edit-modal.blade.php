@@ -2,53 +2,49 @@
 @if(request('modal') === 'create' || request('modal') === 'edit')
     @if(request('modal') === 'edit' && !$editingSales)
         {{-- Sales record not found --}}
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-                <div class="relative bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full max-w-md mx-auto">
-                    <div class="bg-white px-6 py-6">
-                        <div class="text-center">
-                            <div class="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4">
-                                <x-heroicon-o-exclamation-triangle class="w-8 h-8 text-red-600" />
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Sale Not Found</h3>
-                            <p class="text-gray-500 mb-6">The sale you're trying to edit could not be found or you don't have permission to access it.</p>
-                            <a href="{{ route('broker.sales.sales') }}"
-                               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <x-heroicon-o-arrow-left class="w-4 h-4 mr-2" />
-                                Back to Sales
-                            </a>
-                        </div>
-                    </div>
+        <x-app-modal
+            title="Sale Not Found"
+            subtitle="The sale you tried to edit is no longer available for this broker account."
+            :close-url="$salesBaseUrl"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                    <x-heroicon-o-exclamation-triangle class="h-5 w-5" />
                 </div>
+            </x-slot:icon>
+
+            <div class="py-4 text-center">
+                <p class="text-sm text-gray-500 mb-6">The sale you're trying to edit could not be found or you don't have permission to access it.</p>
+                <button
+                    type="button"
+                    data-sales-modal-close
+                    data-close-url="{{ $salesBaseUrl }}"
+                    class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+                >
+                    <x-heroicon-o-arrow-left class="w-4 h-4 mr-2" />
+                    Back to Sales
+                </button>
             </div>
-        </div>
+        </x-app-modal>
     @else
         {{-- Unified Sale Modal --}}
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <x-app-modal
+            :title="request('modal') === 'create' ? 'Create Sale' : 'Edit Sale'"
+            :subtitle="request('modal') === 'create' ? 'Build a sale clearly, assign boxes automatically, and keep buyer details in one place.' : 'Review and update this sale without losing the itemized details.'"
+            :close-url="$salesBaseUrl"
+            max-width="7xl"
+            body-class="workspace-popup__body--soft"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm">
+                    <x-heroicon-o-shopping-cart class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
 
-                <div class="relative bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl w-full max-w-md mx-auto">
-                    {{-- Modal Header --}}
-                    <div class="bg-white px-6 py-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900">
-                                {{ request('modal') === 'create' ? 'Create Sale' : 'Edit Sale' }}
-                            </h3>
-                            <a href="{{ route('broker.sales.sales') }}"
-                               class="text-gray-400 hover:text-gray-600 transition-colors">
-                                <x-heroicon-o-x-mark class="w-6 h-6" />
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Modal Body --}}
-                    <div class="bg-white px-6 py-6">
-                        <form action="{{ request('modal') === 'create' ? route('broker.sales.store') : route('broker.sales.update', $editingSales->id ?? '') }}"
-                              method="POST"
-                              class="space-y-6">
+            <form action="{{ request('modal') === 'create' ? route('broker.sales.store') : route('broker.sales.update', $editingSales->id ?? '') }}"
+                  method="POST"
+                  data-sales-async-form
+                  class="space-y-6">
                             @csrf
                             @if(request('modal') === 'edit')
                                 @method('PUT')
@@ -119,7 +115,7 @@
                                                                     <select name="sales_details[{{ $index }}][box_id][]"
                                                                             class="fish-box-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 cursor-not-allowed"
                                                                             disabled>
-                                                                        <option value="{{ $boxId }}" selected>Fish Box #{{ $boxId }}</option>
+                                                                        <option value="{{ $boxId }}" selected>{{ $detail['box_labels'][$boxIndex] ?? ('Fish Box #' . $boxId) }}</option>
                                                                     </select>
                                                                     <input type="hidden" name="sales_details[{{ $index }}][box_id][]" class="fish-box-hidden-input" value="{{ $boxId }}">
                                                                 </div>
@@ -238,35 +234,22 @@
                                 </div>
                             </div>
 
-                            {{-- Remarks --}}
-                            <div>
-                                <label for="remarks" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Remarks
-                                </label>
-                                <textarea id="remarks" name="remarks" rows="3"
-                                          class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                          placeholder="Enter any additional remarks">{{ request('modal') === 'edit' && $editingSales ? ($editingSales->remarks ?? '') : (old('remarks', '')) }}</textarea>
-                                @error('remarks')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
                             {{-- Modal Footer --}}
                             <div class="flex justify-end space-x-3 pt-4">
-                                <a href="{{ route('broker.sales.sales') }}"
+                                <button
+                                   type="button"
+                                   data-sales-modal-close
+                                   data-close-url="{{ $salesBaseUrl }}"
                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                                     Cancel
-                                </a>
+                                </button>
                                 <button type="submit"
                                         class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors {{ request('modal') === 'create' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700' }}">
                                     {{ request('modal') === 'create' ? 'Create Sale' : 'Update Sale' }}
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </x-app-modal>
     @endif
 @endif
 

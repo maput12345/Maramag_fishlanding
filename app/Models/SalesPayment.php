@@ -2,21 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Constants\SalesStatusConstant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesPayment extends Model
 {
     use HasFactory;
 
+    protected $table = 'payments';
+
     protected $fillable = [
-        'sales_id',
-        'broker_id',
+        'sale_id',
         'paid_amount',
         'payment_date',
-        'status',
-        'payment_method'
+        'payment_method',
     ];
 
     protected $casts = [
@@ -24,15 +25,44 @@ class SalesPayment extends Model
         'paid_amount' => 'decimal:2',
     ];
 
-    // Relationships
-    public function sales()
+    /**
+     * @return BelongsTo
+     */
+    public function sales(): BelongsTo
     {
-        return $this->belongsTo(Sales::class, 'sales_id');
+        return $this->belongsTo(Sales::class, 'sale_id');
     }
 
-    public function broker()
+    /**
+     * Alias for singular naming.
+     */
+    public function sale(): BelongsTo
     {
-        return $this->belongsTo(Broker::class, 'broker_id');
+        return $this->belongsTo(Sales::class, 'sale_id');
+    }
+
+    /**
+     * Compatibility accessor for older payment tables.
+     */
+    public function getStatusAttribute(): string
+    {
+        return 'Active';
+    }
+
+    /**
+     * Expose the broker through the related sale.
+     */
+    public function getBrokerAttribute(): ?Broker
+    {
+        return $this->sales?->broker;
+    }
+
+    /**
+     * Compatibility accessor for authorization checks that still read broker_id.
+     */
+    public function getBrokerIdAttribute(): ?int
+    {
+        return $this->sales?->broker_id;
     }
 
     /**
@@ -82,11 +112,12 @@ class SalesPayment extends Model
      */
     public static function getTotalSalesToday(?int $brokerId): float
     {
-        $query = self::whereDate('payment_date', today())
-            ->where('status', SalesStatusConstant::ACTIVE);
+        $query = self::whereDate('payment_date', today());
 
         if ($brokerId) {
-            $query->where('broker_id', $brokerId);
+            $query->whereHas('sales', function ($saleQuery) use ($brokerId) {
+                $saleQuery->where('broker_id', $brokerId);
+            });
         }
 
         return $query->sum('paid_amount');

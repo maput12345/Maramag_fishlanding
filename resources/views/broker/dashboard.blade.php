@@ -2,19 +2,27 @@
     $breadcrumbs = [
         ['title' => 'Dashboard']
     ];
+
+    $maxDailySales = max(1, $dailySalesData->max('sales'));
+    $thisWeekTotal = $dailySalesData->sum('sales');
+    $lastWeekTotal = 0;
+    $growthPercent = $lastWeekTotal > 0 ? (($thisWeekTotal - $lastWeekTotal) / $lastWeekTotal) * 100 : 0;
+    $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
 @endphp
 
 @extends('layouts.broker')
 
 @section('content')
-<div class="w-full">
-                <!-- Page Header -->
-                <div class="mb-8">
-                    <h1 class="text-3xl font-bold text-gray-900">Broker Dashboard</h1>
-                    <p class="text-gray-600 mt-2">Welcome back! Here's your sales performance and daily activities.</p>
-                </div>
+<div class="w-full dashboard-shell">
+    <div class="dashboard-header">
+        <span class="dashboard-kicker">Broker Overview</span>
+        <div>
+            <h1 class="dashboard-title">Broker Dashboard</h1>
+            <p class="dashboard-subtitle">Track today’s collections, reusable box movement, and recent selling activity from one cleaner workspace.</p>
+        </div>
+    </div>
 
-                <!-- Stats Cards -->
+    <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <!-- My Sales Count Today -->
                     <a href="{{ route('broker.sales.sales') }}" class="block h-full">
@@ -36,7 +44,7 @@
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full flex flex-col justify-between">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-blue-100 text-sm font-medium">My Collection Today</p>
+                                    <p class="text-blue-100 text-sm font-medium">Collected Today</p>
                                     <p class="text-3xl font-bold">₱ {{ $salesToday }}</p>
                                     <p class="text-blue-100 text-sm">
                                         @if($paidAmountGrowthPercent > 0)
@@ -56,7 +64,7 @@
                         <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full flex flex-col justify-between">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-purple-100 text-sm font-medium">Payment to Collect</p>
+                                    <p class="text-purple-100 text-sm font-medium">Outstanding Balance</p>
                                     <p class="text-3xl font-bold">₱ {{ $salesBalance }}</p>
                                 </div>
                                 <div class="w-12 h-12 bg-purple-400 rounded-lg flex items-center justify-center">

@@ -87,14 +87,14 @@ class SalesManagementController extends Controller
     {
         $salesController = new SalesController();
         $data = $salesController->getAnalyticsData($request);
-        return view('broker.sales.analytics', $data);
+        return view('broker.sales.analytics-polished', $data);
     }
 
     public function sales(Request $request)
     {
         $salesController = new SalesController();
         $data = $salesController->getIndexData($request);
-        return view('broker.sales.sales', $data);
+        return view('broker.sales.sales-polished', $data);
     }
 
     /**

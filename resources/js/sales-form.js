@@ -8,7 +8,7 @@ let SALES_CONFIG = {};
 
 /**
  * Initialize sales form
- * @param {Object} config - Configuration object with fishBoxes, fishTypes, and detailIndex
+ * @param {Object} config - Configuration object with fishBoxes, fishTypes, fishPrices, and detailIndex
  */
 function initializeSalesForm(config) {
     SALES_CONFIG = config;
@@ -18,6 +18,9 @@ function initializeSalesForm(config) {
     const totalAmountDisplay = document.getElementById('total-amount-display');
 
     if (!container || !addBtn || !totalAmountDisplay) return;
+    if (container.dataset.salesFormInitialized === 'true') return;
+
+    container.dataset.salesFormInitialized = 'true';
 
     // Get selected fish boxes (excluding a specific row)
     const getSelectedFishBoxes = (excludeRowIndex = null) => {
@@ -127,6 +130,8 @@ function initializeSalesForm(config) {
         const fishTypeId = fishTypeSelect.value;
         const fishBoxesContainer = row.querySelector('.fish-boxes-container');
         const itemInput = row.querySelector('.item-input');
+        const unitPriceInput = row.querySelector('.unit-price-input');
+        const suggestedPrice = SALES_CONFIG.fishPrices?.[fishTypeId];
 
         if (fishTypeId) {
             const availableBoxes = getAvailableFishBoxesForType(fishTypeId, row.dataset.index);
@@ -150,6 +155,11 @@ function initializeSalesForm(config) {
 
                 const fishType = SALES_CONFIG.fishTypes.find(ft => ft.id == fishTypeId);
                 if (fishType && itemInput) itemInput.value = fishType.name;
+                if (unitPriceInput && suggestedPrice && (!unitPriceInput.value || parseFloat(unitPriceInput.value) === 0)) {
+                    unitPriceInput.value = Number(suggestedPrice).toFixed(2);
+                    calculateSubTotal(unitPriceInput);
+                    updateTotalAmount();
+                }
 
                 // Only update other rows if not called from updateAllRowsFishBoxAvailability
                 if (!skipUpdate) {

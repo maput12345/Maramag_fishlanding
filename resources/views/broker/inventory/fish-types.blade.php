@@ -1,7 +1,9 @@
 <div>
     <!-- Fish Types Tab Content -->
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">Fish Types List</h2>
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900">Fish Types List</h2>
+        </div>
         <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes', 'modal' => 'create']) }}"
            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center space-x-2">
             <x-heroicon-o-plus class="w-4 h-4" />
@@ -9,106 +11,95 @@
         </a>
     </div>
 
-    <!-- Fish Type Modal (Create/Edit) -->
-    @if(request('modal') === 'create' || request('modal') === 'edit')
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-
-            <!-- Modal panel -->
-            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-
-                <!-- Modal Header -->
-                <div class="bg-white px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                                <x-heroicon-o-tag class="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    {{ request('modal') === 'edit' ? 'Edit Fish Type' : 'Add New Fish Type' }}
-                                </h3>
-                                <p class="text-sm text-gray-500">
-                                    {{ request('modal') === 'edit' ? 'Update the fish type details' : 'Enter the details for the new fish type' }}
-                                </p>
-                            </div>
-                        </div>
-                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes']) }}"
-                           class="text-gray-400 hover:text-gray-600 transition-colors">
-                            <x-heroicon-o-x-mark class="w-6 h-6" />
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Modal Body -->
-                <div class="bg-white px-6 py-6">
-                    <form action="{{ request('modal') === 'edit' ? route('broker.fish-types.update', request('edit')) : route('broker.fish-types.store') }}" method="POST" class="space-y-6">
-                        @csrf
-                        @if(request('modal') === 'edit')
-                            @method('PUT')
-                        @endif
-
-                        <!-- Fish Type Name -->
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                                Fish Type Name <span class="text-red-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <input type="text"
-                                       id="name"
-                                       name="name"
-                                       value="{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->name : old('name') }}"
-                                       placeholder="Enter fish type name (e.g., Tilapia, Catfish)"
-                                       class="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors @error('name') border-red-500 @enderror"
-                                       required>
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <x-heroicon-o-tag class="h-5 w-5 text-gray-400" />
-                                </div>
-                            </div>
-                            @error('name')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Description -->
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                                Description
-                            </label>
-                            <textarea id="description"
-                                      name="description"
-                                      rows="4"
-                                      placeholder="Enter a detailed description of the fish type..."
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none @error('description') border-red-500 @enderror">{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->description : old('description') }}</textarea>
-                            @error('description')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Modal Footer -->
-                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 pt-4">
-                            <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes']) }}"
-                               class="mt-3 w-full inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:w-auto transition-colors">
-                                Cancel
-                            </a>
-                            <button type="submit"
-                                    class="w-full inline-flex justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto transition-colors">
-                                @if(request('modal') === 'edit')
-                                    <x-heroicon-o-pencil-square class="w-4 h-4 mr-2" />
-                                    Update Fish Type
-                                @else
-                                    <x-heroicon-o-plus class="w-4 h-4 mr-2" />
-                                    Add Fish Type
-                                @endif
-                            </button>
-                        </div>
-                    </form>
-                </div>
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6 summary-strip-wrap">
+        <div class="summary-strip summary-strip--three">
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Assigned Types</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($fishTypeSummary['assigned'] ?? 0) }}</p>
+            </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Used in Purchases</p>
+                <p class="mt-2 text-3xl font-bold text-blue-600">{{ number_format($fishTypeSummary['used'] ?? 0) }}</p>
+            </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">With Price Set</p>
+                <p class="mt-2 text-3xl font-bold text-green-600">{{ number_format($fishTypeSummary['with_prices'] ?? 0) }}</p>
             </div>
         </div>
     </div>
+
+    <!-- Fish Type Modal (Create/Edit) -->
+    @if(request('modal') === 'create' || request('modal') === 'edit')
+        <x-app-modal
+            :title="request('modal') === 'edit' ? 'Edit Fish Type' : 'Add Fish Type'"
+            :subtitle="request('modal') === 'edit' ? 'Update the fish type details for cleaner inventory setup.' : 'Create a fish type with a clear name and optional description.'"
+            :close-url="route('broker.inventory.index', ['tab' => 'fishTypes'])"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm">
+                    <x-heroicon-o-tag class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            <form action="{{ request('modal') === 'edit' ? route('broker.fish-types.update', request('edit')) : route('broker.fish-types.store') }}" method="POST" class="space-y-6">
+                @csrf
+                @if(request('modal') === 'edit')
+                    @method('PUT')
+                @endif
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Fish Type Name <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               value="{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->name : old('name') }}"
+                               placeholder="Enter fish type name, like Tilapia or Catfish"
+                               class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors @error('name') border-red-500 @enderror"
+                               required>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <x-heroicon-o-tag class="h-5 w-5 text-gray-400" />
+                        </div>
+                    </div>
+                    @error('name')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                    </label>
+                    <textarea id="description"
+                              name="description"
+                              rows="4"
+                              placeholder="Add a short description to make the fish type easier to recognize."
+                              class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none @error('description') border-red-500 @enderror">{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->description : old('description') }}</textarea>
+                    @error('description')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                    <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes']) }}"
+                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                        @if(request('modal') === 'edit')
+                            <x-heroicon-o-pencil-square class="w-4 h-4 mr-2" />
+                            Update Fish Type
+                        @else
+                            <x-heroicon-o-plus class="w-4 h-4 mr-2" />
+                            Add Fish Type
+                        @endif
+                    </button>
+                </div>
+            </form>
+        </x-app-modal>
     @endif
 
     <!-- Fish Types Search -->
@@ -179,7 +170,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="text-sm text-gray-900">{{ $fishType->description }}</span>
+                                <span class="text-sm text-gray-900">{{ $fishType->description ?: 'No description provided yet.' }}</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">

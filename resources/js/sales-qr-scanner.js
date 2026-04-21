@@ -12,6 +12,7 @@ class SalesQRScanner {
         this.modal = null;
         this.isModalCreated = false;
         this.onScanSuccess = null;
+        this.handleEscape = this.handleEscape.bind(this);
     }
 
     /**
@@ -103,6 +104,7 @@ class SalesQRScanner {
      */
     closeModal() {
         this.stopScanner();
+        document.removeEventListener('keydown', this.handleEscape);
         if (this.modal) {
             this.modal.classList.add('hidden');
             // Remove modal from DOM
@@ -116,6 +118,12 @@ class SalesQRScanner {
         }
     }
 
+    handleEscape(event) {
+        if (event.key === 'Escape') {
+            this.closeModal();
+        }
+    }
+
     /**
      * Create the QR Scanner modal with modern design
      */
@@ -123,62 +131,62 @@ class SalesQRScanner {
         if (this.isModalCreated) return;
 
         const modalHTML = `
-            <div id="salesQrScannerModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
-                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                    <!-- Backdrop with blur effect -->
-                    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
-                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div id="salesQrScannerModal" class="workspace-popup hidden" style="z-index: 180;">
+                <div class="workspace-popup__stage">
+                    <button type="button" id="salesQrScannerBackdrop" class="workspace-popup__backdrop" aria-label="Close QR scanner"></button>
 
-                    <!-- Modal panel -->
-                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                        <!-- Header -->
-                        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-lg font-semibold text-white">Scan Fish Box QR Code</h3>
-                                <button onclick="window.salesQrScanner.closeModal()" class="text-white hover:text-gray-200 transition-colors">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
+                    <div class="workspace-popup__panel workspace-popup__panel--lg" role="dialog" aria-modal="true" aria-labelledby="salesQrScannerTitle">
+                        <div class="workspace-popup__header">
+                            <div class="workspace-popup__heading">
+                                <div class="workspace-popup__icon">
+                                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-2 4h2M4 12H2m2 8H2m10-8a4 4 0 100-8 4 4 0 000 8zm0 0v8m0-8h8"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 id="salesQrScannerTitle" class="workspace-popup__title">Scan Fish Box QR Code</h3>
+                                    <p class="workspace-popup__subtitle">Position the fish box QR code inside the frame to add it to this sale.</p>
+                                </div>
                             </div>
+
+                            <button type="button" onclick="window.salesQrScanner.closeModal()" class="workspace-popup__close" aria-label="Close QR scanner">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
 
-                        <!-- Body -->
-                        <div class="bg-white px-6 py-4">
-                            <!-- Camera container -->
-                            <div class="relative bg-gray-100 rounded-lg overflow-hidden mb-4" style="height: 300px;">
-                                <video id="salesQrVideo" class="w-full h-full object-cover" autoplay muted playsinline></video>
-                                <!-- Scanning overlay -->
+                        <div class="workspace-popup__body workspace-popup__body--soft">
+                            <div class="relative mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-gray-100" style="height: 320px;">
+                                <video id="salesQrVideo" class="h-full w-full object-cover" autoplay muted playsinline></video>
                                 <div class="absolute inset-0 pointer-events-none">
                                     <div class="absolute inset-0 bg-black bg-opacity-30"></div>
-                                    <!-- Scanning frame -->
-                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white rounded-lg">
-                                        <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-lg"></div>
-                                        <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-lg"></div>
-                                        <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-500 rounded-bl-lg"></div>
-                                        <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-500 rounded-br-lg"></div>
+                                    <div class="absolute top-1/2 left-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 transform rounded-2xl border-2 border-white shadow-2xl">
+                                        <div class="absolute top-0 left-0 h-6 w-6 rounded-tl-lg border-t-4 border-l-4 border-blue-500"></div>
+                                        <div class="absolute top-0 right-0 h-6 w-6 rounded-tr-lg border-t-4 border-r-4 border-blue-500"></div>
+                                        <div class="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-4 border-l-4 border-blue-500"></div>
+                                        <div class="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-4 border-r-4 border-blue-500"></div>
                                     </div>
-                                    <!-- Scanning line animation -->
-                                    <div id="salesQrScanLine" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-0.5 bg-blue-500 opacity-0"></div>
+                                    <div id="salesQrScanLine" class="absolute top-1/2 left-1/2 h-0.5 w-48 -translate-x-1/2 -translate-y-1/2 transform bg-blue-500 opacity-0"></div>
                                 </div>
                             </div>
 
-                            <!-- Status -->
                             <div id="salesQrStatus" class="text-center">
-                                <div class="flex items-center justify-center space-x-2 mb-2">
-                                    <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
-                                    <p class="text-gray-600 font-medium">Initializing camera...</p>
+                                <div class="mb-2 flex items-center justify-center space-x-2">
+                                    <div class="h-2 w-2 rounded-full bg-gray-400"></div>
+                                    <p class="font-medium text-gray-600">Initializing camera...</p>
                                 </div>
-                                <p class="text-gray-500 text-sm">Point your camera at a fish box QR code</p>
+                                <p class="text-sm text-gray-500">Point your camera at a fish box QR code</p>
                             </div>
-                        </div>
 
-                        <!-- Footer -->
-                        <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
-                            <button onclick="window.salesQrScanner.closeModal()"
-                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                Cancel
-                            </button>
+                            <div class="mt-5 flex justify-end border-t border-gray-100 pt-4">
+                                <button onclick="window.salesQrScanner.closeModal()"
+                                        class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -187,6 +195,11 @@ class SalesQRScanner {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         this.modal = document.getElementById('salesQrScannerModal');
+        const backdrop = document.getElementById('salesQrScannerBackdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', () => this.closeModal());
+        }
+        document.addEventListener('keydown', this.handleEscape);
         this.isModalCreated = true;
 
         // Start scanner when modal is opened
@@ -515,7 +528,8 @@ class SalesQRScanner {
 
         // Get fish type name
         const fishTypeName = fishBoxData.fish_type?.name || fishBoxData.fish_type_name || fishBoxData.fish_type || 'Unknown';
-        const boxName = fishBoxData.name || `Fish Box #${fishBoxData.id}`;
+        const boxNumber = fishBoxData.broker_box_number || fishBoxData.id;
+        const boxName = fishBoxData.name || `Fish Box #${boxNumber}`;
 
         // Show success message
         if (window.toastr) {
@@ -646,7 +660,7 @@ class SalesQRScanner {
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span class="font-medium">${fishBox.name || `Fish Box #${fishBox.id}`}</span>
+                            <span class="font-medium">${fishBox.name || `Fish Box #${fishBox.broker_box_number || fishBox.id}`}</span>
                             <span class="ml-2 text-xs">(Scanned)</span>
                         </div>
                     </div>

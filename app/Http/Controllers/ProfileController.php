@@ -32,21 +32,17 @@ class ProfileController extends Controller
 
         $passwordOption = $request->input('password_option', 'keep');
 
-        $updateData = [
-            'name' => $request->name,
-        ];
-
         // Update password only if changing password option is selected
         if ($passwordOption === 'change') {
-            $updateData['password'] = bcrypt($request->password);
+            $user->password = bcrypt($request->password);
+            $user->save();
         }
-
-        // Update user data
-        $user->update($updateData);
 
         // Update profile data
         $profileData = [
-            'name' => $request->name,
+            'first_name' => $request->first_name,
+            'middle_name' => $request->middle_name,
+            'last_name' => $request->last_name,
             'address' => $request->address,
         ];
 
@@ -66,10 +62,12 @@ class ProfileController extends Controller
         }
 
         // Fallback: redirect to appropriate dashboard based on user role
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isStaff()) {
             return redirect()->route('admin.dashboard')->with('success', 'Profile updated successfully.');
-        } else {
+        } elseif ($user->isBroker()) {
             return redirect()->route('broker.dashboard')->with('success', 'Profile updated successfully.');
         }
+
+        return redirect()->route('applications.index')->with('success', 'Profile updated successfully.');
     }
 }

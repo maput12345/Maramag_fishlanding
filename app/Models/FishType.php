@@ -6,6 +6,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FishType extends Model
@@ -15,35 +18,61 @@ class FishType extends Model
     protected $fillable = [
         'name',
         'description',
-        'broker_id',
     ];
 
     /**
-     * Get the broker that owns this fish type.
+     * Get the brokers that can sell this fish type.
      */
-    public function broker()
+    public function brokers(): BelongsToMany
     {
-        return $this->belongsTo(Broker::class, 'broker_id');
+        return $this->belongsToMany(Broker::class, 'broker_fish_type')->withTimestamps();
     }
 
     /**
      * Get the fish boxes for this fish type.
      */
-    public function fishBoxes()
+    public function fishBoxes(): HasMany
     {
-        return $this->hasMany(FishBox::class);
+        return $this->hasMany(FishBoxPurchase::class, 'fish_type_id');
     }
 
     /**
-     * Check if this fish type is used by checking if fish boxes exist with the same broker_id
-     *
-     * @return bool
+     * Get the recorded prices for this fish type.
      */
-    public function isUsed(): bool
+    public function prices(): HasManyThrough
     {
-        return $this->fishBoxes()
-            ->where('broker_id', $this->broker_id)
-            ->exists();
+        return $this->hasManyThrough(
+            FishPrice::class,
+            BrokerFishType::class,
+            'fish_type_id',
+            'broker_fish_type_id',
+            'id',
+            'id'
+        );
+    }
+
+    /**
+     * Get the broker assignments for this fish type.
+     */
+    public function brokerFishTypes(): HasMany
+    {
+        return $this->hasMany(BrokerFishType::class, 'fish_type_id');
+    }
+
+    /**
+     * Check if this fish type is already used by any fish boxes.
+     */
+    public function isUsed(?int $brokerId = null): bool
+    {
+        $query = $this->fishBoxes();
+
+        if ($brokerId) {
+            $query->whereHas('fishBox', function ($fishBoxQuery) use ($brokerId) {
+                $fishBoxQuery->where('broker_id', $brokerId);
+            });
+        }
+
+        return $query->exists();
     }
 
     // =============== DATABASE OPERATIONS =============== //
@@ -60,7 +89,9 @@ class FishType extends Model
         $query = static::query();
 
         if ($brokerId) {
-            $query->where('broker_id', $brokerId);
+            $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
+                $brokerQuery->where('brokers.id', $brokerId);
+            });
         }
 
         return $query->get();
@@ -79,19 +110,18 @@ class FishType extends Model
     {
         $query = static::query();
 
-        // Filter by broker if provided
         if ($brokerId) {
-            $query->where('broker_id', $brokerId);
+            $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
+                $brokerQuery->where('brokers.id', $brokerId);
+            });
         }
 
-        // Apply search filter
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%');
             });
         }
 
-        // Order by creation date and paginate
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 

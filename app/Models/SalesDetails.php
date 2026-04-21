@@ -2,161 +2,165 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Log;
 
 class SalesDetails extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'sales_id',
-        'broker_id',
-        'box_id',
-        'item',
-        'item_description',
+        'sale_id',
+        'fish_box_purchase_id',
         'unit_price',
-        'quantity',
-        'sub_total'
+        'sub_total',
+        'discount',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'box_id' => 'array',
         'unit_price' => 'decimal:2',
         'sub_total' => 'decimal:2',
+        'discount' => 'decimal:2',
     ];
 
-    // ============== RELATIONS ============== //
-
     /**
-     * Get the sales that this sales detail belongs to
-     *
-     * @return BelongsTo
+     * Get the sale that this sales detail belongs to.
      */
     public function sales(): BelongsTo
     {
-        return $this->belongsTo(Sales::class, 'sales_id');
+        return $this->belongsTo(Sales::class, 'sale_id');
     }
 
     /**
-     * Get the broker that this sales detail belongs to
-     *
-     * @return BelongsTo
+     * Alias for singular naming.
      */
-    public function broker(): BelongsTo
+    public function sale(): BelongsTo
     {
-        return $this->belongsTo(Broker::class, 'broker_id');
+        return $this->belongsTo(Sales::class, 'sale_id');
     }
 
     /**
-     * Get the fish boxes that this sales detail belongs to
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Get the purchase cycle sold on this row.
+     */
+    public function fishBoxPurchase(): BelongsTo
+    {
+        return $this->belongsTo(FishBoxPurchase::class, 'fish_box_purchase_id');
+    }
+
+    /**
+     * Compatibility accessor that returns the physical fish box.
+     */
+    public function getFishBoxAttribute(): ?FishBox
+    {
+        return $this->fishBoxPurchase?->fishBox;
+    }
+
+    /**
+     * Compatibility helper that mimics the old multiple-box collection.
      */
     public function fishBoxes()
     {
-        if (is_array($this->box_id) && !empty($this->box_id)) {
-            return FishBox::whereIn('id', $this->box_id)->get();
-        }
-        return collect();
+        return $this->fishBox ? collect([$this->fishBox]) : collect();
     }
 
     /**
-     * Get the first fish box for backward compatibility
-     *
-     * @return FishBox|null
+     * Get the first fish box for backward compatibility.
      */
     public function getFirstFishBoxAttribute(): ?FishBox
     {
-        if (is_array($this->box_id) && !empty($this->box_id)) {
-            return FishBox::find($this->box_id[0]);
-        }
-        return null;
+        return $this->fishBox;
     }
 
     /**
-     * Get the fish box relationship (backward compatibility)
-     * This returns the first fish box for compatibility with existing code
-     * Since box_id is now a JSON array, we use a custom approach
-     *
-     * @return FishBox|null
+     * Compatibility accessor for the old JSON box_id field.
      */
-    public function fishBox()
+    public function getBoxIdAttribute(): array
     {
-        if (is_array($this->box_id) && !empty($this->box_id)) {
-            return FishBox::find($this->box_id[0]);
-        }
-        return null;
+        return $this->fishBoxPurchase?->fish_box_id ? [$this->fishBoxPurchase->fish_box_id] : [];
     }
 
     /**
-     * Get all fish box IDs as an array
-     *
-     * @return array
+     * Get all fish box IDs as an array.
      */
     public function getBoxIdsAttribute(): array
     {
-        return is_array($this->box_id) ? $this->box_id : [];
+        return $this->box_id;
     }
 
     /**
-     * Get the count of fish boxes
-     *
-     * @return int
+     * Get the count of fish boxes on this row.
      */
     public function getBoxCountAttribute(): int
     {
-        return count($this->box_ids);
+        return $this->fish_box_purchase_id ? 1 : 0;
     }
 
     /**
-     * Check if a specific fish box ID is in this sales detail
-     *
-     * @param int $boxId
-     * @return bool
+     * Derive the item name from the related fish type.
+     */
+    public function getItemAttribute(): string
+    {
+        return $this->fishBoxPurchase?->fishType?->name ?? '';
+    }
+
+    /**
+     * Derive the item description from the related fish type.
+     */
+    public function getItemDescriptionAttribute(): ?string
+    {
+        return $this->fishBoxPurchase?->fishType?->description;
+    }
+
+    /**
+     * Each normalized sales detail represents one fish box.
+     */
+    public function getQuantityAttribute(): int
+    {
+        return $this->fish_box_purchase_id ? 1 : 0;
+    }
+
+    /**
+     * Check if a specific physical fish box matches this row.
      */
     public function hasBoxId(int $boxId): bool
     {
-        return in_array($boxId, $this->box_ids);
+        return (int) ($this->fishBoxPurchase?->fish_box_id) === $boxId;
     }
 
-    // ============== DATABASE OPERATIONS ============== //
-
     /**
-     * Create sales details for a sale
-     *
-     * @param int $salesId
-     * @param int $brokerId
-     * @param array $details
-     * @return void
+     * Create normalized sales detail rows for a sale.
      */
-    public static function createSalesDetails(int $salesId, int $brokerId, array $details): void
+    public static function createSalesDetails(int $saleId, int $brokerId, array $details): void
     {
-        if (empty($details)) {
-            return;
-        }
-
         foreach ($details as $detail) {
-            // Store box_id as array of IDs
-            $boxIds = is_array($detail['box_id']) ? $detail['box_id'] : [$detail['box_id']];
+            $boxIds = is_array($detail['box_id'] ?? null) ? $detail['box_id'] : [$detail['box_id'] ?? null];
+            $boxIds = array_values(array_filter(array_unique($boxIds)));
 
-            self::create([
-                'sales_id' => $salesId,
-                'broker_id' => $brokerId,
-                'box_id' => $boxIds, // Store as JSON array
-                'item' => $detail['item'],
-                'item_description' => $detail['item_description'] ?? null,
-                'unit_price' => $detail['unit_price'] ?? null,
-                'quantity' => $detail['quantity'] ?? count($boxIds), // Use actual quantity
-                'sub_total' => $detail['sub_total'] ?? null // Use calculated sub total
-            ]);
+            if (empty($boxIds)) {
+                continue;
+            }
+
+            $unitPrice = (float) ($detail['unit_price'] ?? 0);
+            $lineSubTotal = (float) ($detail['sub_total'] ?? ($unitPrice * count($boxIds)));
+            $perBoxSubTotal = count($boxIds) > 0 ? round($lineSubTotal / count($boxIds), 2) : $unitPrice;
+            $perBoxDiscount = max(0, round($unitPrice - $perBoxSubTotal, 2));
+
+            foreach ($boxIds as $boxId) {
+                $purchase = FishBoxPurchase::getCurrentForBox((int) $boxId, $brokerId);
+
+                if (!$purchase) {
+                    continue;
+                }
+
+                self::create([
+                    'sale_id' => $saleId,
+                    'fish_box_purchase_id' => $purchase->id,
+                    'unit_price' => $unitPrice,
+                    'sub_total' => $perBoxSubTotal,
+                    'discount' => $perBoxDiscount,
+                ]);
+            }
         }
     }
 }

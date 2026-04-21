@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Constants\FishBoxStatusConstant;
 use App\Models\FishType;
 use App\Models\FishBox;
-use App\Models\InventoryLog;
 use App\Http\Requests\FishBoxRequest;
 use App\Models\Broker;
 use Illuminate\Http\JsonResponse;
@@ -37,6 +36,13 @@ class FishBoxController extends Controller
 
         // Filter fish boxes by current broker
         $fishBoxes = FishBox::getPaginatedWithFilters($search, $status, $fishType, 12, $brokerId);
+        $fishBoxSummary = [
+            'total' => FishBox::where('broker_id', $brokerId)->count(),
+            'in_stock' => FishBox::where('broker_id', $brokerId)->inStock()->count(),
+            'sold' => FishBox::where('broker_id', $brokerId)->sold()->count(),
+            'returned' => FishBox::where('broker_id', $brokerId)->returned()->count(),
+            'missing' => FishBox::where('broker_id', $brokerId)->missing()->count(),
+        ];
 
         $editingFishBox = null;
 
@@ -45,7 +51,7 @@ class FishBoxController extends Controller
             $editingFishBox = FishBox::find($request->get('edit'));
         }
 
-        return compact('fishBoxStatuses', 'fishTypes', 'fishBoxes', 'editingFishBox');
+        return compact('fishBoxStatuses', 'fishTypes', 'fishBoxes', 'editingFishBox', 'fishBoxSummary');
     }
 
     /**
@@ -59,7 +65,13 @@ class FishBoxController extends Controller
         $validated = $request->validated();
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
-        $createdBoxes = FishBox::createFishBoxes($validated['fish_type_id'], $validated['quantity'], $brokerId);
+        $createdBoxes = FishBox::createFishBoxes(
+            $validated['fish_type_id'],
+            $validated['quantity'],
+            $brokerId,
+            (float) $validated['cost_price'],
+            $userId
+        );
 
         $message = count($createdBoxes) === 1
             ? 'Fish box created successfully!'
@@ -81,14 +93,10 @@ class FishBoxController extends Controller
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
         $validated = $request->validated();
-        $originalStatus = $fishBox->status;
+        $userId = Auth::id();
 
-        $fishBox->update($validated);
+        $fishBox->updateBoxAndPurchase($validated, $userId);
 
-        // Create inventory log only if status changed
-        if (isset($validated['status']) && $validated['status'] !== $originalStatus) {
-            InventoryLog::createLogForFishBox($fishBox->id, $validated['status'], $fishBox->broker_id);
-        }
         return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
             ->with('success', 'Fish box updated successfully!');
     }
@@ -156,9 +164,6 @@ class FishBoxController extends Controller
             // Update the fish box status based on current status
             FishBox::updateStatus($fishBox->id, $newStatus, Auth::id());
 
-            // Create inventory log for the status change
-            InventoryLog::createLogForFishBox($fishBox->id, $newStatus, $fishBox->broker_id);
-
             // Return JSON response for AJAX requests
             return response()->json([
                 'success' => true,
@@ -193,17 +198,13 @@ class FishBoxController extends Controller
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
 
         if (!$fishBox->canBeMarkedAsMissing()) {
-            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            return redirect()->back()
                 ->with('error', 'This fish box cannot be marked as missing.');
         }
 
-        $fishBox->status = FishBoxStatusConstant::MISSING;
-        $fishBox->save();
+        FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::MISSING, Auth::id());
 
-        // Create inventory log for the status change
-        InventoryLog::createLogForFishBox($fishBox->id, FishBoxStatusConstant::MISSING, $fishBox->broker_id);
-
-        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        return redirect()->back()
             ->with('success', 'Fish box marked as missing successfully!');
     }
 
@@ -219,13 +220,13 @@ class FishBoxController extends Controller
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
 
         if ($fishBox->status !== FishBoxStatusConstant::SOLD) {
-            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            return redirect()->back()
                 ->with('error', 'Only sold fish boxes can be returned.');
         }
 
         FishBox::updateFishBoxesForReturned($fishBox->id, Auth::id());
 
-        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        return redirect()->back()
             ->with('success', 'Fish box returned successfully!');
     }
 
@@ -240,11 +241,11 @@ class FishBoxController extends Controller
         $returnedCount = FishBox::returnAllToStock($brokerId);
 
         if ($returnedCount === 0) {
-            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            return redirect()->back()
                 ->with('info', 'No returned fish boxes to process.');
         }
 
-        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        return redirect()->back()
             ->with('success', "{$returnedCount} fish boxes returned to stock successfully!");
     }
 }

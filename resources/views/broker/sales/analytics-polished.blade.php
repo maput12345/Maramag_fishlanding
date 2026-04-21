@@ -1,0 +1,250 @@
+@php
+    $breadcrumbs = [
+        ['title' => 'Sales & Analytics']
+    ];
+
+    $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
+@endphp
+
+@extends('layouts.broker')
+
+@section('content')
+<div class="w-full dashboard-shell">
+    <div class="dashboard-header">
+        <span class="dashboard-kicker">Sales Intelligence</span>
+        <div>
+            <h1 class="dashboard-title">Sales Analytics</h1>
+            <p class="dashboard-subtitle">Review collections from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
+        </div>
+    </div>
+
+    <section class="panel-card">
+        <div class="panel-card__inner">
+            <div class="panel-card__header">
+                <div>
+                    <h3 class="panel-card__title">Filters</h3>
+                </div>
+            </div>
+
+            <form method="GET" action="{{ route('broker.sales.analytics') }}" x-data="{
+                status: '{{ request('status') }}',
+                dateFrom: '{{ request('date_from', $dateFrom) }}',
+                dateTo: '{{ request('date_to', $dateTo) }}'
+            }">
+                <div class="analytics-filter-layout">
+                    <div class="status-field">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select name="status" x-model="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Status</option>
+                            <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Pending Payment</option>
+                            <option value="{{ \App\Constants\SalesStatusConstant::PAID }}">Paid</option>
+                            <option value="{{ \App\Constants\SalesStatusConstant::PARTIALLY_PAID }}">Partially Paid</option>
+                        </select>
+                    </div>
+
+                    <div class="fish-type-field">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                        <input type="date" name="date_from" x-model="dateFrom" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="fish-type-field">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                        <input type="date" name="date_to" x-model="dateTo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="buttons-field flex justify-end space-x-2">
+                        <a href="{{ route('broker.sales.analytics') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            Clear
+                        </a>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <div class="metric-grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+        <div class="metric-card metric-card--primary">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Total Orders</p>
+                    <p class="metric-card__value">{{ number_format($totalOrders) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-document-text />
+                </span>
+            </div>
+        </div>
+
+        <div class="metric-card metric-card--success">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Total Revenue</p>
+                    <p class="metric-card__value">PHP {{ number_format($totalRevenue, 2) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-chart-pie />
+                </span>
+            </div>
+        </div>
+
+        <div class="metric-card metric-card--warning">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Outstanding Balance</p>
+                    <p class="metric-card__value">PHP {{ number_format($totalBalance, 2) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-currency-dollar />
+                </span>
+            </div>
+        </div>
+
+        <div class="metric-card metric-card--neutral">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Fish Boxes Sold</p>
+                    <p class="metric-card__value">{{ number_format($totalFishBoxes) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-cube />
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <section class="panel-card chart-card">
+            <div class="panel-card__inner">
+                <div class="panel-card__header">
+                    <div>
+                        <h3 class="panel-card__title">Weekly Sales Trend</h3>
+                    </div>
+                </div>
+
+                <div class="chart-grid" style="--chart-columns: {{ max(1, count($weeklySalesData)) }};">
+                    @foreach($weeklySalesData as $weekData)
+                        <div class="chart-column">
+                            <div class="chart-column__value">PHP {{ number_format($weekData['sales'], 0) }}</div>
+                            <div class="chart-column__track">
+                                <div class="chart-column__bar" style="height: {{ ($weekData['sales'] / $maxWeeklySales) * 100 }}%;">
+                                    <div class="chart-column__tooltip">PHP {{ number_format($weekData['sales'], 2) }}</div>
+                                </div>
+                            </div>
+                            <span class="chart-column__label">{{ $weekData['day'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-card">
+            <div class="panel-card__inner">
+                <div class="panel-card__header">
+                    <div>
+                        <h3 class="panel-card__title">Top Selling Items</h3>
+                    </div>
+                    <span class="panel-card__hint">{{ \Carbon\Carbon::parse($dateFrom)->format('M d') }} - {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}</span>
+                </div>
+
+                <div class="top-item-list">
+                    @forelse($topItems as $index => $item)
+                        <div class="top-item-row">
+                            <div class="top-item-row__lead">
+                                <div class="top-item-row__rank">{{ $index + 1 }}</div>
+                                <div>
+                                    <p class="top-item-row__title">{{ $item['name'] }}</p>
+                                    <p class="top-item-row__meta">{{ $item['quantity'] }} sold</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-semibold text-gray-900">PHP {{ number_format($item['revenue'], 2) }}</p>
+                                @if($topItems->count() > 0)
+                                    <div class="progress-track">
+                                        <div class="progress-bar" style="width: {{ $topItems->first()['revenue'] > 0 ? ($item['revenue'] / $topItems->first()['revenue']) * 100 : 0 }}%"></div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <x-heroicon-o-cube class="heroicon" />
+                            <p class="text-sm">No sales data available for this period.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="panel-card">
+        <div class="panel-card__inner">
+            <div class="panel-card__header">
+                <div>
+                    <h3 class="panel-card__title">Sales Performance</h3>
+                </div>
+                <span class="panel-card__hint">Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }}</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse($sales as $sale)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ \Carbon\Carbon::parse($sale->sales_date)->format('M d, Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $sale->formatted_id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div>
+                                        <div class="font-medium">{{ $sale->buyer_name }}</div>
+                                        <div class="text-gray-500 text-xs">{{ $sale->buyer_contact }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $sale->formatted_items }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->total_amount, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->paid_amount, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($sale->status === \App\Constants\SalesStatusConstant::PAID)
+                                        <span class="status-badge status-badge--paid">Paid</span>
+                                    @elseif($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
+                                        <span class="status-badge status-badge--partial">Partial</span>
+                                    @else
+                                        <span class="status-badge status-badge--pending">Pending</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-6 py-12">
+                                    <div class="empty-state">
+                                        <x-heroicon-o-document-text class="heroicon" />
+                                        <p class="text-sm">No sales data available for the selected period and filters.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if($sales->hasPages())
+                <div class="pt-4">
+                    {{ $sales->appends(request()->query())->links() }}
+                </div>
+            @endif
+        </div>
+    </section>
+</div>
+@endsection

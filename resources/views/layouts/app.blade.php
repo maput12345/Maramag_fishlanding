@@ -15,11 +15,13 @@
     <title>{{ config('app.name', 'POS System') }}</title>
 
     <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Compiled CSS -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/next-gen-ui.css') }}">
 
 
     <!-- Alpine.js for interactive components -->
@@ -28,7 +30,7 @@
     <!-- POS System Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
-<body class="@yield('body-class', 'bg-gray-50 font-sans')">
+<body class="@yield('body-class', 'login-shell theme-admin')">
     @yield('content')
 </body>
 </html>

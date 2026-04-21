@@ -13,8 +13,20 @@ class AddRoleToUsersTable extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'broker'])->default('broker');
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('role_name')->unique();
+            $table->string('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('user_roles', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['user_id', 'role_id']);
         });
     }
 
@@ -25,8 +37,7 @@ class AddRoleToUsersTable extends Migration
      */
     public function down()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-        });
+        Schema::dropIfExists('user_roles');
+        Schema::dropIfExists('roles');
     }
 }

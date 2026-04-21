@@ -33,12 +33,14 @@ class LoginController extends Controller
     protected function redirectTo()
     {
         $user = auth()->user();
-        if ($user && $user->role === 'admin') {
+        if ($user && ($user->isAdmin() || $user->isStaff())) {
             return route('admin.dashboard');
         }
-        if ($user && $user->role === 'broker') {
+        if ($user && $user->isBroker()) {
             return route('broker.dashboard');
         }
+
+        return route('applications.index');
     }
 
     /**
@@ -87,13 +89,21 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        if ($user->role === 'admin') {
+        if ($user->isAdmin() || $user->isStaff()) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->role === 'broker') {
+        } elseif ($user->isBroker()) {
             return redirect()->route('broker.dashboard');
         }
 
-        return redirect()->intended($this->redirectPath());
+        return redirect()->route('applications.index');
+    }
+
+    /**
+     * Show the application's login form.
+     */
+    public function showLoginForm()
+    {
+        return view('auth.login-polished');
     }
 
     /**

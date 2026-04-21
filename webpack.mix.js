@@ -22,7 +22,8 @@ mix.js('resources/js/app.js', 'public/js')
    .js('resources/js/sales-form.js', 'public/js')
    .postCss('resources/css/app.css', 'public/css')
    .postCss('resources/css/admin.css', 'public/css')
-   .postCss('resources/css/filter-layout.css', 'public/css');
+   .postCss('resources/css/filter-layout.css', 'public/css')
+   .copy('resources/css/background.png', 'public/css/background.png');
 
 if (mix.inProduction()) {
    mix.version();

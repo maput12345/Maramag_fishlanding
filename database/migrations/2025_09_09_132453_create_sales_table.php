@@ -13,19 +13,12 @@ return new class extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->uuid('uuid')->unique();
-            $table->datetime('sales_date');
-            $table->unsignedBigInteger('broker_id');
+            $table->date('sales_date');
+            $table->foreignId('broker_id')->constrained('brokers')->cascadeOnDelete();
+            $table->foreignId('buyer_id')->constrained('buyers')->cascadeOnDelete();
             $table->decimal('total_amount', 10, 2)->default(0);
-            $table->decimal('paid_amount', 10, 2)->default(0);
-            $table->string('buyer_name')->nullable();
-            $table->string('buyer_contact')->nullable();
-            $table->text('remarks')->nullable();
-            $table->json('details')->nullable();
             $table->enum('status', ['Deleted', 'Active', 'Partially_Paid', 'Paid'])->default('Active');
             $table->timestamps();
-
-            $table->foreign('broker_id')->references('id')->on('brokers')->onDelete('cascade');
         });
     }
 

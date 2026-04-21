@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales_details', function (Blueprint $table) {
-            $table->decimal('unit_price', 10, 2)->nullable()->after('item_description');
-            $table->integer('quantity')->default(1)->after('unit_price');
-            $table->decimal('sub_total', 10, 2)->nullable()->after('quantity');
-        });
+        //
     }
 
     /**
@@ -23,8 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sales_details', function (Blueprint $table) {
-            $table->dropColumn(['unit_price', 'quantity', 'sub_total']);
-        });
+        //
     }
 };

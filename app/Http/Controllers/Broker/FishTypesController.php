@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Broker;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FishTypeRequest;
+use App\Models\BrokerFishType;
 use App\Models\FishType;
 use App\Models\Broker;
 use Illuminate\Http\Request;
@@ -25,14 +26,28 @@ class FishTypesController extends Controller
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
         $fishTypes = FishType::getPaginatedWithSearch($request->get('search'), $brokerId);
+        $assignedFishTypeIds = BrokerFishType::where('broker_id', $brokerId)->pluck('fish_type_id');
+        $fishTypeSummary = [
+            'assigned' => $assignedFishTypeIds->count(),
+            'with_prices' => BrokerFishType::where('broker_id', $brokerId)->whereHas('latestPrice')->count(),
+            'used' => FishType::whereIn('id', $assignedFishTypeIds)
+                ->whereHas('fishBoxes', function ($purchaseQuery) use ($brokerId) {
+                    $purchaseQuery->whereHas('fishBox', function ($fishBoxQuery) use ($brokerId) {
+                        $fishBoxQuery->where('broker_id', $brokerId);
+                    });
+                })
+                ->count(),
+        ];
         $editingFishType = null;
 
         // Only fetch editing fish type if we're in edit mode
         if ($request->get('modal') === 'edit' && $request->has('edit')) {
-            $editingFishType = FishType::where('broker_id', $brokerId)->find($request->get('edit'));
+            $editingFishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
+                $query->where('brokers.id', $brokerId);
+            })->find($request->get('edit'));
         }
 
-        return compact('fishTypes', 'editingFishType');
+        return compact('fishTypes', 'editingFishType', 'fishTypeSummary');
     }
 
     /**
@@ -48,9 +63,21 @@ class FishTypesController extends Controller
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
         $data = $request->validated();
-        $data['broker_id'] = $brokerId;
+        $fishType = FishType::whereRaw('LOWER(name) = ?', [mb_strtolower(trim($data['name']))])->first();
 
-        FishType::create($data);
+        if ($fishType && $fishType->brokers()->where('brokers.id', $brokerId)->exists()) {
+            return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
+                ->withInput()
+                ->with('error', 'This fish type is already assigned to your account.');
+        }
+
+        if (!$fishType) {
+            $fishType = FishType::create($data);
+        } elseif (!empty($data['description']) && empty($fishType->description)) {
+            $fishType->update(['description' => $data['description']]);
+        }
+
+        $fishType->brokers()->syncWithoutDetaching([$brokerId]);
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
             ->with('success', 'Fish type created successfully!');
@@ -66,7 +93,10 @@ class FishTypesController extends Controller
      */
     public function update(FishTypeRequest $request, $id): RedirectResponse
     {
-        $fishType = FishType::findOrFail($id);
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $fishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
+            $query->where('brokers.id', $brokerId);
+        })->findOrFail($id);
 
         $fishType->update($request->validated());
 
@@ -83,15 +113,22 @@ class FishTypesController extends Controller
      */
     public function destroy($id): RedirectResponse
     {
-        $fishType = FishType::findOrFail($id);
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $fishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
+            $query->where('brokers.id', $brokerId);
+        })->findOrFail($id);
 
         // Check if fish type has associated fish boxes
-        if ($fishType->fishBoxes()->count() > 0) {
+        if ($fishType->isUsed($brokerId)) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
                 ->with('error', 'Cannot delete fish type that has associated fish boxes.');
         }
 
-        $fishType->delete();
+        $fishType->brokers()->detach($brokerId);
+
+        if ($fishType->brokers()->count() === 0 && !$fishType->fishBoxes()->exists()) {
+            $fishType->delete();
+        }
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
             ->with('success', 'Fish type deleted successfully!');

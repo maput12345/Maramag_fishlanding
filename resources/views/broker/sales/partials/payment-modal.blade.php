@@ -1,26 +1,17 @@
 {{-- Add Payment Modal --}}
 @if(request('modal') === 'payment')
     @if($saleForPayment)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <x-app-modal
+            title="Add Payment"
+            subtitle="Record a payment and update the sale balance in one clean step."
+            :close-url="$salesBaseUrl"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm">
+                    <x-heroicon-o-currency-dollar class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
 
-                <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg md:w-full">
-                    {{-- Modal Header --}}
-                    <div class="bg-white px-6 py-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900">Add Payment</h3>
-                            <a href="{{ route('broker.sales.sales') }}"
-                               class="text-gray-400 hover:text-gray-600 transition-colors">
-                                <x-heroicon-o-x-mark class="w-6 h-6" />
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Modal Body --}}
-                    <div class="bg-white px-6 py-6">
-                        {{-- Balance Summary --}}
                         <div class="bg-gray-50 rounded-lg p-4 mb-6">
                             <h4 class="text-sm font-medium text-gray-700 mb-3">Payment Summary</h4>
                             <div class="space-y-2">
@@ -39,7 +30,7 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('broker.sales-payments.store') }}" method="POST" class="space-y-6" x-data="paymentForm()" x-init="initializePaymentForm()">
+                        <form action="{{ route('broker.sales-payments.store') }}" method="POST" class="space-y-6" x-data="paymentForm()" x-init="initializePaymentForm()" data-sales-async-form>
                             @csrf
 
                             <input type="hidden" name="sales_id" value="{{ request('sale') }}">
@@ -94,46 +85,46 @@
                             </div>
 
                             {{-- Modal Footer --}}
-                            <div class="flex justify-end space-x-3 pt-4">
-                                <a href="{{ route('broker.sales.sales') }}"
+                            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                                <button
+                                   type="button"
+                                   data-sales-modal-close
+                                   data-close-url="{{ $salesBaseUrl }}"
                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                                     Cancel
-                                </a>
+                                </button>
                                 <button type="submit" :disabled="paymentError || paidAmount <= 0"
                                         class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
                                     Add Payment
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </x-app-modal>
     @else
         {{-- Sale not found for payment --}}
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg md:w-full">
-                    <div class="bg-white px-6 py-6">
-                        <div class="text-center">
-                            <div class="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4">
-                                <x-heroicon-o-exclamation-triangle class="w-8 h-8 text-red-600" />
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Sale Not Found</h3>
-                            <p class="text-gray-500 mb-6">The sale you're trying to add payment for could not be found or you don't have permission to access it.</p>
-                            <a href="{{ route('broker.sales.sales') }}"
-                               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <x-heroicon-o-arrow-left class="w-4 h-4 mr-2" />
-                                Back to Sales
-                            </a>
-                        </div>
-                    </div>
+        <x-app-modal
+            title="Sale Not Found"
+            subtitle="The selected sale is no longer available for payment."
+            :close-url="$salesBaseUrl"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                    <x-heroicon-o-exclamation-triangle class="h-5 w-5" />
                 </div>
+            </x-slot:icon>
+
+            <div class="py-4 text-center">
+                <p class="text-sm text-gray-500 mb-6">The sale you're trying to add payment for could not be found or you don't have permission to access it.</p>
+                <button
+                   type="button"
+                   data-sales-modal-close
+                   data-close-url="{{ $salesBaseUrl }}"
+                   class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors">
+                    <x-heroicon-o-arrow-left class="w-4 h-4 mr-2" />
+                    Back to Sales
+                </button>
             </div>
-        </div>
+        </x-app-modal>
     @endif
 @endif
 

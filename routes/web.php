@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\ApplicationManagementController;
+use App\Http\Controllers\ApplicationPortalController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Broker\FishTypesController;
 use App\Http\Controllers\Broker\FishBoxController;
+use App\Http\Controllers\Broker\FishPricesController;
 use App\Http\Controllers\Admin\FishManagementController;
 use App\Http\Controllers\Broker\SalesController;
 use App\Http\Controllers\Broker\FishboxManagementController;
@@ -26,12 +29,15 @@ use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
-        if ($user->role === 'admin') {
+        if (in_array($user->role, ['admin', 'staff'], true)) {
             return redirect()->route('admin.dashboard');
         } elseif ($user->role === 'broker') {
             return redirect()->route('broker.dashboard');
         }
+
+        return redirect()->route('applications.index');
     }
+
     return redirect()->route('login');
 });
 
@@ -50,6 +56,13 @@ Route::middleware(['auth'])->group(function () {
     Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
+    });
+
+    Route::controller(ApplicationPortalController::class)->prefix('applications')->name('applications.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/openings/{opening}', 'create')->name('create');
+        Route::post('/openings/{opening}', 'store')->name('store');
+        Route::get('/{application}', 'show')->name('show');
     });
 });
 
@@ -74,6 +87,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::controller(SalesManagementController::class)->prefix('admin/sales')->name('admin.sales.')->group(function () {
         Route::get('/', 'index')->name('index');
     });
+
+    Route::controller(ApplicationManagementController::class)->prefix('admin/applications')->name('admin.applications.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/stalls', 'storeStall')->name('stalls.store');
+        Route::post('/openings', 'storeOpening')->name('openings.store');
+        Route::patch('/openings/{opening}/status', 'updateOpeningStatus')->name('openings.status');
+        Route::get('/{application}', 'show')->name('show');
+        Route::patch('/{application}/review', 'review')->name('review');
+        Route::post('/{application}/winner', 'selectWinner')->name('winner');
+    });
 });
 
 // Broker routes
@@ -92,6 +115,13 @@ Route::middleware(['auth', 'broker'])->group(function () {
         Route::post('/fish-types', 'store')->name('fish-types.store');
         Route::put('/fish-types/{id}', 'update')->name('fish-types.update');
         Route::delete('/fish-types/{id}', 'destroy')->name('fish-types.destroy');
+    });
+
+    // Fish Price Management routes for brokers
+    Route::controller(FishPricesController::class)->prefix('broker')->name('broker.')->group(function () {
+        Route::post('/fish-prices', 'store')->name('fish-prices.store');
+        Route::put('/fish-prices/{id}', 'update')->name('fish-prices.update');
+        Route::delete('/fish-prices/{id}', 'destroy')->name('fish-prices.destroy');
     });
 
     // Fish Box Management routes for brokers

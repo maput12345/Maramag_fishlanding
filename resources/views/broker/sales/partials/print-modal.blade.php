@@ -1,28 +1,20 @@
 {{-- Print Receipt Modal --}}
 @if(request('modal') === 'print')
     @if($printingSales)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <x-app-modal
+            title="Print Receipt"
+            subtitle="Review the final sale summary and print a clean receipt."
+            :close-url="$salesBaseUrl"
+            max-width="lg"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm">
+                    <x-heroicon-o-printer class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
 
-                <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full max-w-md mx-auto">
-                    {{-- Modal Header --}}
-                    <div class="bg-white px-6 py-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-900">Print Receipt</h3>
-                            <div class="flex items-center space-x-3">
-                                <a href="{{ route('broker.sales.sales') }}"
-                                   class="text-gray-400 hover:text-gray-600 transition-colors">
-                                    <x-heroicon-o-x-mark class="w-6 h-6" />
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Receipt Content --}}
-                    <div class="bg-white px-6 py-6" id="receipt-content">
-                        <div class="max-w-md mx-auto bg-white">
+            <div id="receipt-content" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="mx-auto max-w-md bg-white">
                             {{-- Company Header --}}
                             <div class="text-center border-b border-gray-200 pb-4 mb-4">
                                 <h1 class="text-2xl font-bold text-gray-900">{{ $printingSales->broker->name }}</h1>
@@ -78,7 +70,7 @@
                                                     <div class="flex flex-wrap gap-1">
                                                         @foreach($detail->box_id as $boxId)
                                                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                                Fish Box #{{ $boxId }}
+                                                                {{ $detail->fishBox?->name ?? ('Fish Box #' . $boxId) }}
                                                             </span>
                                                         @endforeach
                                                     </div>
@@ -141,46 +133,46 @@
                         </div>
                     </div>
 
-                    {{-- Modal Footer --}}
-                    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-                        <a href="{{ route('broker.sales.sales') }}"
-                           class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                            Close
-                        </a>
-                        <button onclick="printReceiptBroker()"
-                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                            <x-heroicon-o-printer class="w-4 h-4 mr-2 inline" />
-                            Print Receipt
-                        </button>
-                    </div>
-                </div>
+            <div class="mt-6 flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                   type="button"
+                   data-sales-modal-close
+                   data-close-url="{{ $salesBaseUrl }}"
+                   class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                    Close
+                </button>
+                <button onclick="printReceiptBroker()"
+                        class="inline-flex w-full justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
+                    <x-heroicon-o-printer class="mr-2 h-4 w-4" />
+                    Print Receipt
+                </button>
             </div>
-        </div>
+        </x-app-modal>
     @else
-        {{-- Sale not found for printing --}}
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center lg:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg md:w-full">
-                    <div class="bg-white px-6 py-6">
-                        <div class="text-center">
-                            <div class="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4">
-                                <x-heroicon-o-exclamation-triangle class="w-8 h-8 text-red-600" />
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Sale Not Found</h3>
-                            <p class="text-gray-500 mb-6">The sale you're trying to print could not be found or you don't have permission to access it.</p>
-                            <a href="{{ route('broker.sales.sales') }}"
-                               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                                <x-heroicon-o-arrow-left class="w-4 h-4 mr-2" />
-                                Back to Sales
-                            </a>
-                        </div>
-                    </div>
+        <x-app-modal
+            title="Sale Not Found"
+            subtitle="The selected sale could not be prepared for printing."
+            :close-url="$salesBaseUrl"
+            max-width="sm"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                    <x-heroicon-o-exclamation-triangle class="h-5 w-5" />
                 </div>
+            </x-slot:icon>
+
+            <div class="py-4 text-center">
+                <p class="mb-6 text-sm text-gray-500">The sale you're trying to print could not be found or you don't have permission to access it.</p>
+                <button
+                   type="button"
+                   data-sales-modal-close
+                   data-close-url="{{ $salesBaseUrl }}"
+                   class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                    <x-heroicon-o-arrow-left class="mr-2 h-4 w-4" />
+                    Back to Sales
+                </button>
             </div>
-        </div>
+        </x-app-modal>
     @endif
 @endif
 

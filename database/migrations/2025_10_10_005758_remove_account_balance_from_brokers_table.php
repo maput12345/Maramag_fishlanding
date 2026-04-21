@@ -11,10 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('brokers', function (Blueprint $table) {
-            $table->dropIndex(['account_balance']); // Drop index first
-            $table->dropColumn('account_balance');
-        });
+        //
     }
 
     /**
@@ -22,9 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('brokers', function (Blueprint $table) {
-            $table->decimal('account_balance', 10, 2)->default(0.00);
-            $table->index('account_balance');
-        });
+        //
     }
 };

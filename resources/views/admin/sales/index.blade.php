@@ -13,7 +13,6 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">Sales & Analytics</h1>
-                            <p class="text-gray-600 mt-2">Transaction management, payment processing, returns handling, and comprehensive sales analytics</p>
                         </div>
                     </div>
                 </div>

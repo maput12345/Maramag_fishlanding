@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 use App\Constants\SalesStatusConstant;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,42 +13,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Constants\FishBoxStatusConstant;
-use App\Models\InventoryLog;
 
 class Sales extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'uuid',
         'sales_date',
         'broker_id',
+        'buyer_id',
         'total_amount',
-        'paid_amount',
-        'buyer_name',
-        'buyer_contact',
-        'remarks',
-        'details',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'sales_date' => 'datetime',
         'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-        'details' => 'array',
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->uuid)) {
-                $model->uuid = Str::uuid();
-            }
-        });
-    }
 
     // Relationships
     /**
@@ -61,11 +41,19 @@ class Sales extends Model
     }
 
     /**
+     * @return BelongsTo
+     */
+    public function buyer() : BelongsTo
+    {
+        return $this->belongsTo(Buyer::class, 'buyer_id');
+    }
+
+    /**
      * @return HasMany
      */
     public function salesDetails() : HasMany
     {
-        return $this->hasMany(SalesDetails::class, 'sales_id');
+        return $this->hasMany(SalesDetails::class, 'sale_id');
     }
 
     /**
@@ -73,7 +61,7 @@ class Sales extends Model
      */
     public function salesPayments() : HasMany
     {
-        return $this->hasMany(SalesPayment::class, 'sales_id');
+        return $this->hasMany(SalesPayment::class, 'sale_id');
     }
 
     // Scopes
@@ -92,9 +80,45 @@ class Sales extends Model
     /**
      * @return float
      */
+    public function getBuyerNameAttribute(): ?string
+    {
+        return $this->buyer?->name;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getBuyerContactAttribute(): ?string
+    {
+        return $this->buyer?->contact;
+    }
+
+    /**
+     * Compatibility accessor for the removed remarks column.
+     */
+    public function getRemarksAttribute(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * @return float
+     */
+    public function getPaidAmountAttribute() : float
+    {
+        if ($this->relationLoaded('salesPayments')) {
+            return (float) $this->salesPayments->sum('paid_amount');
+        }
+
+        return (float) $this->salesPayments()->sum('paid_amount');
+    }
+
+    /**
+     * @return float
+     */
     public function getRemainingAmountAttribute() : float
     {
-        return $this->total_amount - $this->paid_amount;
+        return max(0, (float) $this->total_amount - (float) $this->paid_amount);
     }
 
     /**
@@ -117,10 +141,7 @@ class Sales extends Model
      */
     public function updatePaidAmount() : void
     {
-        $this->paid_amount = $this->salesPayments()
-            ->where('status', 'Active')
-            ->sum('paid_amount');
-        $this->save();
+        $this->refresh();
     }
 
     /**
@@ -135,27 +156,21 @@ class Sales extends Model
     public static function createSalesWithDetails(array $salesData, array $salesDetails, int $brokerId): Sales
     {
         return DB::transaction(function () use ($salesData, $salesDetails, $brokerId) {
+            $userId = Auth::id();
+            $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
 
-            $userId = Auth::user()->id;
-            // Create the sale
             $sale = self::create([
                 'sales_date' => $salesData['sales_date'],
                 'broker_id' => $brokerId,
+                'buyer_id' => $buyer->id,
                 'total_amount' => $salesData['total_amount'],
-                'buyer_name' => $salesData['buyer_name'],
-                'buyer_contact' => $salesData['buyer_contact'] ?? null,
-                'remarks' => $salesData['remarks'] ?? null,
-                'details' => $salesData['details'] ?? null,
                 'status' => SalesStatusConstant::ACTIVE
             ]);
 
-            // Create sales details
             SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails);
-
-            // Update fish box status for each detail
             FishBox::updateFishBoxesForSales($brokerId, $salesDetails, $userId);
 
-            return $sale;
+            return $sale->load(['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments']);
         });
     }
 
@@ -171,42 +186,28 @@ class Sales extends Model
     public static function updateSalesWithDetails(Sales $sale, array $salesData, array $salesDetails, int $brokerId): void
     {
         DB::transaction(function () use ($sale, $salesData, $salesDetails, $brokerId) {
-            $userId = Auth::user()->id;
+            $userId = Auth::id();
+            $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
 
-            // Update the sale
             $sale->update([
                 'sales_date' => $salesData['sales_date'],
+                'buyer_id' => $buyer->id,
                 'total_amount' => $salesData['total_amount'],
-                'buyer_name' => $salesData['buyer_name'],
-                'buyer_contact' => $salesData['buyer_contact'] ?? null,
-                'remarks' => $salesData['remarks'] ?? null,
-                'details' => $salesData['details'] ?? null,
             ]);
 
-            // Get old sales details before deleting
-            $oldSalesDetails = $sale->salesDetails;
+            foreach ($sale->salesDetails as $detail) {
+                $fishBoxId = $detail->fishBoxPurchase?->fish_box_id;
 
-            // Reset fish boxes back to IN_STOCK status for old sales details
-            foreach ($oldSalesDetails as $detail) {
-                // Handle box_id as JSON array
-                $boxIds = is_array($detail->box_id) ? $detail->box_id : [$detail->box_id];
-                foreach ($boxIds as $boxId) {
-                    FishBox::updateStatus($boxId, FishBoxStatusConstant::IN_STOCK, $userId);
-                    InventoryLog::deleteLogForFishBox($boxId, $sale->created_at);
+                if ($fishBoxId) {
+                    FishBox::updateStatus($fishBoxId, FishBoxStatusConstant::IN_STOCK, $userId);
+                    InventoryLog::deleteLogForFishBox($fishBoxId, $sale->created_at);
                 }
             }
 
-            // Update sales details - delete existing and create new ones
             $sale->salesDetails()->delete();
-
-            // Create new sales details
             SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails);
-
-            // Update fish box status for new details
             FishBox::updateFishBoxesForSales($brokerId, $salesDetails, $userId);
-
-            // Recalculate paid amount and update status
-            $sale->updatePaidAmount();
+            $sale->refresh();
             $sale->updatePaymentStatus();
         });
     }
@@ -222,7 +223,7 @@ class Sales extends Model
      */
     public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $brokerId, ?string $dateFrom = null, ?string $dateTo = null) : LengthAwarePaginator
     {
-        $query = self::with(['broker', 'salesDetails', 'salesPayments'])
+        $query = self::with(['broker.user', 'buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments'])
             ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
 
         if ($brokerId) {
@@ -230,9 +231,9 @@ class Sales extends Model
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('buyer_name', 'like', "%{$search}%")
-                  ->orWhere('buyer_contact', 'like', "%{$search}%");
+            $query->whereHas('buyer', function ($buyerQuery) use ($search) {
+                $buyerQuery->whereRaw("TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?", ["%{$search}%"])
+                    ->orWhere('contact', 'like', "%{$search}%");
             });
         }
 
@@ -261,6 +262,47 @@ class Sales extends Model
     }
 
     /**
+     * Get summary metrics for the filtered sales list.
+     */
+    public static function getSummaryForFilters(?string $search = null, ?string $status = null, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $query = self::with('salesPayments')
+            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        if ($brokerId) {
+            $query->where('broker_id', $brokerId);
+        }
+
+        if ($search) {
+            $query->whereHas('buyer', function ($buyerQuery) use ($search) {
+                $buyerQuery->whereRaw("TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?", ["%{$search}%"])
+                    ->orWhere('contact', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($dateFrom) {
+            $query->whereDate('sales_date', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->whereDate('sales_date', '<=', $dateTo);
+        }
+
+        $sales = $query->get();
+
+        return [
+            'count' => $sales->count(),
+            'gross_total' => (float) $sales->sum('total_amount'),
+            'paid_total' => (float) $sales->sum(fn ($sale) => $sale->paid_amount),
+            'balance_total' => (float) $sales->sum(fn ($sale) => $sale->remaining_amount),
+        ];
+    }
+
+    /**
      * @return void
      */
     public function deleteSales(): void
@@ -286,7 +328,7 @@ class Sales extends Model
             $query->where('broker_id', $brokerId);
         }
 
-        return $query->sum('paid_amount');
+        return (float) $query->sum('total_amount');
     }
 
     /**
@@ -296,14 +338,15 @@ class Sales extends Model
      */
     public static function getTotalPaidAmountToday(?int $brokerId): float
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
+        $query = self::with('salesPayments')
+            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
             ->whereDate('sales_date', today());
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
         }
 
-        return $query->sum('paid_amount');
+        return (float) $query->get()->sum(fn ($sale) => $sale->paid_amount);
     }
 
     /**
@@ -313,14 +356,15 @@ class Sales extends Model
      */
     public static function getTotalPaidAmountYesterday(?int $brokerId): float
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
+        $query = self::with('salesPayments')
+            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
             ->whereDate('sales_date', Carbon::yesterday());
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
         }
 
-        return $query->sum('paid_amount');
+        return (float) $query->get()->sum(fn ($sale) => $sale->paid_amount);
     }
 
     /**
@@ -331,7 +375,7 @@ class Sales extends Model
      */
     public static function getRecentSales($limit = 4, ?int $brokerId): Collection
     {
-        $query = self::with(['broker', 'salesDetails'])
+        $query = self::with(['broker.user', 'buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments'])
             ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
 
         if ($brokerId) {
@@ -355,7 +399,7 @@ class Sales extends Model
      */
     public function getFormattedItems(): string
     {
-        return $this->salesDetails->pluck('item')->implode(', ');
+        return $this->salesDetails->pluck('item')->filter()->unique()->implode(', ');
     }
 
     /**
@@ -377,14 +421,14 @@ class Sales extends Model
      */
     public static function getTotalSalesBalance(?int $brokerId): float
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+        $query = self::with('salesPayments')
+            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
         }
 
-        return $query->selectRaw('SUM(total_amount - paid_amount) as balance')
-            ->value('balance') ?? 0;
+        return (float) $query->get()->sum(fn ($sale) => $sale->remaining_amount);
     }
 
     /**
@@ -456,7 +500,6 @@ class Sales extends Model
      */
     public static function getAnalyticsData(?int $brokerId, ?string $dateFrom = null, ?string $dateTo = null, ?string $status = null): array
     {
-        // Set default date range to last 7 days if not provided
         if (!$dateFrom) {
             $dateFrom = Carbon::now()->subDays(6)->format('Y-m-d');
         }
@@ -464,7 +507,8 @@ class Sales extends Model
             $dateTo = Carbon::now()->format('Y-m-d');
         }
 
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
+        $query = self::with(['salesDetails.fishBoxPurchase.fishType', 'salesPayments', 'buyer'])
+            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
             ->whereDate('sales_date', '>=', $dateFrom)
             ->whereDate('sales_date', '<=', $dateTo);
 
@@ -476,19 +520,13 @@ class Sales extends Model
             $query->where('status', $status);
         }
 
-        // Current period data
-        $totalRevenue = $query->sum('paid_amount');
-        $totalOrders = $query->count();
-        $totalBalance = $query->sum('total_amount') - $query->sum('paid_amount');
-        $totalFishBoxes = $query->withCount('salesDetails')->get()->sum('sales_details_count');
-
-        // Get weekly sales data for the period
+        $sales = $query->get();
+        $totalRevenue = (float) $sales->sum(fn ($sale) => $sale->paid_amount);
+        $totalOrders = $sales->count();
+        $totalBalance = (float) $sales->sum(fn ($sale) => $sale->remaining_amount);
+        $totalFishBoxes = $sales->sum(fn ($sale) => $sale->salesDetails->count());
         $weeklySalesData = self::getDailySalesForPeriod($brokerId, $dateFrom, $dateTo, $status);
-
-        // Get top selling items
         $topItems = self::getTopSellingItems($brokerId, $dateFrom, $dateTo, 5, $status);
-
-        // Get payment methods breakdown
         $paymentMethods = SalesPayment::getPaymentMethodsBreakdown($brokerId, $dateFrom, $dateTo, $status);
 
         return [
@@ -591,7 +629,7 @@ class Sales extends Model
         $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
             ->whereDate('sales_date', '>=', $dateFrom)
             ->whereDate('sales_date', '<=', $dateTo)
-            ->with(['salesDetails']);
+            ->with(['salesDetails.fishBoxPurchase.fishType']);
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
@@ -616,7 +654,7 @@ class Sales extends Model
                     ];
                 }
                 $itemCounts[$item]['quantity'] += 1;
-                $itemCounts[$item]['revenue'] += $sale->total_amount / $sale->salesDetails->count();
+                $itemCounts[$item]['revenue'] += (float) $detail->sub_total;
             }
         }
 

@@ -29,10 +29,10 @@ class AdminDashboardController extends Controller
         $totalFishBoxesSold = $this->salesRepository->getTotalFishBoxesSoldCount();
 
         // Count fish boxes with current status Missing (net missing count)
-        $totalFishBoxesMissing = FishBox::where('status', FishBoxStatusConstant::MISSING)->count();
+        $totalFishBoxesMissing = FishBox::missing()->count();
         
         // Count fish boxes with current status Returned
-        $totalFishBoxesReturned = FishBox::where('status', FishBoxStatusConstant::RETURNED)->count();
+        $totalFishBoxesReturned = FishBox::returned()->count();
 
         // Get top brokers with fishbox count
         $topBrokers = $this->salesRepository->getTopBrokersWithFishBoxCount();

@@ -1,27 +1,57 @@
 @php
     $breadcrumbs = [
-        ['title' => 'Sales Management']
+        ['title' => 'Sales']
     ];
+
+    $salesModalBreadcrumbs = [
+        'create' => 'Create Sale',
+        'edit' => 'Edit Sale',
+        'show' => 'View Sale',
+        'payment' => 'Add Payment',
+        'print' => 'Print Receipt',
+    ];
+
+    if (request()->filled('modal') && isset($salesModalBreadcrumbs[request('modal')])) {
+        $breadcrumbs[] = ['title' => $salesModalBreadcrumbs[request('modal')]];
+    }
 @endphp
 
 @extends('layouts.broker')
 
 @section('content')
-            <div class="w-full content-spacing">
+            <div class="relative w-full content-spacing workspace-modal-host">
                 <!-- Page Header -->
                 <div class="mb-8">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex-1">
-                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Sales Management</h1>
-                            <p class="text-gray-600 mt-2 text-sm sm:text-base">Create, edit, and manage your sales transactions</p>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Sales</h1>
                         </div>
-                        <!-- <div class="flex space-x-3">
+                        <div class="flex space-x-3">
                             <a href="{{ route('broker.sales.sales', ['modal' => 'create']) }}"
                                class="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center w-full sm:w-auto">
                                 <x-heroicon-o-plus class="w-4 h-4 mr-2" />
-                                Create New Sale
+                                Create Sale
                             </a>
-                        </div> -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <p class="text-sm font-medium text-gray-500">Sales Records</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($salesSummary['count'] ?? 0) }}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <p class="text-sm font-medium text-gray-500">Gross Amount</p>
+                        <p class="mt-2 text-3xl font-bold text-blue-600">PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <p class="text-sm font-medium text-gray-500">Collected</p>
+                        <p class="mt-2 text-3xl font-bold text-green-600">PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-5">
+                        <p class="text-sm font-medium text-gray-500">Outstanding</p>
+                        <p class="mt-2 text-3xl font-bold text-orange-600">PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
                     </div>
                 </div>
 
@@ -184,7 +214,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-6 py-12 text-center">
+                                        <td colspan="7" class="px-6 py-12 text-center">
                                             <div class="flex flex-col items-center">
                                                 <x-heroicon-o-shopping-cart class="w-16 h-16 text-gray-400 mb-4" />
                                                 <h3 class="text-lg font-medium text-gray-900 mb-2">No sales found</h3>
@@ -209,13 +239,12 @@
                         {{ $sales->appends(request()->query())->links('components.pagination') }}
                     </div>
                 @endif
-            </div>
-
 {{-- Modals --}}
 @include('broker.sales.partials.create-edit-modal')
 @include('broker.sales.partials.payment-modal')
 @include('broker.sales.partials.print-modal')
-@include('broker.sales.partials.show-modal')
+@include('broker.sales.partials.show-modal-polished')
+            </div>
 
 {{-- Hidden template for new sales detail rows (used by JavaScript) --}}
 <template id="sales-detail-row-template">
@@ -312,6 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeSalesForm({
             fishBoxes: @json($fishBoxes ?? []),
             fishTypes: @json($fishTypes ?? []),
+            fishPrices: @json($fishPriceMap ?? []),
             detailIndex: {{ count($salesDetails) }}
         });
     }

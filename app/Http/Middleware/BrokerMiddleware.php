@@ -16,7 +16,7 @@ class BrokerMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'broker'])) {
+        if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isBroker())) {
             return $next($request);
         }
 

@@ -1,22 +1,50 @@
 @extends('layouts.broker')
 
 @php
-    $breadcrumbs = [
-        ['title' => 'Fishboxes Management']
+    $currentTab = $currentTab ?? request('tab', 'fishBoxes');
+
+    $tabTitles = [
+        'fishBoxes' => 'Fish Boxes',
+        'fishTypes' => 'Fish Types',
+        'fishPrices' => 'Fish Prices',
     ];
+
+    $breadcrumbs = [
+        ['title' => 'Inventory & Pricing']
+    ];
+
+    if (isset($tabTitles[$currentTab])) {
+        $breadcrumbs[] = ['title' => $tabTitles[$currentTab]];
+    }
+
+    $inventoryModalBreadcrumbs = [
+        'create' => [
+            'fishBoxes' => 'Add Fish Box',
+            'fishTypes' => 'Add Fish Type',
+            'fishPrices' => 'Add Fish Price',
+        ],
+        'edit' => [
+            'fishBoxes' => 'Edit Fish Box',
+            'fishTypes' => 'Edit Fish Type',
+            'fishPrices' => 'Edit Fish Price',
+        ],
+    ];
+
+    if (request()->filled('modal') && isset($inventoryModalBreadcrumbs[request('modal')][$currentTab])) {
+        $breadcrumbs[] = ['title' => $inventoryModalBreadcrumbs[request('modal')][$currentTab]];
+    }
 @endphp
 
 @section('content')
 <!-- Meta tags for QR scanner functionality -->
 <meta name="fish-box-update-url" content="{{ route('broker.fish-boxes.return-via-qr') }}">
 
-<div class="w-full">
+<div class="relative w-full workspace-modal-host">
                 <!-- Page Header -->
                 <div class="mb-8">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 class="text-3xl font-bold text-gray-900">Fishboxes Management</h1>
-                            <p class="text-gray-600 mt-2">Manage your fish boxes and fish types inventory</p>
+                            <h1 class="text-3xl font-bold text-gray-900">Inventory & Pricing</h1>
                         </div>
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                             <!-- Scan QR Button -->
@@ -47,21 +75,31 @@
                                     <span>Fish Types</span>
                                 </div>
                             </a>
+                            <a href="{{ route('broker.inventory.index') }}?tab=fishPrices"
+                               class="whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($currentTab ?? request('tab')) === 'fishPrices' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <div class="flex items-center space-x-2">
+                                    <x-heroicon-o-currency-dollar class="w-5 h-5" />
+                                    <span>Fish Prices</span>
+                                </div>
+                            </a>
                         </nav>
                     </div>
                 </div>
 
                 <!-- Tab Content -->
-                <div class="tab-content">
-                    @if(($currentTab ?? request('tab', 'fishBoxes')) === 'fishBoxes')
+                <div class="tab-content" data-inventory-tab-content>
+                    @if($currentTab === 'fishBoxes')
                         @include('broker.inventory.fish-boxes')
-                    @elseif(($currentTab ?? request('tab')) === 'fishTypes')
+                    @elseif($currentTab === 'fishTypes')
                         @include('broker.inventory.fish-types', ['fishTypes' => $fishTypes ?? collect()])
+                    @elseif($currentTab === 'fishPrices')
+                        @include('broker.inventory.fish-prices')
                     @endif
                 </div>
             </div>
 <!-- Inventory page specific JS -->
 <script src="{{ asset('js/inventory.js') }}" defer></script>
+<script src="{{ asset('js/inventory-async.js') }}" defer></script>
 <script src="{{ asset('js/qr-code.js') }}" defer></script>
 
 <!-- QR Scanner Scripts -->

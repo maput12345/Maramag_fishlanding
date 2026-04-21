@@ -53,6 +53,10 @@
 <div class="space-y-4">
     <!-- Broker Users Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="flex items-center justify-between gap-3 px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Broker Directory</h3>
+            <span class="text-sm text-gray-500">{{ $brokers->count() }} result{{ $brokers->count() === 1 ? '' : 's' }}</span>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50">
@@ -65,7 +69,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @foreach($brokers->whereNull('deleted_at') as $broker)
+                    @forelse($brokers as $broker)
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
@@ -74,7 +78,7 @@
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">{{ $broker->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $broker->address }}</div>
+                                    <div class="text-sm text-gray-500">{{ $broker->stall_name ?: $broker->address }}</div>
                                 </div>
                             </div>
                         </td>
@@ -133,7 +137,11 @@
                             </div>
                         </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No brokers matched the current filters.</td>
+                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

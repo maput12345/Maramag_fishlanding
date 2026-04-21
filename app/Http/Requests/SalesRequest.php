@@ -21,26 +21,21 @@ class SalesRequest extends FormRequest
      */
     public function rules(): array
     {
-        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
-
         $rules = [
             'sales_date' => 'required|date',
             'total_amount' => 'required|numeric|min:0',
             'buyer_name' => 'required|string|max:255',
-            'remarks' => 'nullable|string',
-            'details' => 'nullable|array',
+            'buyer_contact' => 'nullable|string|max:255',
             'sales_details' => 'required|array|min:1',
             'sales_details.*.box_id' => 'required|array|min:1',
-            'sales_details.*.box_id.*' => 'required|exists:fish_boxes,id',
+            'sales_details.*.box_id.*' => 'required|distinct|exists:fish_boxes,id',
             'sales_details.*.fish_type_id' => 'required|exists:fish_types,id',
-            'sales_details.*.item' => 'required|string|max:255',
+            'sales_details.*.item' => 'nullable|string|max:255',
             'sales_details.*.item_description' => 'nullable|string',
-            'sales_details.*.unit_price' => 'nullable|numeric|min:0',
+            'sales_details.*.unit_price' => 'required|numeric|min:0',
             'sales_details.*.quantity' => 'nullable|integer|min:1',
-            'sales_details.*.sub_total' => 'nullable|numeric|min:0',
+            'sales_details.*.sub_total' => 'required|numeric|min:0',
         ];
-
-
         return $rules;
     }
 

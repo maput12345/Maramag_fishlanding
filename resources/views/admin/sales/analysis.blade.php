@@ -66,7 +66,6 @@
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Active Brokers</p>
                     <p class="text-2xl font-bold text-gray-900">{{ $brokersWithSales->total() }}</p>
-                    <p class="text-xs text-blue-600">With sales</p>
                 </div>
             </div>
         </div>
@@ -80,7 +79,6 @@
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Total Sales</p>
                     <p class="text-2xl font-bold text-gray-900">{{ $brokersWithSales->sum(fn($broker) => $broker->sales->count()) }}</p>
-                    <p class="text-xs text-green-600">Transactions</p>
                 </div>
             </div>
         </div>
@@ -94,7 +92,6 @@
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Fishboxes Sold</p>
                     <p class="text-2xl font-bold text-gray-900">{{ number_format($totalFishBoxesSold) }}</p>
-                    <p class="text-xs text-orange-600">Total units</p>
                 </div>
             </div>
         </div>
