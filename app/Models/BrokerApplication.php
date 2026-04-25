@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 class BrokerApplication extends Model
 {
@@ -98,5 +99,54 @@ class BrokerApplication extends Model
             $this->last_name,
             $this->suffix,
         ])->filter()->implode(' ');
+    }
+
+    /**
+     * Determine whether this application can be treated as fully qualified.
+     *
+     * When review payload is provided, every requirement row must be present
+     * and explicitly marked as Verified.
+     */
+    public function canBeQualified(?array $reviewRequirementPayloads = null): bool
+    {
+        $requirements = $this->relationLoaded('requirements')
+            ? $this->requirements
+            : $this->requirements()->get();
+
+        if ($requirements->isEmpty()) {
+            return false;
+        }
+
+        if ($reviewRequirementPayloads === null) {
+            return $requirements->every(function (ApplicationRequirement $requirement) {
+                return $requirement->verification_status === 'Verified';
+            });
+        }
+
+        $submittedPayloads = collect($reviewRequirementPayloads)
+            ->filter(fn ($payload) => is_array($payload))
+            ->values();
+
+        if ($submittedPayloads->count() !== $requirements->count()) {
+            return false;
+        }
+
+        $submittedStatusesById = $submittedPayloads->mapWithKeys(function (array $payload) {
+            $requirementId = (int) ($payload['id'] ?? 0);
+
+            if ($requirementId <= 0) {
+                return [];
+            }
+
+            return [$requirementId => $payload['verification_status'] ?? null];
+        });
+
+        if ($submittedStatusesById->count() !== $requirements->count()) {
+            return false;
+        }
+
+        return $requirements->every(function (ApplicationRequirement $requirement) use ($submittedStatusesById) {
+            return $submittedStatusesById->get($requirement->id) === 'Verified';
+        });
     }
 }

@@ -184,3 +184,31 @@
     }
 }
 
+/* User Management filter layout */
+.user-filter-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: end;
+}
+
+.user-filter-layout .search-field,
+.user-filter-layout .status-field,
+.user-filter-layout .role-field,
+.user-filter-layout .buttons-field {
+    grid-column: span 1;
+}
+
+@media (min-width: 1024px) {
+    .user-filter-layout {
+        grid-template-columns: minmax(0, 2.5fr) minmax(220px, 1fr) minmax(220px, 1fr) auto;
+    }
+
+    .user-filter-layout--brokers {
+        grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr) auto;
+    }
+
+    .user-filter-layout .buttons-field {
+        white-space: nowrap;
+    }
+}

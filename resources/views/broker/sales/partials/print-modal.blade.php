@@ -13,7 +13,11 @@
                 </div>
             </x-slot:icon>
 
-            <div id="receipt-content" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div
+                id="receipt-content"
+                data-watermark-logo-url="{{ asset('image/logo.png') }}"
+                class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
                 <div class="mx-auto max-w-md bg-white">
                             {{-- Company Header --}}
                             <div class="text-center border-b border-gray-200 pb-4 mb-4">
@@ -44,9 +48,9 @@
                                 </div>
                             </div>
 
-                            {{-- Items --}}
+                            {{-- Commodities --}}
                             <div class="border-t border-gray-200 pt-4 mb-4">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-3">Items Sold</h3>
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">Commodities Sold</h3>
                                 <div class="space-y-3">
                                     @foreach($printingSales->salesDetails as $detail)
                                         <div class="bg-gray-50 rounded-lg p-3">
@@ -127,7 +131,7 @@
 
                             {{-- Footer --}}
                             <div class="border-t border-gray-200 pt-4 text-center">
-                                <p class="text-xs text-gray-500">Thank you for your business!</p>
+                                <p class="text-xs text-gray-500">Thank you for purchasing!</p>
                                 <p class="text-xs text-gray-400 mt-1">Generated on {{ now()->format('M d, Y g:i A') }}</p>
                             </div>
                         </div>

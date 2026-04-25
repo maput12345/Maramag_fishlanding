@@ -35902,7 +35902,7 @@ function getRecordTypeFromForm(form) {
   if (action.includes('sales') && action.includes('payments')) return 'Sale Payment';
   if (action.includes('sales')) return 'Sale';
   if (action.includes('fish-boxes') || action.includes('fish-box')) return 'Fish Box';
-  if (action.includes('fish-type')) return 'Fish Type';
+  if (action.includes('fish-type')) return 'Fish Name';
   if (action.includes('users')) return 'User';
   if (action.includes('brokers')) return 'Broker';
   if (action.includes('admins')) return 'Admin';

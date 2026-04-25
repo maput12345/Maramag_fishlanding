@@ -23,6 +23,7 @@ mix.js('resources/js/app.js', 'public/js')
    .postCss('resources/css/app.css', 'public/css')
    .postCss('resources/css/admin.css', 'public/css')
    .postCss('resources/css/filter-layout.css', 'public/css')
+   .copy('node_modules/qr-scanner/qr-scanner.legacy.min.js', 'public/js/qr-scanner-legacy.min.js')
    .copy('resources/css/background.png', 'public/css/background.png');
 
 if (mix.inProduction()) {

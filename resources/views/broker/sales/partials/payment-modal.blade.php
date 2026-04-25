@@ -1,6 +1,46 @@
 {{-- Add Payment Modal --}}
+@php
+    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
+        : false;
+@endphp
 @if(request('modal') === 'payment')
-    @if($saleForPayment)
+    @if($brokerViewReadOnly)
+        <x-app-modal
+            title="Support Actions Required"
+            subtitle="Broker payment actions are read-only until an admin explicitly enables support actions."
+            :close-url="$salesBaseUrl"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                    <x-heroicon-o-lock-closed class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            <div class="space-y-6 py-2">
+                <p class="text-sm text-gray-600">
+                    This broker workspace is currently in read-only mode. Enable support actions first if you need to record or adjust payments for this broker.
+                </p>
+
+                <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                    <button
+                       type="button"
+                       data-sales-modal-close
+                       data-close-url="{{ $salesBaseUrl }}"
+                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                        Back
+                    </button>
+                    <form method="POST" action="{{ route('admin.broker-view.support.enable') }}" class="sm:w-auto">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex w-full justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 sm:w-auto">
+                            Enable Support Actions
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </x-app-modal>
+    @elseif($saleForPayment)
         <x-app-modal
             title="Add Payment"
             subtitle="Record a payment and update the sale balance in one clean step."
@@ -30,10 +70,18 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('broker.sales-payments.store') }}" method="POST" class="space-y-6" x-data="paymentForm()" x-init="initializePaymentForm()" data-sales-async-form>
+                        <form action="{{ route('broker.sales-payments.store') }}"
+                              method="POST"
+                              class="space-y-6"
+                              x-data="paymentForm({
+                                  maxPaymentAmount: {{ (float) $saleForPayment->remaining_amount }},
+                                  initialPaidAmount: {{ (float) old('paid_amount', 0) }}
+                              })"
+                              x-init="initializePaymentForm()"
+                              data-sales-async-form>
                             @csrf
 
-                            <input type="hidden" name="sales_id" value="{{ request('sale') }}">
+                            <input type="hidden" name="sales_id" value="{{ $saleForPayment->id }}">
 
                             <div>
                                 <label for="paid_amount" class="block text-sm font-medium text-gray-700 mb-2">
@@ -41,7 +89,7 @@
                                 </label>
                                 <input type="number" id="paid_amount" name="paid_amount" required
                                        step="0.01" min="0.01" :max="maxPaymentAmount"
-                                       x-model="paidAmount"
+                                       x-model.number="paidAmount"
                                        @input="validatePaymentAmount()"
                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                        placeholder="0.00">

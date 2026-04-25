@@ -40,7 +40,12 @@ class UserManagementController extends Controller
             $role = 'all';
         }
 
-        $adminsQuery = User::with(['roles', 'employee'])
+        $adminsQuery = User::query()
+            ->select(['id', 'email', 'status', 'created_at'])
+            ->with([
+                'roles:id,role_name',
+                'employee:id,user_id,first_name,middle_name,last_name,position,contact_number',
+            ])
             ->whereHas('roles', function ($roleQuery) use ($adminRoles) {
                 $roleQuery->whereIn('role_name', $adminRoles);
             });
@@ -71,9 +76,23 @@ class UserManagementController extends Controller
             });
         }
 
-        $admins = $adminsQuery->get();
+        $admins = collect();
 
-        $brokersQuery = Broker::with('user.roles');
+        $brokersQuery = Broker::query()
+            ->select([
+                'id',
+                'user_id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'suffix',
+                'business_name',
+                'address',
+                'contact_number',
+                'stall_name',
+                'created_at',
+            ])
+            ->with('user:id,email,status');
 
         if ($status === UserStatusConstant::ACTIVE) {
             $brokersQuery->active();
@@ -97,21 +116,36 @@ class UserManagementController extends Controller
             });
         }
 
-        $brokers = $brokersQuery->get();
+        $brokers = collect();
 
-        // Get broker statistics using query scopes
+        if ($tab === 'admins') {
+            $admins = $adminsQuery->get();
+        } else {
+            $brokers = $brokersQuery->get();
+        }
+
+        // Get broker statistics using grouped counts
+        $brokerStatusCounts = Broker::query()
+            ->join('users', 'users.id', '=', 'brokers.user_id')
+            ->selectRaw('users.status, COUNT(*) as total')
+            ->groupBy('users.status')
+            ->pluck('total', 'users.status');
         $deletedBrokers = Broker::onlyTrashed()->count();
-        $deactivatedBrokers = Broker::deactivated()->count();
-        $activeBrokers = Broker::active()->count();
-        $totalBrokers = Broker::count();
+        $activeBrokers = (int) ($brokerStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
+        $deactivatedBrokers = (int) ($brokerStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
+        $totalBrokers = $activeBrokers + $deactivatedBrokers;
 
-        // Get admin statistics using query scopes
-        $employeeQuery = User::whereHas('roles', function ($roleQuery) use ($adminRoles) {
+        // Get admin statistics using grouped counts
+        $employeeQuery = User::query()->whereHas('roles', function ($roleQuery) use ($adminRoles) {
             $roleQuery->whereIn('role_name', $adminRoles);
         });
-        $deactivatedAdmins = (clone $employeeQuery)->deactivated()->count();
-        $activeAdmins = (clone $employeeQuery)->active()->count();
-        $totalAdmins = (clone $employeeQuery)->count();
+        $adminStatusCounts = (clone $employeeQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $activeAdmins = (int) ($adminStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
+        $deactivatedAdmins = (int) ($adminStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
+        $totalAdmins = $activeAdmins + $deactivatedAdmins;
 
         $count = [
             'deletedBrokers' => $deletedBrokers,
@@ -147,7 +181,7 @@ class UserManagementController extends Controller
      */
     public function edit($id): View
     {
-        $user = User::findOrFail($id);
+        $user = $this->getManagedUser((int) $id);
         $profile = $user->getProfile();
 
         return view('admin.users._form', [
@@ -157,6 +191,94 @@ class UserManagementController extends Controller
             'title' => 'Edit User',
             'description' => 'Update user information and profile details.'
         ]);
+    }
+
+    /**
+     * Start an admin-only broker view session.
+     */
+    public function startBrokerView(Broker $broker): RedirectResponse
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403, 'Only administrators can switch into broker view.');
+
+        if (!$broker->user || $broker->user->status !== UserStatusConstant::ACTIVE) {
+            return redirect()
+                ->route('admin.users.index', ['tab' => 'brokers'])
+                ->with('error', 'Only active broker accounts can be opened in broker view.');
+        }
+
+        Broker::startAdminImpersonation(
+            $broker,
+            route('admin.users.index', ['tab' => 'brokers'])
+        );
+
+        return redirect()
+            ->route('broker.dashboard')
+            ->with('success', "Now viewing broker workspace for {$broker->name}.");
+    }
+
+    /**
+     * Exit the current admin broker view session.
+     */
+    public function stopBrokerView(): RedirectResponse
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403, 'Only administrators can exit broker view.');
+
+        $brokerName = Broker::getImpersonatedBrokerForAdmin(Auth::user())?->name;
+        $returnUrl = Broker::getAdminImpersonationReturnUrl()
+            ?: route('admin.users.index', ['tab' => 'brokers']);
+
+        Broker::stopAdminImpersonation();
+
+        return redirect($returnUrl)
+            ->with('success', $brokerName
+                ? "Exited broker view for {$brokerName}."
+                : 'Exited broker view successfully.');
+    }
+
+    /**
+     * Enable write actions while an admin is inside broker view.
+     */
+    public function enableBrokerSupportActions(Request $request): RedirectResponse
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403, 'Only administrators can enable broker support actions.');
+
+        $broker = Broker::getImpersonatedBrokerForAdmin(Auth::user());
+
+        if (!$broker) {
+            return redirect()
+                ->route('admin.users.index', ['tab' => 'brokers'])
+                ->with('error', 'Enter broker view first before enabling support actions.');
+        }
+
+        Broker::enableAdminBrokerSupportActions();
+
+        $redirectTarget = $request->headers->get('referer') ?: route('broker.dashboard');
+
+        return redirect($redirectTarget)
+            ->with('warning', "Support Actions are now enabled for {$broker->name}. Changes here will affect the broker's records.");
+    }
+
+    /**
+     * Return the current admin broker view back to read-only mode.
+     */
+    public function disableBrokerSupportActions(Request $request): RedirectResponse
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403, 'Only administrators can disable broker support actions.');
+
+        $broker = Broker::getImpersonatedBrokerForAdmin(Auth::user());
+
+        if (!$broker) {
+            return redirect()
+                ->route('admin.users.index', ['tab' => 'brokers'])
+                ->with('error', 'Enter broker view first before changing support actions.');
+        }
+
+        Broker::disableAdminBrokerSupportActions();
+
+        $redirectTarget = $request->headers->get('referer') ?: route('broker.dashboard');
+
+        return redirect($redirectTarget)
+            ->with('success', "Broker view for {$broker->name} is read-only again.");
     }
 
     // ============== CRUD Operations ============== //
@@ -216,7 +338,7 @@ class UserManagementController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = User::findOrFail($id);
+            $user = $this->getManagedUser((int) $id);
 
             // Update user data
             $userData = [
@@ -245,13 +367,9 @@ class UserManagementController extends Controller
 
             DB::commit();
 
-            // Redirect to appropriate tab based on user role
-            $redirectUrl = route('admin.users.index');
-            if ($user->hasRole(RoleStatusConstant::BROKER)) {
-                $redirectUrl .= '?tab=brokers';
-            } else {
-                $redirectUrl .= '?tab=admins';
-            }
+            $redirectUrl = route('admin.users.index', [
+                'tab' => $this->resolveUserManagementTab($user),
+            ]);
 
             return redirect($redirectUrl)
                 ->with('success', 'User updated successfully!');
@@ -316,7 +434,7 @@ class UserManagementController extends Controller
     {
         try {
             DB::beginTransaction();
-            $user = User::findOrFail($id);
+            $user = $this->getManagedUser((int) $id);
             $user->deleteProfile();
             DB::commit();
             return redirect()->back()
@@ -326,5 +444,28 @@ class UserManagementController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to delete user. Please try again.');
         }
+    }
+
+    /**
+     * Load the user with the profile relations needed by admin forms and mutations.
+     */
+    private function getManagedUser(int $id): User
+    {
+        return User::query()
+            ->select(['id', 'email', 'status'])
+            ->with([
+                'roles:id,role_name',
+                'broker:id,user_id,first_name,middle_name,last_name,suffix,business_name,address,stall_name,contact_number',
+                'employee:id,user_id,first_name,middle_name,last_name,suffix,position,contact_number',
+            ])
+            ->findOrFail($id);
+    }
+
+    /**
+     * Resolve the listing tab to return to after a mutation.
+     */
+    private function resolveUserManagementTab(User $user): string
+    {
+        return $user->hasRole(RoleStatusConstant::BROKER) ? 'brokers' : 'admins';
     }
 }

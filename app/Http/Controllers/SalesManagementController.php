@@ -11,6 +11,7 @@ use App\Models\InventoryLog;
 use App\Repositories\SalesRepository;
 use App\Repositories\InventoryRepository;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -32,27 +33,25 @@ class SalesManagementController extends Controller
      *
      * @return View
      */
-    public function index(Request $request):View
+    public function index(Request $request): View|RedirectResponse
     {
-        $tab = $request->get('tab', 'analysis'); // Default to analysis tab
-
-        switch ($tab) {
-            case 'analysis':
-                $data = $this->getAnalysisData($request);
-                break;
-
-            case 'fishbox-tracking':
-                $data = $this->getFishboxTrackingData($request);
-                break;
-
-            default:
-                $data = $this->getAnalysisData($request);
-                break;
+        if ($request->get('tab') === 'fishbox-tracking') {
+            return redirect()->route('admin.sales.tracking', $request->except('tab'));
         }
 
-        $data['currentTab'] = $tab;
+        $data = $this->getAnalysisData($request);
 
         return view('admin.sales.index', $data);
+    }
+
+    /**
+     * Show the dedicated admin fish box tracking page.
+     */
+    public function fishboxTracking(Request $request): View
+    {
+        $data = $this->getFishboxTrackingData($request);
+
+        return view('admin.sales.tracking', $data);
     }
 
 
@@ -67,6 +66,7 @@ class SalesManagementController extends Controller
         $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
         $brokerSearch = $request->get('broker_search');
+        $receiptDate = $dateTo;
 
         // Get all brokers with their sales within the date range
         $brokersWithSales = $this->salesRepository->getBrokersWithSalesDetails($dateFrom, $dateTo, $brokerSearch);
@@ -79,7 +79,8 @@ class SalesManagementController extends Controller
             'totalFishBoxesSold',
             'dateFrom',
             'dateTo',
-            'brokerSearch'
+            'brokerSearch',
+            'receiptDate'
         );
     }
 
@@ -108,25 +109,24 @@ class SalesManagementController extends Controller
         // Get available actions for filter
         $actions = FishBoxStatusConstant::getStatusOnlyForAdmin();
 
-        // Get summary counts for today (only Returned and Missing)
-        $today = now()->format('Y-m-d');
-        $fullSummary = InventoryLog::getSummaryForDate($today);
-        $summary = [
-            'returned' => $fullSummary['returned'],
-            'missing' => $fullSummary['missing']
-        ];
-
         // Get filter parameters
         $action = $request->get('action');
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
 
-        // Get paginated inventory logs with filters
-        $inventoryLogs = InventoryLog::getPaginatedWithFilters($action, $dateFrom, $dateTo);
+        $currentStatusSummary = FishBox::getStatusSummary();
+        $summary = [
+            'returned' => $currentStatusSummary['returned'],
+            'missing' => $currentStatusSummary['missing'],
+        ];
+
+        $trackedFishBoxes = FishBox::getAdminTrackingStatuses($action, $dateFrom, $dateTo, 12, 'tracking_page');
+        $inventoryLogs = InventoryLog::getPaginatedWithFilters($action, $dateFrom, $dateTo, 12, 'history_page');
 
         return [
             'summary' => $summary,
             'actions' => $actions,
+            'trackedFishBoxes' => $trackedFishBoxes,
             'inventoryLogs' => $inventoryLogs,
         ];
     }

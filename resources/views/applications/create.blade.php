@@ -20,7 +20,6 @@
                 <span class="portal-brand-pill">LEEO Digital Services</span>
                 <div>
                     <p class="portal-topbar__title">Broker Application Portal</p>
-                    <p class="portal-topbar__meta">A polished follow-through from sign-in to document submission.</p>
                 </div>
             </div>
 
@@ -144,7 +143,8 @@
                                type="text"
                                value="{{ old('suffix') }}"
                                class="portal-input @error('suffix') portal-input--error @enderror"
-                               placeholder="Jr., Sr., III">
+                               placeholder="If none, leave it blank">
+                        <p class="portal-field__hint">If none, leave it blank.</p>
                         @error('suffix')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
@@ -256,64 +256,6 @@
                                            @required($isVisible && $isRequired)>
                                     <p class="portal-field__hint">Upload one clear file for this requirement. Maximum file size is 5MB.</p>
                                     @error('requirements.' . $requirementType->id . '.file')
-                                        <p class="portal-field__error">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <div class="portal-field">
-                                    <label for="requirements_{{ $requirementType->id }}_document_number" class="portal-field__label">Document Number</label>
-                                    <input id="requirements_{{ $requirementType->id }}_document_number"
-                                           name="requirements[{{ $requirementType->id }}][document_number]"
-                                           type="text"
-                                           value="{{ old('requirements.' . $requirementType->id . '.document_number') }}"
-                                           class="portal-input @error('requirements.' . $requirementType->id . '.document_number') portal-input--error @enderror"
-                                           placeholder="Enter reference number"
-                                           data-requirement-input
-                                           @disabled(!$isVisible)>
-                                    @error('requirements.' . $requirementType->id . '.document_number')
-                                        <p class="portal-field__error">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <div class="portal-field">
-                                    <label for="requirements_{{ $requirementType->id }}_issuing_office" class="portal-field__label">Issuing Office</label>
-                                    <input id="requirements_{{ $requirementType->id }}_issuing_office"
-                                           name="requirements[{{ $requirementType->id }}][issuing_office]"
-                                           type="text"
-                                           value="{{ old('requirements.' . $requirementType->id . '.issuing_office') }}"
-                                           class="portal-input @error('requirements.' . $requirementType->id . '.issuing_office') portal-input--error @enderror"
-                                           placeholder="Enter issuing office"
-                                           data-requirement-input
-                                           @disabled(!$isVisible)>
-                                    @error('requirements.' . $requirementType->id . '.issuing_office')
-                                        <p class="portal-field__error">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <div class="portal-field">
-                                    <label for="requirements_{{ $requirementType->id }}_issue_date" class="portal-field__label">Issue Date</label>
-                                    <input id="requirements_{{ $requirementType->id }}_issue_date"
-                                           name="requirements[{{ $requirementType->id }}][issue_date]"
-                                           type="date"
-                                           value="{{ old('requirements.' . $requirementType->id . '.issue_date') }}"
-                                           class="portal-input @error('requirements.' . $requirementType->id . '.issue_date') portal-input--error @enderror"
-                                           data-requirement-input
-                                           @disabled(!$isVisible)>
-                                    @error('requirements.' . $requirementType->id . '.issue_date')
-                                        <p class="portal-field__error">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <div class="portal-field">
-                                    <label for="requirements_{{ $requirementType->id }}_expiry_date" class="portal-field__label">Expiry Date</label>
-                                    <input id="requirements_{{ $requirementType->id }}_expiry_date"
-                                           name="requirements[{{ $requirementType->id }}][expiry_date]"
-                                           type="date"
-                                           value="{{ old('requirements.' . $requirementType->id . '.expiry_date') }}"
-                                           class="portal-input @error('requirements.' . $requirementType->id . '.expiry_date') portal-input--error @enderror"
-                                           data-requirement-input
-                                           @disabled(!$isVisible)>
-                                    @error('requirements.' . $requirementType->id . '.expiry_date')
                                         <p class="portal-field__error">{{ $message }}</p>
                                     @enderror
                                 </div>

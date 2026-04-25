@@ -188,9 +188,10 @@ class SalesController extends Controller
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
+        $initialPayment = $this->extractInitialPaymentData($validated);
 
         // Create sales with details using the model method
-        Sales::createSalesWithDetails($salesData, $salesDetails, $brokerId);
+        Sales::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale created successfully!');
@@ -303,22 +304,32 @@ class SalesController extends Controller
     public function storePayment(SalesPaymentRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
-        $userId = Auth::id();
-        $brokerId = Broker::getBrokerIdByUserId($userId);
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $sale = $brokerId
+            ? Sales::query()->where('broker_id', $brokerId)->find($validated['sales_id'])
+            : null;
 
-        DB::transaction(function () use ($validated) {
+        if (!$sale) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('The selected sale does not belong to your broker account.', 403);
+            }
+
+            return redirect()->route('broker.sales.sales')
+                ->with('error', 'The selected sale does not belong to your broker account.');
+        }
+
+        DB::transaction(function () use ($validated, $sale) {
             // Create the payment
             SalesPayment::create([
-                'sale_id' => $validated['sales_id'],
+                'sale_id' => $sale->id,
                 'paid_amount' => $validated['paid_amount'],
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method']
             ]);
 
             // Update the sales paid amount and status
-            $sale = Sales::findOrFail($validated['sales_id']);
             $sale->updatePaidAmount();
-             $sale->updatePaymentStatus();
+            $sale->updatePaymentStatus();
         });
 
         if ($this->shouldReturnJson($request)) {
@@ -560,6 +571,21 @@ class SalesController extends Controller
     private function shouldReturnJson(Request $request): bool
     {
         return $request->expectsJson() || $request->ajax();
+    }
+
+    private function extractInitialPaymentData(array $validated): ?array
+    {
+        $paidAmount = $validated['initial_paid_amount'] ?? null;
+
+        if ($paidAmount === null || $paidAmount === '') {
+            return null;
+        }
+
+        return [
+            'paid_amount' => $paidAmount,
+            'payment_date' => $validated['initial_payment_date'],
+            'payment_method' => $validated['initial_payment_method'],
+        ];
     }
 
     private function jsonSuccessResponse(string $message): JsonResponse

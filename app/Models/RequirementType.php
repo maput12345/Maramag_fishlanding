@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class RequirementType extends Model
 {
@@ -62,14 +63,14 @@ class RequirementType extends Model
             ],
             [
                 'requirement_name' => 'Barangay Clearance and Community Tax Certificate',
-                'description' => 'All Applicants: 1 original and 1 photocopy from the barangay where the applicant resides or the entity is registered.',
+                'description' => 'All Applicants: 1 original and 1 photocopy from the Barangay where the applicant resides or the entity is registered.',
                 'is_required' => true,
                 'audience' => self::APPLICANT_TYPE_BOTH,
                 'sort_order' => 20,
             ],
             [
                 'requirement_name' => 'Municipal Trial Court and Regional Trial Court Clearance',
-                'description' => 'Natural Person: 1 original and 1 photocopy issued by the Municipal Trial Court (MTC) or Regional Trial Court (RTC) with jurisdiction over the applicant\'s residence.',
+                'description' => 'Natural Person: 1 original and 1 photocopy issued by the appropriate court with jurisdiction over the residence of the applicant, from the Municipal Trial Court (MTC) or Regional Trial Court (RTC).',
                 'is_required' => true,
                 'audience' => self::APPLICANT_TYPE_NATURAL,
                 'sort_order' => 30,
@@ -83,7 +84,7 @@ class RequirementType extends Model
             ],
             [
                 'requirement_name' => 'Tax Clearance',
-                'description' => 'All Applicants: 1 original and 1 photocopy from the Municipal Treasurer\'s Office or the appropriate Local Government Unit.',
+                'description' => 'All Applicants: 1 original and 1 photocopy from the Municipal Treasurer\'s Office for payment of all taxes prescribed under the Local Government Code.',
                 'is_required' => true,
                 'audience' => self::APPLICANT_TYPE_BOTH,
                 'sort_order' => 50,
@@ -110,14 +111,14 @@ class RequirementType extends Model
                 'sort_order' => 80,
             ],
             [
-                'requirement_name' => 'Other Documents Required by the Municipal Market Committee',
-                'description' => 'Natural Person: upload any additional documents specifically requested by the Municipal Market Committee.',
+                'requirement_name' => 'Other Documents as May Be Required by the Municipal Market Committee',
+                'description' => 'Natural Person: upload any additional documents as may be required by the Municipal Market Committee.',
                 'is_required' => false,
                 'audience' => self::APPLICANT_TYPE_NATURAL,
                 'sort_order' => 90,
             ],
             [
-                'requirement_name' => 'Certificate of Incorporation or Partnership',
+                'requirement_name' => 'Certificate of Incorporation (Corporation) or Partnership',
                 'description' => 'Juridical Person: 1 original and 1 photocopy from the Securities and Exchange Commission (SEC).',
                 'is_required' => true,
                 'audience' => self::APPLICANT_TYPE_JURIDICAL,
@@ -183,6 +184,75 @@ class RequirementType extends Model
     public static function officialChecklistNames(): array
     {
         return array_column(self::officialChecklistDefinitions(), 'requirement_name');
+    }
+
+    /**
+     * Return legacy requirement names that should be normalized in place.
+     *
+     * @return array<string, string>
+     */
+    public static function legacyRequirementNameMap(): array
+    {
+        return [
+            'Other Documents Required by the Municipal Market Committee'
+                => 'Other Documents as May Be Required by the Municipal Market Committee',
+            'Certificate of Incorporation or Partnership'
+                => 'Certificate of Incorporation (Corporation) or Partnership',
+        ];
+    }
+
+    /**
+     * Ensure the official checklist rows exist in the database.
+     */
+    public static function ensureOfficialChecklistTypesExist(): void
+    {
+        foreach (static::legacyRequirementNameMap() as $legacyName => $canonicalName) {
+            $legacyRequirementType = static::query()
+                ->where('requirement_name', $legacyName)
+                ->first();
+
+            if (!$legacyRequirementType) {
+                continue;
+            }
+
+            $canonicalRequirementType = static::query()
+                ->where('requirement_name', $canonicalName)
+                ->first();
+
+            if ($canonicalRequirementType) {
+                continue;
+            }
+
+            $legacyRequirementType->update([
+                'requirement_name' => $canonicalName,
+            ]);
+        }
+
+        foreach (self::officialChecklistDefinitions() as $definition) {
+            static::updateOrCreate(
+                ['requirement_name' => $definition['requirement_name']],
+                [
+                    'is_required' => $definition['is_required'],
+                    'description' => $definition['description'],
+                ]
+            );
+        }
+    }
+
+    /**
+     * Get the official checklist rows ordered by their configured sort order.
+     */
+    public static function officialChecklistTypes(): Collection
+    {
+        static::ensureOfficialChecklistTypesExist();
+
+        $definitions = static::officialChecklistMapByName();
+
+        return static::query()
+            ->whereIn('requirement_name', static::officialChecklistNames())
+            ->get()
+            ->sortBy(fn (self $requirementType) => $definitions[$requirementType->requirement_name]['sort_order'] ?? PHP_INT_MAX)
+            ->values();
     }
 
     /**

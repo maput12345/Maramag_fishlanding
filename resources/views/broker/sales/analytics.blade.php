@@ -13,7 +13,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">Sales Analytics</h1>
-                            <p class="text-gray-600 mt-2">Review sales activity, collections, and top-performing items from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
+                            <p class="text-gray-600 mt-2">Review sales activity, collections, and top-performing commodities from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
                         </div>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
                                 </a>
                                 <button type="submit"
                                         class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                                    Apply
+                                    Search
                                 </button>
                             </div>
                         </div>
@@ -104,9 +104,9 @@
                     <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-purple-100 text-sm font-medium">Payment to Collect</p>
+                                <p class="text-purple-100 text-sm font-medium">Outstanding Balance</p>
                                 <p class="text-3xl font-bold">₱{{ number_format($totalBalance, 2) }}</p>
-                                <p class="text-purple-100 text-sm mt-1">Outstanding balance</p>
+                                <p class="text-purple-100 text-sm mt-1">Outstanding Balance</p>
                             </div>
                             <div class="w-12 h-12 bg-purple-400 rounded-lg flex items-center justify-center">
                                 <x-heroicon-o-currency-dollar class="w-6 h-6" />
@@ -120,7 +120,7 @@
                             <div>
                                 <p class="text-orange-100 text-sm font-medium">Total Fish Boxes</p>
                                 <p class="text-3xl font-bold">{{ number_format($totalFishBoxes) }}</p>
-                                <p class="text-orange-100 text-sm mt-1">Items sold</p>
+                                <p class="text-orange-100 text-sm mt-1">Commodities sold</p>
                             </div>
                             <div class="w-12 h-12 bg-orange-400 rounded-lg flex items-center justify-center">
                                 <x-heroicon-o-cube class="w-6 h-6" />
@@ -172,7 +172,7 @@
                     <!-- Top Selling Items -->
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Top Selling Items</h3>
+                            <h3 class="text-lg font-semibold text-gray-900">Top Selling Commodities</h3>
                             <div class="text-sm text-gray-500">Period: {{ \Carbon\Carbon::parse($dateFrom)->format('M d') }} - {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}</div>
                         </div>
                         <div class="space-y-4">
@@ -222,7 +222,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>

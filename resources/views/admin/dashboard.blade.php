@@ -40,10 +40,10 @@
             </div>
         </a>
 
-        <a href="{{ route('admin.sales.index', ['tab' => 'fishbox-tracking']) }}" class="metric-card metric-card--warning">
+        <a href="{{ route('admin.sales.tracking') }}" class="metric-card metric-card--warning">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Boxes Missing</p>
+                    <p class="metric-card__eyebrow">Current Missing Boxes</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxesMissing) }}</p>
                 </div>
                 <span class="metric-card__icon">
@@ -52,10 +52,10 @@
             </div>
         </a>
 
-        <a href="{{ route('admin.sales.index', ['tab' => 'fishbox-tracking']) }}" class="metric-card metric-card--neutral">
+        <a href="{{ route('admin.sales.tracking') }}" class="metric-card metric-card--neutral">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Boxes Returned</p>
+                    <p class="metric-card__eyebrow">Currently Returned Boxes</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxesReturned) }}</p>
                 </div>
                 <span class="metric-card__icon">
@@ -70,7 +70,7 @@
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Top Fish Types Sold</h3>
+                        <h3 class="panel-card__title">Top Fish Names Sold</h3>
                     </div>
                 </div>
 
@@ -90,7 +90,7 @@
                     @empty
                         <div class="empty-state">
                             <x-heroicon-o-archive-box class="heroicon" />
-                            <p class="text-sm">No fish types sold yet.</p>
+                            <p class="text-sm">No fish names sold yet.</p>
                         </div>
                     @endforelse
                 </div>
@@ -130,5 +130,46 @@
             </div>
         </section>
     </div>
+
+    <section class="panel-card mt-6">
+        <div class="panel-card__inner">
+            <div class="panel-card__header">
+                <div>
+                    <h3 class="panel-card__title">Current Missing Boxes</h3>
+                    <p class="panel-card__hint">See which broker currently owns each missing fish box.</p>
+                </div>
+                <a href="{{ route('admin.sales.tracking', ['action' => 'Missing']) }}" class="panel-card__action">Open Tracking</a>
+            </div>
+
+            <div class="activity-list">
+                @forelse($currentMissingBoxes as $missingBox)
+                    <div class="activity-row">
+                        <div class="activity-row__icon">
+                            <x-heroicon-o-exclamation-triangle class="w-4 h-4" />
+                        </div>
+                        <div class="activity-row__body">
+                            <p class="activity-row__title">{{ $missingBox->name }}</p>
+                            <p class="activity-row__detail">
+                                {{ $missingBox->fish_type_name ?? 'Unknown Fish Name' }}
+                                • {{ $missingBox->broker?->name ?? 'Unknown Broker' }}
+                                @if($missingBox->broker?->stall_name)
+                                    • {{ $missingBox->broker->stall_name }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="activity-row__value">
+                            <p class="activity-row__amount text-red-600">Missing</p>
+                            <p class="activity-row__detail">{{ $missingBox->updated_at->format('M d, Y H:i') }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">
+                        <x-heroicon-o-shield-check class="heroicon" />
+                        <p class="text-sm">No boxes are currently marked missing.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
 </div>
 @endsection

@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Broker;
+use App\Models\FishBox;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Validator;
 
 class SalesRequest extends FormRequest
 {
@@ -26,6 +30,9 @@ class SalesRequest extends FormRequest
             'total_amount' => 'required|numeric|min:0',
             'buyer_name' => 'required|string|max:255',
             'buyer_contact' => 'nullable|string|max:255',
+            'initial_paid_amount' => 'nullable|required_with:initial_payment_date,initial_payment_method|numeric|min:0.01',
+            'initial_payment_date' => 'nullable|required_with:initial_paid_amount,initial_payment_method|date',
+            'initial_payment_method' => 'nullable|required_with:initial_paid_amount,initial_payment_date|string|max:255',
             'sales_details' => 'required|array|min:1',
             'sales_details.*.box_id' => 'required|array|min:1',
             'sales_details.*.box_id.*' => 'required|distinct|exists:fish_boxes,id',
@@ -36,7 +43,81 @@ class SalesRequest extends FormRequest
             'sales_details.*.quantity' => 'nullable|integer|min:1',
             'sales_details.*.sub_total' => 'required|numeric|min:0',
         ];
+
         return $rules;
+    }
+
+    /**
+     * Ensure every submitted fish box belongs to the authenticated broker.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $boxIds = collect($this->input('sales_details', []))
+                ->flatMap(function ($detail): array {
+                    if (!is_array($detail)) {
+                        return [];
+                    }
+
+                    $boxIds = $detail['box_id'] ?? [];
+
+                    return is_array($boxIds) ? $boxIds : [$boxIds];
+                })
+                ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+                ->map(fn ($boxId): int => (int) $boxId)
+                ->unique()
+                ->values();
+
+            if ($boxIds->isEmpty()) {
+                return;
+            }
+
+            $brokerId = $this->resolveCurrentBrokerId();
+
+            if (!$brokerId) {
+                $validator->errors()->add('sales_details', 'Only broker accounts with an active broker profile can record sales.');
+                return;
+            }
+
+            $existingBoxCount = FishBox::query()
+                ->whereIn('id', $boxIds->all())
+                ->count();
+
+            if ($existingBoxCount !== $boxIds->count()) {
+                return;
+            }
+
+            $ownedBoxCount = FishBox::query()
+                ->where('broker_id', $brokerId)
+                ->whereIn('id', $boxIds->all())
+                ->count();
+
+            if ($ownedBoxCount !== $boxIds->count()) {
+                $validator->errors()->add('sales_details', 'One or more selected fish boxes do not belong to your broker account.');
+            }
+
+            $initialPaidAmount = $this->input('initial_paid_amount');
+
+            if ($initialPaidAmount === null || $initialPaidAmount === '') {
+                return;
+            }
+
+            $totalAmount = (float) $this->input('total_amount', 0);
+
+            if ((float) $initialPaidAmount > $totalAmount) {
+                $validator->errors()->add('initial_paid_amount', 'Initial payment cannot exceed the total sale amount.');
+            }
+        });
+    }
+
+    /**
+     * Resolve the broker profile for the authenticated user.
+     */
+    private function resolveCurrentBrokerId(): ?int
+    {
+        $userId = Auth::id();
+
+        return $userId ? Broker::getBrokerIdByUserId($userId) : null;
     }
 
     /**
@@ -56,6 +137,13 @@ class SalesRequest extends FormRequest
             'buyer_name.max' => 'Buyer name cannot exceed 255 characters.',
             'buyer_contact.required' => 'Please enter the buyer contact.',
             'buyer_contact.max' => 'Buyer contact cannot exceed 255 characters.',
+            'initial_paid_amount.required_with' => 'Please enter the initial paid amount.',
+            'initial_paid_amount.numeric' => 'Initial paid amount must be a valid number.',
+            'initial_paid_amount.min' => 'Initial paid amount must be greater than 0.',
+            'initial_payment_date.required_with' => 'Please select the initial payment date.',
+            'initial_payment_date.date' => 'Please enter a valid initial payment date.',
+            'initial_payment_method.required_with' => 'Please select the initial payment method.',
+            'initial_payment_method.max' => 'Initial payment method cannot exceed 255 characters.',
             'sales_details.required' => 'Please add at least one sales detail.',
             'sales_details.min' => 'Please add at least one sales detail.',
             'sales_details.*.box_id.required' => 'Please select at least one fish box.',
@@ -88,6 +176,9 @@ class SalesRequest extends FormRequest
             'total_amount' => 'total amount',
             'buyer_name' => 'buyer name',
             'buyer_contact' => 'buyer contact',
+            'initial_paid_amount' => 'initial paid amount',
+            'initial_payment_date' => 'initial payment date',
+            'initial_payment_method' => 'initial payment method',
             'sales_details' => 'sales details',
             'sales_details.*.box_id' => 'fish box',
             'sales_details.*.fish_type_id' => 'fish type',

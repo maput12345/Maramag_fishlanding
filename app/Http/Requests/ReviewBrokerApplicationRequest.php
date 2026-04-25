@@ -41,6 +41,31 @@ class ReviewBrokerApplicationRequest extends FormRequest
                     break;
                 }
             }
+
+            if (
+                $this->input('application_status') === 'Qualified'
+                && !$application->canBeQualified($this->input('requirements', []))
+            ) {
+                $validator->errors()->add(
+                    'application_status',
+                    'All application requirements must be marked Verified before the application can be qualified.'
+                );
+            }
+
+            if ($this->input('application_status') !== 'Qualified') {
+                return;
+            }
+
+            $opening = $application->relationLoaded('applicationOpening')
+                ? $application->applicationOpening
+                : $application->applicationOpening()->first(['id', 'bidding_date', 'bidding_location']);
+
+            if (!$opening?->bidding_date || blank($opening->bidding_location)) {
+                $validator->errors()->add(
+                    'application_status',
+                    'Set the bidding date and bidding location on the application opening before qualifying this applicant.'
+                );
+            }
         });
     }
 }

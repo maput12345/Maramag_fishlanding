@@ -186,7 +186,20 @@ c("Image load error"):b()};a.addEventListener("load",d);a.addEventListener("erro
 /******/ 	
 /******/ 	/* webpack/runtime/publicPath */
 /******/ 	(() => {
-/******/ 		__webpack_require__.p = "/";
+/******/ 		var scriptUrl;
+/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
+/******/ 		var document = __webpack_require__.g.document;
+/******/ 		if (!scriptUrl && document) {
+/******/ 			if (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT") scriptUrl = document.currentScript.src;
+/******/ 			if (!scriptUrl) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				if (scripts.length) scriptUrl = scripts[scripts.length - 1].src;
+/******/ 			}
+/******/ 		}
+/******/ 		if (scriptUrl) {
+/******/ 			scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/js\/[^\/]+$/, "/");
+/******/ 		}
+/******/ 		__webpack_require__.p = scriptUrl || "/";
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/jsonp chunk loading */
@@ -306,6 +319,10 @@ var QRScanner = /*#__PURE__*/function () {
     this.isProcessing = false;
     this.modal = null;
     this.isModalCreated = false;
+    this.keepScanning = false;
+    this.restartTimeout = null;
+    this.lastSuccessfulQrCode = null;
+    this.lastSuccessfulAt = null;
   }
 
   /**
@@ -315,6 +332,7 @@ var QRScanner = /*#__PURE__*/function () {
     key: "openModal",
     value: function openModal() {
       this.createModal();
+      this.keepScanning = true;
       if (this.modal) {
         this.modal.classList.remove('hidden');
       }
@@ -327,6 +345,8 @@ var QRScanner = /*#__PURE__*/function () {
     key: "closeModal",
     value: function closeModal() {
       var _this = this;
+      this.keepScanning = false;
+      this.clearRestartTimeout();
       this.stopScanner();
       if (this.modal) {
         this.modal.classList.add('hidden');
@@ -406,7 +426,7 @@ var QRScanner = /*#__PURE__*/function () {
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              if (!this.isProcessing) {
+              if (!this.isProcessing && this.keepScanning) {
                 _context.n = 1;
                 break;
               }
@@ -651,37 +671,108 @@ var QRScanner = /*#__PURE__*/function () {
     }
 
     /**
+     * Clear any pending scanner restart.
+     */
+  }, {
+    key: "clearRestartTimeout",
+    value: function clearRestartTimeout() {
+      if (this.restartTimeout) {
+        clearTimeout(this.restartTimeout);
+        this.restartTimeout = null;
+      }
+    }
+
+    /**
+     * Prevent the same just-returned QR code from being scanned again immediately.
+     */
+  }, {
+    key: "isDuplicateSuccessfulScan",
+    value: function isDuplicateSuccessfulScan(qrCode) {
+      return this.lastSuccessfulQrCode === qrCode && this.lastSuccessfulAt !== null && Date.now() - this.lastSuccessfulAt < 4000;
+    }
+
+    /**
+     * Remember the last successful QR scan.
+     */
+  }, {
+    key: "markSuccessfulScan",
+    value: function markSuccessfulScan(qrCode) {
+      this.lastSuccessfulQrCode = qrCode;
+      this.lastSuccessfulAt = Date.now();
+    }
+
+    /**
+     * Update scanner status area.
+     */
+  }, {
+    key: "updateStatusMessage",
+    value: function updateStatusMessage(html) {
+      var statusElement = document.getElementById('qr-status');
+      if (statusElement) {
+        statusElement.innerHTML = html;
+      }
+    }
+
+    /**
+     * Restart scanning after a successful return while keeping the modal open.
+     */
+  }, {
+    key: "restartScannerAfterSuccess",
+    value: function restartScannerAfterSuccess(message) {
+      var _this4 = this;
+      if (!this.keepScanning || !this.modal || this.modal.classList.contains('hidden')) {
+        return;
+      }
+      this.updateStatusMessage("\n            <div class=\"text-center\">\n                <div class=\"flex items-center justify-center space-x-2 mb-2\">\n                    <div class=\"w-2 h-2 bg-green-500 rounded-full animate-pulse\"></div>\n                    <p class=\"text-green-600 font-medium\">Return successful</p>\n                </div>\n                <p class=\"text-gray-600 text-sm\">".concat(message, "</p>\n                <p class=\"mt-1 text-xs text-gray-500\">Ready to scan the next fish box...</p>\n            </div>\n        "));
+      this.clearRestartTimeout();
+      this.restartTimeout = setTimeout(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
+            case 0:
+              _this4.restartTimeout = null;
+              if (!_this4.keepScanning || !_this4.modal || _this4.modal.classList.contains('hidden')) {
+                return _context4.a(2);
+              }
+              _context4.n = 1;
+              return _this4.startScanner();
+            case 1:
+              return _context4.a(2);
+          }
+        }, _callee4);
+      })), 900);
+    }
+
+    /**
      * Handle scan result
      */
   }, {
     key: "handleScanResult",
     value: function handleScanResult(qrCode) {
-      var _this4 = this;
+      var _this5 = this;
       // Prevent multiple processing
-      if (this.isProcessing) {
+      if (this.isProcessing || this.isDuplicateSuccessfulScan(qrCode)) {
         return;
       }
       this.isProcessing = true;
+      this.clearRestartTimeout();
 
       // Stop scanner immediately
       this.stopScanner();
 
       // Show processing message
-      var statusElement = document.getElementById('qr-status');
-      if (statusElement) {
-        statusElement.innerHTML = "\n                <div class=\"text-center\">\n                    <div class=\"flex items-center justify-center space-x-2 mb-2\">\n                        <div class=\"animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600\"></div>\n                        <p class=\"text-blue-600 font-medium\">Processing QR Code...</p>\n                    </div>\n                    <div class=\"bg-blue-50 border border-blue-200 rounded-lg p-2\">\n                        <p class=\"text-xs text-blue-700 font-mono\">".concat(qrCode, "</p>\n                    </div>\n                </div>\n            ");
-      }
+      this.updateStatusMessage("\n            <div class=\"text-center\">\n                <div class=\"flex items-center justify-center space-x-2 mb-2\">\n                    <div class=\"animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600\"></div>\n                    <p class=\"text-blue-600 font-medium\">Processing QR Code...</p>\n                </div>\n                <div class=\"bg-blue-50 border border-blue-200 rounded-lg p-2\">\n                    <p class=\"text-xs text-blue-700 font-mono\">".concat(qrCode, "</p>\n                </div>\n            </div>\n        "));
 
       // Call backend handler
       if (window.qrBackendHandler && typeof window.qrBackendHandler.handleQRScanResult === 'function') {
         window.qrBackendHandler.handleQRScanResult(qrCode,
         // Success callback
         function (result) {
-          _this4.closeModal();
+          _this5.markSuccessfulScan(qrCode);
+          _this5.restartScannerAfterSuccess(result.message || 'Fish box returned successfully.');
         },
         // Error callback
         function (error) {
-          _this4.closeModal();
+          _this5.closeModal();
         });
       } else {
         this.closeModal();

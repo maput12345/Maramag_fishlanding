@@ -236,19 +236,23 @@ var QRBackendHandler = /*#__PURE__*/function () {
     value: function showSuccess(message) {
       if (typeof Swal !== 'undefined') {
         Swal.fire({
+          toast: true,
+          position: 'top-end',
           icon: 'success',
-          title: 'Success!',
-          text: message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#059669'
+          title: message,
+          showConfirmButton: false,
+          timer: 1800,
+          timerProgressBar: true
         });
       } else if (typeof window.Swal !== 'undefined') {
         window.Swal.fire({
+          toast: true,
+          position: 'top-end',
           icon: 'success',
-          title: 'Success!',
-          text: message,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#059669'
+          title: message,
+          showConfirmButton: false,
+          timer: 1800,
+          timerProgressBar: true
         });
       } else if (typeof toastr !== 'undefined') {
         toastr.success(message);

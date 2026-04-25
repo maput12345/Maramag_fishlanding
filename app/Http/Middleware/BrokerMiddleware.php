@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Broker;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -16,8 +17,42 @@ class BrokerMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isBroker())) {
+        if (!auth()->check()) {
+            abort(403, 'Access denied. Broker privileges required.');
+        }
+
+        if (auth()->user()->isBroker()) {
             return $next($request);
+        }
+
+        if (auth()->user()->isAdmin()) {
+            if (Broker::isAdminImpersonatingBroker(auth()->user())) {
+                $isReadOnlyBrokerView = Broker::isAdminBrokerViewReadOnly(auth()->user());
+                $isSafeMethod = in_array($request->getMethod(), ['GET', 'HEAD', 'OPTIONS'], true);
+
+                if ($isReadOnlyBrokerView && !$isSafeMethod) {
+                    $message = 'Broker view is read-only. Enable Support Actions before making broker changes.';
+
+                    if ($request->ajax() || $request->expectsJson() || $request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $message,
+                        ], 403);
+                    }
+
+                    $redirectTarget = $request->headers->get('referer') ?: route('broker.dashboard');
+
+                    return redirect()
+                        ->to($redirectTarget)
+                        ->with('error', $message);
+                }
+
+                return $next($request);
+            }
+
+            return redirect()
+                ->route('admin.users.index', ['tab' => 'brokers'])
+                ->with('info', 'Select a broker from User Management to enter broker view.');
         }
 
         abort(403, 'Access denied. Broker privileges required.');

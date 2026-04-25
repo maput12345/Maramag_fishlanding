@@ -7,15 +7,16 @@
     <section class="login-hero">
         <div class="brand-chip">Account Access</div>
         <p class="login-kicker">New User Setup</p>
-        <h1>Create a clean account for the operations workspace.</h1>
-        <p class="login-description">Registration is available for controlled setup, but your main production flow should still be managed by LEEO staff through the user management module.</p>
+        <h1>WELCOME TO MARAMAG FISH LANDING.</h1>
+        <p class="login-description">Once your account is created, you can submit your application when stalls become available. 
+All applications are subject to review and approval by the LEEO administrator.</p>
     </section>
 
     <section class="login-panel-wrap">
         <div class="login-card">
             <div class="login-card-header">
                 <h2>Create an applicant account</h2>
-                <p>Register first, then you can submit a broker application whenever LEEO opens a vacant stall.</p>
+                <p>Register to apply for a broker stall at Maramag Fish Landing.</p>
             </div>
 
             <form class="space-y-5" method="POST" action="{{ route('register') }}">

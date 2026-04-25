@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Constants\FishBoxStatusConstant;
+use App\Constants\SalesStatusConstant;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class FishBox extends Model
@@ -193,6 +198,23 @@ class FishBox extends Model
     }
 
     /**
+     * Select the broker-local box number up front to avoid per-row count lookups.
+     */
+    public function scopeWithBrokerBoxNumber(Builder $query): Builder
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->qualifyColumn('*'));
+        }
+
+        return $query->selectSub(function ($subQuery) {
+            $subQuery->from('fish_boxes as broker_boxes')
+                ->selectRaw('COUNT(*)')
+                ->whereColumn('broker_boxes.broker_id', 'fish_boxes.broker_id')
+                ->whereColumn('broker_boxes.id', '<=', 'fish_boxes.id');
+        }, 'broker_box_number');
+    }
+
+    /**
      * Create multiple reusable fish boxes and their first purchase cycle.
      */
     public static function createFishBoxes($fishTypeId, $quantity, $brokerId, ?float $costPrice = null, ?int $userId = null): array
@@ -214,12 +236,17 @@ class FishBox extends Model
     }
 
     /**
-     * Get paginated fish boxes with search and filter functionality.
+     * Build the base broker fish box query with optional filters.
      */
-    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $fishTypeId = null, int $perPage = 12, ?int $brokerId = null): LengthAwarePaginator
-    {
+    private static function buildFilteredFishBoxQuery(
+        ?string $search = null,
+        ?string $status = null,
+        ?int $fishTypeId = null,
+        ?int $brokerId = null
+    ): Builder {
         $query = static::with(['currentPurchase.fishType', 'broker.user'])
-            ->select('fish_boxes.*');
+            ->select('fish_boxes.*')
+            ->withBrokerBoxNumber();
 
         if ($search) {
             $normalizedSearch = preg_replace('/[^0-9]/', '', $search);
@@ -252,7 +279,177 @@ class FishBox extends Model
             $query->where('broker_id', $brokerId);
         }
 
-        return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate($perPage);
+        return $query;
+    }
+
+    /**
+     * Get paginated fish boxes with search and filter functionality.
+     */
+    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $fishTypeId = null, int $perPage = 12, ?int $brokerId = null): LengthAwarePaginator
+    {
+        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
+            ->orderBy('fish_boxes.created_at', 'desc')
+            ->orderBy('fish_boxes.id', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get the full filtered fish box set for broker bulk QR printing.
+     *
+     * @return Collection<int, array{id:int,name:string,fish_name:string,qr_code:string,status:string}>
+     */
+    public static function getFilteredForBulkQrPrint(
+        ?string $search = null,
+        ?string $status = null,
+        ?int $fishTypeId = null,
+        ?int $brokerId = null
+    ): Collection {
+        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
+            ->orderBy('fish_boxes.created_at', 'desc')
+            ->orderBy('fish_boxes.id', 'desc')
+            ->get()
+            ->map(static function (self $fishBox): array {
+                return [
+                    'id' => (int) $fishBox->id,
+                    'name' => $fishBox->name,
+                    'fish_name' => $fishBox->fish_type_name ?? 'Unassigned',
+                    'qr_code' => $fishBox->qr_code,
+                    'status' => $fishBox->status,
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * Get the latest default cost price for a broker fish type assignment.
+     */
+    public static function getDefaultCostPriceForBrokerFishType(int $brokerId, int $fishTypeId): ?float
+    {
+        $assignment = BrokerFishType::query()
+            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->with([
+                'latestPrice' => function ($query) {
+                    $query->select([
+                        'fish_prices.id',
+                        'fish_prices.broker_fish_type_id',
+                        'fish_prices.default_cost_price',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->where('fish_type_id', $fishTypeId)
+            ->first();
+
+        if (!$assignment || $assignment->latestPrice?->default_cost_price === null) {
+            return null;
+        }
+
+        return (float) $assignment->latestPrice->default_cost_price;
+    }
+
+    /**
+     * Build a fish-type to default-cost map for broker inventory forms.
+     *
+     * @return array<string, string>
+     */
+    public static function getDefaultCostMapForBroker(int $brokerId): array
+    {
+        return BrokerFishType::query()
+            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->with([
+                'latestPrice' => function ($query) {
+                    $query->select([
+                        'fish_prices.id',
+                        'fish_prices.broker_fish_type_id',
+                        'fish_prices.default_cost_price',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->get()
+            ->filter(fn (BrokerFishType $assignment): bool => $assignment->latestPrice?->default_cost_price !== null)
+            ->mapWithKeys(function (BrokerFishType $assignment): array {
+                return [
+                    (string) $assignment->fish_type_id => (string) $assignment->latestPrice->default_cost_price,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Count fish boxes that can be reused in today's bulk restock flow.
+     */
+    public static function countEligibleForBulkRestock(int $brokerId): int
+    {
+        return static::query()
+            ->where('broker_id', $brokerId)
+            ->whereIn('box_status', [
+                FishBoxStatusConstant::IN_STOCK,
+                FishBoxStatusConstant::RETURNED,
+            ])
+            ->count();
+    }
+
+    /**
+     * Get reusable boxes that can be selected for daily restocking.
+     */
+    public static function getEligibleForBulkRestock(int $brokerId): Collection
+    {
+        return static::query()
+            ->select('fish_boxes.*')
+            ->withBrokerBoxNumber()
+            ->with(['currentPurchase.fishType'])
+            ->where('broker_id', $brokerId)
+            ->whereIn('box_status', [
+                FishBoxStatusConstant::IN_STOCK,
+                FishBoxStatusConstant::RETURNED,
+            ])
+            ->orderBy('fish_boxes.id')
+            ->get();
+    }
+
+    /**
+     * Create a fresh purchase cycle for each selected reusable box.
+     */
+    public static function bulkRestock(
+        int $brokerId,
+        array $fishBoxIds,
+        int $fishTypeId,
+        float $costPrice,
+        int $userId
+    ): int {
+        $eligibleBoxes = static::query()
+            ->where('broker_id', $brokerId)
+            ->whereIn('id', $fishBoxIds)
+            ->whereIn('box_status', [
+                FishBoxStatusConstant::IN_STOCK,
+                FishBoxStatusConstant::RETURNED,
+            ])
+            ->orderBy('id')
+            ->get();
+
+        if ($eligibleBoxes->isEmpty()) {
+            return 0;
+        }
+
+        DB::transaction(function () use ($eligibleBoxes, $fishTypeId, $costPrice, $userId) {
+            foreach ($eligibleBoxes as $fishBox) {
+                FishBoxPurchase::createForBox(
+                    $fishBox->id,
+                    $fishTypeId,
+                    $costPrice,
+                    $userId
+                );
+
+                if ($fishBox->box_status !== FishBoxStatusConstant::IN_STOCK) {
+                    $fishBox->update([
+                        'box_status' => FishBoxStatusConstant::IN_STOCK,
+                    ]);
+                }
+            }
+        });
+
+        return $eligibleBoxes->count();
     }
 
     /**
@@ -261,9 +458,192 @@ class FishBox extends Model
     public static function getAvailableForSale(int $brokerId)
     {
         return static::with('currentPurchase.fishType')
+            ->withBrokerBoxNumber()
             ->where('box_status', FishBoxStatusConstant::IN_STOCK)
             ->where('broker_id', $brokerId)
             ->get();
+    }
+
+    /**
+     * Get grouped box-status totals for summary cards.
+     */
+    public static function getStatusSummary(?int $brokerId = null): array
+    {
+        $counts = static::query()
+            ->when($brokerId, function ($query) use ($brokerId) {
+                $query->where('broker_id', $brokerId);
+            })
+            ->selectRaw('box_status, COUNT(*) as total')
+            ->groupBy('box_status')
+            ->pluck('total', 'box_status');
+
+        $summary = [
+            'in_stock' => (int) ($counts[FishBoxStatusConstant::IN_STOCK] ?? 0),
+            'sold' => (int) ($counts[FishBoxStatusConstant::SOLD] ?? 0),
+            'returned' => (int) ($counts[FishBoxStatusConstant::RETURNED] ?? 0),
+            'missing' => (int) ($counts[FishBoxStatusConstant::MISSING] ?? 0),
+        ];
+
+        $summary['total'] = array_sum($summary);
+
+        return $summary;
+    }
+
+    /**
+     * Get the current admin tracking snapshot for returned and missing fish boxes.
+     */
+    public static function getAdminTrackingStatuses(
+        ?string $status = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null,
+        int $perPage = 12,
+        string $pageName = 'tracking_page'
+    ): LengthAwarePaginator {
+        $query = static::query()
+            ->select('fish_boxes.*')
+            ->withBrokerBoxNumber()
+            ->with([
+                'currentPurchase' => function ($purchaseQuery) {
+                    $purchaseQuery->select([
+                        'fish_box_purchases.id',
+                        'fish_box_purchases.fish_box_id',
+                        'fish_box_purchases.fish_type_id',
+                    ]);
+                },
+                'currentPurchase.fishType:id,name',
+                'broker:id,first_name,middle_name,last_name,suffix,stall_name',
+            ])
+            ->whereIn('box_status', FishBoxStatusConstant::getStatusOnlyForAdmin());
+
+        if ($status) {
+            $query->where('box_status', $status);
+        }
+
+        if ($dateFrom) {
+            try {
+                $query->where('fish_boxes.updated_at', '>=', Carbon::parse($dateFrom)->startOfDay());
+            } catch (\Throwable $exception) {
+                // Ignore malformed dates so filtering stays non-breaking.
+            }
+        }
+
+        if ($dateTo) {
+            try {
+                $query->where('fish_boxes.updated_at', '<=', Carbon::parse($dateTo)->endOfDay());
+            } catch (\Throwable $exception) {
+                // Ignore malformed dates so filtering stays non-breaking.
+            }
+        }
+
+        return $query
+            ->orderBy('fish_boxes.updated_at', 'desc')
+            ->orderBy('fish_boxes.id', 'desc')
+            ->paginate($perPage, ['*'], $pageName);
+    }
+
+    /**
+     * Get current missing boxes with broker ownership for the admin dashboard.
+     */
+    public static function getCurrentMissingBoxes(int $limit = 6)
+    {
+        return static::query()
+            ->select('fish_boxes.*')
+            ->withBrokerBoxNumber()
+            ->with([
+                'currentPurchase' => function ($purchaseQuery) {
+                    $purchaseQuery->select([
+                        'fish_box_purchases.id',
+                        'fish_box_purchases.fish_box_id',
+                        'fish_box_purchases.fish_type_id',
+                    ]);
+                },
+                'currentPurchase.fishType:id,name',
+                'broker:id,first_name,middle_name,last_name,suffix,stall_name',
+            ])
+            ->missing()
+            ->orderBy('fish_boxes.updated_at', 'desc')
+            ->orderBy('fish_boxes.id', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Build a driver-safe buyer full-name SQL expression.
+     */
+    private static function buyerNameExpression(string $table = 'buyers'): string
+    {
+        if (static::query()->getConnection()->getDriverName() === 'sqlite') {
+            return "TRIM(COALESCE({$table}.first_name, '')"
+                . " || CASE WHEN {$table}.middle_name IS NOT NULL AND {$table}.middle_name != '' THEN ' ' || {$table}.middle_name ELSE '' END"
+                . " || CASE WHEN {$table}.last_name IS NOT NULL AND {$table}.last_name != '' THEN ' ' || {$table}.last_name ELSE '' END)";
+        }
+
+        return "TRIM(CONCAT_WS(' ', {$table}.first_name, {$table}.middle_name, {$table}.last_name))";
+    }
+
+    /**
+     * Get the broker's current missing fish boxes with the latest buyer name.
+     */
+    public static function getBrokerMissingTracking(
+        int $brokerId,
+        ?string $search = null,
+        int $perPage = 12,
+        string $pageName = 'page'
+    ): LengthAwarePaginator {
+        $buyerNameExpression = static::buyerNameExpression();
+
+        $query = static::query()
+            ->select('fish_boxes.*')
+            ->withBrokerBoxNumber()
+            ->selectSub(function ($subQuery) use ($buyerNameExpression) {
+                $subQuery->from('sales_details')
+                    ->join('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
+                    ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
+                    ->leftJoin('buyers', 'buyers.id', '=', 'sales.buyer_id')
+                    ->selectRaw($buyerNameExpression)
+                    ->whereColumn('fish_box_purchases.fish_box_id', 'fish_boxes.id')
+                    ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses())
+                    ->orderByDesc('sales_details.id')
+                    ->limit(1);
+            }, 'last_buyer_name')
+            ->with([
+                'currentPurchase' => function ($purchaseQuery) {
+                    $purchaseQuery->select([
+                        'fish_box_purchases.id',
+                        'fish_box_purchases.fish_box_id',
+                        'fish_box_purchases.fish_type_id',
+                    ]);
+                },
+                'currentPurchase.fishType:id,name',
+            ])
+            ->where('fish_boxes.broker_id', $brokerId)
+            ->missing();
+
+        if ($search) {
+            $normalizedSearch = preg_replace('/[^0-9]/', '', $search);
+
+            $query->where(function (Builder $trackingQuery) use ($search, $normalizedSearch, $buyerNameExpression) {
+                $trackingQuery->where('fish_boxes.qr_code', 'like', '%' . $search . '%')
+                    ->orWhereHas('currentPurchase.fishType', function ($fishTypeQuery) use ($search) {
+                        $fishTypeQuery->where('name', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('salesDetails.sale.buyer', function ($buyerQuery) use ($search, $buyerNameExpression) {
+                        $buyerQuery->whereRaw("{$buyerNameExpression} like ?", ['%' . $search . '%']);
+                    });
+
+                if ($normalizedSearch !== '') {
+                    $trackingQuery->orWhereRaw(
+                        '(SELECT COUNT(*) FROM fish_boxes AS broker_boxes WHERE broker_boxes.broker_id = fish_boxes.broker_id AND broker_boxes.id <= fish_boxes.id) = ?',
+                        [(int) $normalizedSearch]
+                    );
+                }
+            });
+        }
+
+        return $query
+            ->orderBy('fish_boxes.updated_at', 'desc')
+            ->orderBy('fish_boxes.id', 'desc')
+            ->paginate($perPage, ['*'], $pageName);
     }
 
     /**
@@ -329,6 +709,18 @@ class FishBox extends Model
     }
 
     /**
+     * Determine whether the active purchase cycle already has recorded sales.
+     */
+    public function currentPurchaseHasSalesHistory(): bool
+    {
+        if (!$this->currentPurchase) {
+            return false;
+        }
+
+        return $this->currentPurchase->salesDetails()->exists();
+    }
+
+    /**
      * Update fish boxes status for sold sales details.
      */
     public static function updateFishBoxesForSales(int $brokerId, array $salesDetails, int $userId): void
@@ -339,10 +731,24 @@ class FishBox extends Model
 
         foreach ($salesDetails as $detail) {
             $boxIds = is_array($detail['box_id'] ?? null) ? $detail['box_id'] : [$detail['box_id'] ?? null];
-            $boxIds = array_filter($boxIds);
+            $boxIds = array_values(array_filter(
+                array_unique(array_map('intval', $boxIds)),
+                fn (int $boxId): bool => $boxId > 0
+            ));
 
-            if (!empty($boxIds)) {
-                self::updateStatus($boxIds, FishBoxStatusConstant::SOLD, $userId);
+            if (empty($boxIds)) {
+                continue;
+            }
+
+            $ownedBoxIds = static::query()
+                ->where('broker_id', $brokerId)
+                ->whereIn('id', $boxIds)
+                ->pluck('id')
+                ->map(fn ($boxId): int => (int) $boxId)
+                ->all();
+
+            if (!empty($ownedBoxIds)) {
+                self::updateStatus($ownedBoxIds, FishBoxStatusConstant::SOLD, $userId);
             }
         }
     }
@@ -359,11 +765,36 @@ class FishBox extends Model
     }
 
     /**
+     * Automatically mark still-sold fish boxes as missing after the cutoff.
+     */
+    public static function markSoldBoxesMissingAtCutoff(?Carbon $cutoff = null, ?int $userId = null): int
+    {
+        $cutoff ??= now(config('app.timezone'))->setTime(11, 59, 0);
+
+        $eligibleBoxIds = static::query()
+            ->sold()
+            ->where('updated_at', '<=', $cutoff)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        if (empty($eligibleBoxIds)) {
+            return 0;
+        }
+
+        static::updateStatus($eligibleBoxIds, FishBoxStatusConstant::MISSING, $userId);
+
+        return count($eligibleBoxIds);
+    }
+
+    /**
      * Get a fish box by QR code and broker.
      */
     public static function getFishBoxByQrCode(string $qrCode, int $brokerId): ?self
     {
         return static::with('currentPurchase.fishType')
+            ->withBrokerBoxNumber()
             ->where('qr_code', $qrCode)
             ->where('broker_id', $brokerId)
             ->first();
@@ -375,6 +806,7 @@ class FishBox extends Model
     public static function getFishBoxByIdAndBroker(int $id, int $brokerId): self
     {
         return static::with('currentPurchase.fishType')
+            ->withBrokerBoxNumber()
             ->where('id', $id)
             ->where('broker_id', $brokerId)
             ->firstOrFail();
@@ -417,6 +849,18 @@ class FishBox extends Model
     }
 
     /**
+     * Expose the latest buyer name when it is selected in the base query.
+     */
+    public function getLastBuyerNameAttribute(): ?string
+    {
+        if (array_key_exists('last_buyer_name', $this->attributes)) {
+            return $this->attributes['last_buyer_name'] ?: null;
+        }
+
+        return $this->buyer_names;
+    }
+
+    /**
      * Check if the fish box can be marked as missing.
      */
     public function canBeMarkedAsMissing(): bool
@@ -433,10 +877,9 @@ class FishBox extends Model
      */
     public function canBeReturned(): bool
     {
-        return !in_array($this->status, [
-            FishBoxStatusConstant::IN_STOCK,
+        return in_array($this->status, [
+            FishBoxStatusConstant::SOLD,
             FishBoxStatusConstant::MISSING,
-            FishBoxStatusConstant::RETURNED,
         ], true);
     }
 

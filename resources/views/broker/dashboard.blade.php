@@ -44,7 +44,7 @@
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full flex flex-col justify-between">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-blue-100 text-sm font-medium">Collected Today</p>
+                                    <p class="text-blue-100 text-sm font-medium">Daily Collection</p>
                                     <p class="text-3xl font-bold">₱ {{ $salesToday }}</p>
                                     <p class="text-blue-100 text-sm">
                                         @if($paidAmountGrowthPercent > 0)
@@ -123,7 +123,7 @@
 
                     <!-- My Sales Performance -->
                     <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">My Sales Performance</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Daily Sales Performance</h3>
                         <div class="h-64 flex items-end justify-between space-x-2">
                             @php
                                 $maxSales = $dailySalesData->max('sales');
@@ -166,7 +166,7 @@
                     <!-- Top Selling Items -->
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900">Top Selling Items</h3>
+                            <h3 class="text-lg font-semibold text-gray-900">Top Selling Commodities</h3>
                             <div class="text-sm text-gray-500">All Time</div>
                         </div>
                         <div class="space-y-4">

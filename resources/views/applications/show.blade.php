@@ -1,93 +1,251 @@
 @extends('layouts.app')
 
-@section('body-class', 'login-shell theme-admin')
+@php
+    $applicationStatusTone = match ($application->application_status) {
+        'Qualified', 'Winner' => 'portal-status-badge--success',
+        'Needs Revision' => 'portal-status-badge--warning',
+        'Rejected', 'Not Selected' => 'portal-status-badge--danger',
+        default => 'portal-status-badge--neutral',
+    };
+@endphp
+
+@section('body-class', 'portal-shell theme-admin')
 
 @section('content')
-<div class="mx-auto max-w-5xl px-4 py-10">
-    <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <a href="{{ route('applications.index') }}" class="text-sm font-medium text-blue-600 hover:text-blue-700">← Back to application portal</a>
-        <div class="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">Application Record</p>
-                <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ $application->applicationOpening?->stall?->display_name ?? 'Stall Opening' }}</h1>
-                <p class="mt-2 text-sm text-slate-600">Submitted on {{ optional($application->submitted_at)->format('M d, Y h:i A') ?? 'N/A' }}</p>
+<div class="portal-page">
+    <div class="portal-stage portal-stage--form">
+        <div class="portal-topbar">
+            <div class="portal-topbar__brand">
+                <span class="portal-brand-pill">LEEO Digital Services</span>
+                <div>
+                    <p class="portal-topbar__title">Broker Application Portal</p>
+                    <p class="portal-topbar__meta">A consistent record view for your submitted stall application.</p>
+                </div>
             </div>
-            <span class="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">{{ $application->application_status }}</span>
-        </div>
-    </div>
 
-    <section class="mt-8 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
-        <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 class="text-xl font-semibold text-slate-900">Application Details</h2>
-            <dl class="mt-6 grid gap-4 md:grid-cols-2">
-                <div>
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ $application->name }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Business Name</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ $application->business_name ?: 'N/A' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Contact Number</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ $application->contact_number }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Review Date</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ optional($application->review_date)->format('M d, Y h:i A') ?? 'Pending' }}</dd>
-                </div>
-                <div class="md:col-span-2">
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Address</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ $application->address }}</dd>
-                </div>
-                <div class="md:col-span-2">
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Remarks</dt>
-                    <dd class="mt-1 text-sm text-slate-900">{{ $application->remarks ?: 'No review remarks yet.' }}</dd>
-                </div>
-            </dl>
+            <div class="portal-topbar__controls">
+                <a href="{{ route('applications.index') }}" class="portal-button portal-button--secondary">
+                    <span>Back to Portal</span>
+                </a>
+
+                <a href="{{ route('logout') }}"
+                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                   class="portal-button portal-button--ghost">
+                    <x-heroicon-o-arrow-right-on-rectangle class="portal-button__icon" />
+                    <span>Logout</span>
+                </a>
+            </div>
+
+            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
+                @csrf
+            </form>
         </div>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 class="text-xl font-semibold text-slate-900">Review Timeline</h2>
-            <div class="mt-6 space-y-4 text-sm text-slate-600">
-                <div class="rounded-2xl bg-slate-50 p-4">
-                    <p class="font-semibold text-slate-900">Reviewed By</p>
-                    <p class="mt-1">{{ $application->reviewedBy?->name ?? 'Waiting for LEEO review' }}</p>
+        <section class="portal-section-card">
+            <div class="portal-section-card__header">
+                <div>
+                    <p class="portal-section-card__eyebrow">Application Record</p>
+                    <h1 class="portal-section-card__title">{{ $application->applicationOpening?->stall?->display_name ?? 'Stall Opening' }}</h1>
+                    <p class="portal-section-card__description">Review the submitted details, document records, and current LEEO status for this application.</p>
                 </div>
-                <div class="rounded-2xl bg-slate-50 p-4">
-                    <p class="font-semibold text-slate-900">Winner Selection</p>
-                    <p class="mt-1">{{ $application->selectedBy?->name ?? 'Not yet selected' }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ optional($application->selected_at)->format('M d, Y h:i A') ?? 'Pending offline bidding result' }}</p>
+                <span class="portal-status-badge {{ $applicationStatusTone }}">{{ $application->application_status }}</span>
+            </div>
+
+            <div class="portal-application-card__meta">
+                <span>
+                    <x-heroicon-o-calendar-days class="h-4 w-4" />
+                    Submitted {{ optional($application->submitted_at)->format('M d, Y h:i A') ?? 'Pending timestamp' }}
+                </span>
+                <span>
+                    <x-heroicon-o-user class="h-4 w-4" />
+                    {{ $application->name }}
+                </span>
+                <span>
+                    <x-heroicon-o-document-text class="h-4 w-4" />
+                    {{ $application->requirements->count() }} requirement{{ $application->requirements->count() === 1 ? '' : 's' }} on record
+                </span>
+            </div>
+        </section>
+
+        <div class="portal-record-layout">
+            <section class="portal-section-card">
+                <div class="portal-section-card__header">
+                    <div>
+                        <p class="portal-section-card__eyebrow">Applicant Profile</p>
+                        <h2 class="portal-section-card__title">Application Details</h2>
+                        <p class="portal-section-card__description">This mirrors the information you submitted through the broker application form.</p>
+                    </div>
                 </div>
+
+                <div class="portal-form-grid portal-form-grid--requirement">
+                    <div class="portal-field">
+                        <label class="portal-field__label">Full Name</label>
+                        <div class="portal-input portal-record-value">{{ $application->name }}</div>
+                    </div>
+
+                    <div class="portal-field">
+                        <label class="portal-field__label">Business Name</label>
+                        <div class="portal-input portal-record-value">{{ $application->business_name ?: 'N/A' }}</div>
+                    </div>
+
+                    <div class="portal-field">
+                        <label class="portal-field__label">Contact Number</label>
+                        <div class="portal-input portal-record-value">{{ $application->contact_number ?: 'N/A' }}</div>
+                    </div>
+
+                    <div class="portal-field">
+                        <label class="portal-field__label">Review Date</label>
+                        <div class="portal-input portal-record-value">{{ optional($application->review_date)->format('M d, Y h:i A') ?? 'Pending' }}</div>
+                    </div>
+
+                    <div class="portal-field portal-field--wide">
+                        <label class="portal-field__label">Address</label>
+                        <div class="portal-input portal-record-value portal-record-value--multiline">{{ $application->address ?: 'N/A' }}</div>
+                    </div>
+
+                    <div class="portal-field portal-field--wide">
+                        <label class="portal-field__label">Remarks</label>
+                        <div class="portal-input portal-record-value portal-record-value--multiline">{{ $application->remarks ?: 'No review remarks yet.' }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="portal-section-card">
+                <div class="portal-section-card__header">
+                    <div>
+                        <p class="portal-section-card__eyebrow">Review Flow</p>
+                        <h2 class="portal-section-card__title">Review Timeline</h2>
+                        <p class="portal-section-card__description">Track who reviewed the application and whether a winner has already been recorded.</p>
+                    </div>
+                </div>
+
+                <div class="portal-detail-list portal-record-timeline">
+                    <div class="portal-detail-item">
+                        <div class="portal-detail-item__icon">
+                            <x-heroicon-o-user-circle class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="portal-detail-item__label">Reviewed By</p>
+                            <p class="portal-detail-item__value">{{ $application->reviewedBy?->name ?? 'Waiting for LEEO review' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="portal-detail-item">
+                        <div class="portal-detail-item__icon portal-detail-item__icon--gold">
+                            <x-heroicon-o-calendar-days class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="portal-detail-item__label">Review Date</p>
+                            <p class="portal-detail-item__value">{{ optional($application->review_date)->format('M d, Y h:i A') ?? 'Pending' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="portal-detail-item">
+                        <div class="portal-detail-item__icon">
+                            <x-heroicon-o-trophy class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="portal-detail-item__label">Winner Selection</p>
+                            <p class="portal-detail-item__value">{{ $application->selectedBy?->name ?? 'Not yet selected' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="portal-detail-item">
+                        <div class="portal-detail-item__icon portal-detail-item__icon--gold">
+                            <x-heroicon-o-clock class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="portal-detail-item__label">Decision Timestamp</p>
+                            <p class="portal-detail-item__value">{{ optional($application->selected_at)->format('M d, Y h:i A') ?? 'Pending offline bidding result' }}</p>
+                        </div>
+                    </div>
+                </div>
+
                 @if($application->broker)
-                    <div class="rounded-2xl bg-emerald-50 p-4 text-emerald-800">
-                        <p class="font-semibold">Broker account activated</p>
-                        <p class="mt-1">Assigned to {{ $application->broker->stall?->display_name ?? 'the winning stall' }}.</p>
+                    <div class="portal-inline-alert portal-inline-alert--success">
+                        Broker account activated and assigned to {{ $application->broker->stall?->display_name ?? 'the winning stall' }}.
                     </div>
                 @endif
-            </div>
+            </section>
         </div>
-    </section>
 
-    <section class="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h2 class="text-xl font-semibold text-slate-900">Submitted Requirements</h2>
-        <div class="mt-6 space-y-4">
-            @foreach($application->requirements as $requirement)
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-900">{{ $requirement->requirementType?->requirement_name }}</h3>
-                            <p class="mt-1 text-sm text-slate-600">Verification status: {{ $requirement->verification_status }}</p>
+        <section class="portal-section-card">
+            <div class="portal-section-card__header">
+                <div>
+                    <p class="portal-section-card__eyebrow">Submitted Documents</p>
+                    <h2 class="portal-section-card__title">Requirement Records</h2>
+                    <p class="portal-section-card__description">Each uploaded requirement keeps the same document metadata and verification status used during review.</p>
+                </div>
+                <span class="portal-count-pill">{{ $application->requirements->count() }} {{ $application->requirements->count() === 1 ? 'record' : 'records' }}</span>
+            </div>
+
+            <div class="portal-requirement-grid">
+                @forelse($application->requirements as $requirement)
+                    @php
+                        $verificationTone = match ($requirement->verification_status) {
+                            'Verified' => 'portal-status-badge--success',
+                            'Rejected' => 'portal-status-badge--danger',
+                            default => 'portal-status-badge--neutral',
+                        };
+                    @endphp
+
+                    <article class="portal-requirement-card">
+                        <div class="portal-requirement-card__header">
+                            <div>
+                                <div class="portal-requirement-card__badges">
+                                    <span class="portal-status-badge {{ $verificationTone }}">{{ $requirement->verification_status }}</span>
+                                </div>
+                                <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
+                                <p class="portal-requirement-card__description">
+                                    Uploaded {{ optional($requirement->uploaded_at)->format('M d, Y h:i A') ?? 'N/A' }}
+                                </p>
+                            </div>
+
+                            @if($requirement->file_url)
+                                <a href="{{ $requirement->file_url }}" target="_blank" rel="noopener" class="portal-button portal-button--secondary">
+                                    <span>View File</span>
+                                </a>
+                            @endif
                         </div>
-                        @if($requirement->file_url)
-                            <a href="{{ $requirement->file_url }}" target="_blank" rel="noopener" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white">
-                                View File
-                            </a>
-                        @endif
+
+                        <div class="portal-form-grid portal-form-grid--requirement">
+                            <div class="portal-field">
+                                <label class="portal-field__label">Document Number</label>
+                                <div class="portal-input portal-record-value">{{ $requirement->document_number ?: 'N/A' }}</div>
+                            </div>
+
+                            <div class="portal-field">
+                                <label class="portal-field__label">Issuing Office</label>
+                                <div class="portal-input portal-record-value">{{ $requirement->issuing_office ?: 'N/A' }}</div>
+                            </div>
+
+                            <div class="portal-field">
+                                <label class="portal-field__label">Issue Date</label>
+                                <div class="portal-input portal-record-value">{{ optional($requirement->issue_date)->format('M d, Y') ?? 'N/A' }}</div>
+                            </div>
+
+                            <div class="portal-field">
+                                <label class="portal-field__label">Expiry Date</label>
+                                <div class="portal-input portal-record-value">{{ optional($requirement->expiry_date)->format('M d, Y') ?? 'N/A' }}</div>
+                            </div>
+
+                            <div class="portal-field portal-field--wide">
+                                <label class="portal-field__label">Requirement Remarks</label>
+                                <div class="portal-input portal-record-value portal-record-value--multiline">{{ $requirement->remarks ?: 'No remarks recorded.' }}</div>
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="portal-empty portal-empty--wide">
+                        <div class="portal-empty__icon">
+                            <x-heroicon-o-document class="h-7 w-7" />
+                        </div>
+                        <h3 class="portal-empty__title">No requirement records found</h3>
+                        <p class="portal-empty__description">Uploaded requirement details will appear here once documents are attached to the application.</p>
                     </div>
-                </article>
-            @endforeach
-        </div>
-    </section>
+                @endforelse
+            </div>
+        </section>
+    </div>
 </div>
 @endsection

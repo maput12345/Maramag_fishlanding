@@ -83,6 +83,8 @@ class StoreBrokerApplicationRequest extends FormRequest
                 ->pluck('requirement_name')
                 ->all();
 
+            RequirementType::ensureOfficialChecklistTypesExist();
+
             $requiredTypes = RequirementType::whereIn('requirement_name', $requiredRequirementNames)
                 ->pluck('id', 'requirement_name');
 

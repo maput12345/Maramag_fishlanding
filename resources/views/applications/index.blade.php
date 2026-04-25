@@ -16,7 +16,6 @@
                 <span class="portal-brand-pill">LEEO Digital Services</span>
                 <div>
                     <p class="portal-topbar__title">Broker Application Portal</p>
-                    <p class="portal-topbar__meta">A seamless continuation of your sign-in workspace for stall applications.</p>
                 </div>
             </div>
 
@@ -53,7 +52,6 @@
                 <div>
                     <p class="portal-section-card__eyebrow">Available Openings</p>
                     <h2 class="portal-section-card__title">Open Stall Applications</h2>
-                    <p class="portal-section-card__description">Apply only to stalls that are currently opened by the LEEO office.</p>
                 </div>
                 <span class="portal-count-pill">{{ $openingsCount }} {{ $openingsCount === 1 ? 'opening' : 'openings' }}</span>
             </div>
@@ -109,7 +107,6 @@
                             <x-heroicon-o-building-storefront class="h-7 w-7" />
                         </div>
                         <h3 class="portal-empty__title">No stall openings are available right now</h3>
-                        <p class="portal-empty__description">Please check again once the LEEO office opens a vacant stall for applications.</p>
                     </div>
                 @endforelse
             </div>
@@ -120,7 +117,6 @@
                 <div>
                     <p class="portal-section-card__eyebrow">Application History</p>
                     <h2 class="portal-section-card__title">My Submitted Applications</h2>
-                    <p class="portal-section-card__description">Track the applications you already filed and monitor their review status from one place.</p>
                 </div>
                 <span class="portal-count-pill">{{ $applicationsCount }} {{ $applicationsCount === 1 ? 'submission' : 'submissions' }}</span>
             </div>
@@ -166,7 +162,6 @@
                         <x-heroicon-o-inbox class="h-7 w-7" />
                     </div>
                     <h3 class="portal-empty__title">No submitted applications yet</h3>
-                    <p class="portal-empty__description">Once you apply to an open stall, your application history and review updates will appear here.</p>
                     @if($openingsCount > 0)
                         <a href="#open-stalls" class="portal-button portal-button--secondary portal-empty__action">
                             <span>Browse Open Stalls</span>

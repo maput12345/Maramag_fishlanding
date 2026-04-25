@@ -3,6 +3,11 @@
         ['title' => 'Sales']
     ];
 
+    $topbarAction = [
+        'label' => 'Create Sale',
+        'url' => route('broker.sales.sales', ['modal' => 'create']),
+    ];
+
     $salesModalBreadcrumbs = [
         'create' => 'Create Sale',
         'edit' => 'Edit Sale',
@@ -26,32 +31,25 @@
                         <div class="flex-1">
                             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Sales</h1>
                         </div>
-                        <div class="flex space-x-3">
-                            <a href="{{ route('broker.sales.sales', ['modal' => 'create']) }}"
-                               class="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center w-full sm:w-auto">
-                                <x-heroicon-o-plus class="w-4 h-4 mr-2" />
-                                Create Sale
-                            </a>
-                        </div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                     <div class="bg-white rounded-xl shadow-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Sales Records</p>
-                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($salesSummary['count'] ?? 0) }}</p>
+                        <p class="summary-stat-value text-gray-900">{{ number_format($salesSummary['count'] ?? 0) }}</p>
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
-                        <p class="text-sm font-medium text-gray-500">Gross Amount</p>
-                        <p class="mt-2 text-3xl font-bold text-blue-600">PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                        <p class="text-sm font-medium text-gray-500">Sales Amount</p>
+                        <p class="summary-stat-value text-blue-600">PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
-                        <p class="text-sm font-medium text-gray-500">Collected</p>
-                        <p class="mt-2 text-3xl font-bold text-green-600">PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                        <p class="text-sm font-medium text-gray-500">Total Collection</p>
+                        <p class="summary-stat-value text-green-600">PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
-                        <p class="text-sm font-medium text-gray-500">Outstanding</p>
-                        <p class="mt-2 text-3xl font-bold text-orange-600">PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                        <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
+                        <p class="summary-stat-value text-orange-600">PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
                     </div>
                 </div>
 
@@ -118,7 +116,7 @@
                                 </a>
                                 <button type="submit"
                                         class="px-3 lg:px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                                    Apply
+                                    Search
                                 </button>
                             </div>
                         </div>
@@ -142,7 +140,7 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
@@ -252,11 +250,11 @@
         <div class="flex flex-wrap gap-4">
             <!-- Fish Type Selection -->
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Fish Type</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fish Name</label>
                 <select name="sales_details[INDEX][fish_type_id]"
                         class="fish-type-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required>
-                    <option value="">Select Fish Type</option>
+                    <option value="">Select Fish Name</option>
                     @foreach($fishTypes ?? [] as $fishType)
                         <option value="{{ $fishType->id }}">{{ $fishType->name }}</option>
                     @endforeach
@@ -269,7 +267,7 @@
                 <div class="fish-boxes-container space-y-1 max-h-32 overflow-y-auto">
                     <div class="fish-box-item mb-1">
                         <select class="fish-box-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 cursor-not-allowed" disabled>
-                            <option value="">Auto-selected</option>
+                            <option value="">Auto-select</option>
                         </select>
                         <input type="hidden" name="sales_details[INDEX][box_id][]" class="fish-box-hidden-input">
                     </div>
@@ -278,7 +276,7 @@
 
             <!-- Unit Price -->
             <div class="flex-1 min-w-[150px]">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Unit Price</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Price per Box</label>
                 <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
                        class="unit-price-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                        placeholder="0.00">
@@ -315,7 +313,13 @@
     </div>
 </template>
 
+<script>
+    window.salesQrScannerConfig = {
+        lookupUrlTemplate: @json(route('broker.fish-boxes.qr', ['qrCode' => '__QR_CODE__']))
+    };
+</script>
 <script src="{{ asset('js/print-receipt.js') }}" defer></script>
+<script src="{{ asset('js/qr-scanner-legacy.min.js') }}" defer></script>
 <script src="{{ asset('js/sales-qr-scanner.js') }}" defer></script>
 <script src="{{ asset('js/sales-form.js') }}" defer></script>
 <script>

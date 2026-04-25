@@ -76,12 +76,22 @@ class InventoryLog extends Model
      */
     public function scopeByDateRange(Builder $query, ?string $dateFrom = null, ?string $dateTo = null): Builder
     {
+        $createdAtColumn = $query->getModel()->qualifyColumn('created_at');
+
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
+            try {
+                $query->where($createdAtColumn, '>=', Carbon::parse($dateFrom)->startOfDay());
+            } catch (\Throwable $exception) {
+                // Ignore malformed dates so filter behavior remains non-breaking.
+            }
         }
 
         if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
+            try {
+                $query->where($createdAtColumn, '<=', Carbon::parse($dateTo)->endOfDay());
+            } catch (\Throwable $exception) {
+                // Ignore malformed dates so filter behavior remains non-breaking.
+            }
         }
 
         return $query;
@@ -92,7 +102,10 @@ class InventoryLog extends Model
      */
     public function scopeByDate(Builder $query, string $date): Builder
     {
-        return $query->whereDate('created_at', $date);
+        return $query->whereBetween($query->getModel()->qualifyColumn('created_at'), [
+            Carbon::parse($date)->startOfDay(),
+            Carbon::parse($date)->endOfDay(),
+        ]);
     }
 
     /**
@@ -126,20 +139,49 @@ class InventoryLog extends Model
      */
     public static function getSummaryForDate(string $date): array
     {
+        $counts = static::query()
+            ->byDate($date)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
         return [
-            'stocked' => static::byAction(FishBoxStatusConstant::IN_STOCK)->byDate($date)->count(),
-            'sold' => static::byAction(FishBoxStatusConstant::SOLD)->byDate($date)->count(),
-            'returned' => static::byAction(FishBoxStatusConstant::RETURNED)->byDate($date)->count(),
-            'missing' => static::byAction(FishBoxStatusConstant::MISSING)->byDate($date)->count(),
+            'stocked' => (int) ($counts[FishBoxStatusConstant::IN_STOCK] ?? 0),
+            'sold' => (int) ($counts[FishBoxStatusConstant::SOLD] ?? 0),
+            'returned' => (int) ($counts[FishBoxStatusConstant::RETURNED] ?? 0),
+            'missing' => (int) ($counts[FishBoxStatusConstant::MISSING] ?? 0),
         ];
     }
 
     /**
      * Get paginated inventory logs with filters.
      */
-    public static function getPaginatedWithFilters(?string $action, ?string $dateFrom, ?string $dateTo, int $perPage = 12): LengthAwarePaginator
+    public static function getPaginatedWithFilters(
+        ?string $action,
+        ?string $dateFrom,
+        ?string $dateTo,
+        int $perPage = 12,
+        string $pageName = 'page'
+    ): LengthAwarePaginator
     {
-        $query = static::with(['fishBoxPurchase.fishType', 'fishBoxPurchase.fishBox.broker', 'createdBy'])
+        $query = static::with([
+                'fishBoxPurchase:id,fish_box_id,fish_type_id',
+                'fishBoxPurchase.fishBox' => function ($fishBoxQuery) {
+                    $fishBoxQuery->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
+                        ->withBrokerBoxNumber()
+                        ->with([
+                            'currentPurchase' => function ($purchaseQuery) {
+                                $purchaseQuery->select([
+                                    'fish_box_purchases.id',
+                                    'fish_box_purchases.fish_box_id',
+                                    'fish_box_purchases.fish_type_id',
+                                ]);
+                            },
+                            'currentPurchase.fishType:id,name',
+                            'broker:id,first_name,middle_name,last_name,suffix,stall_id,stall_name',
+                        ]);
+                },
+            ])
             ->whereIn('status', [FishBoxStatusConstant::RETURNED, FishBoxStatusConstant::MISSING]);
 
         if ($action) {
@@ -148,7 +190,7 @@ class InventoryLog extends Model
 
         $query->byDateRange($dateFrom, $dateTo);
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+        return $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], $pageName);
     }
 
     /**
@@ -202,8 +244,8 @@ class InventoryLog extends Model
         $query = static::join('fish_box_purchases', 'fish_inventory.fish_box_purchase_id', '=', 'fish_box_purchases.id')
             ->join('fish_types', 'fish_box_purchases.fish_type_id', '=', 'fish_types.id')
             ->where('fish_inventory.status', FishBoxStatusConstant::SOLD)
-            ->whereDate('fish_inventory.created_at', '>=', $dateFrom)
-            ->whereDate('fish_inventory.created_at', '<=', $dateTo);
+            ->where('fish_inventory.created_at', '>=', Carbon::parse($dateFrom)->startOfDay())
+            ->where('fish_inventory.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
 
         return $query->selectRaw('fish_types.id, fish_types.name, COUNT(DISTINCT fish_inventory.fish_box_purchase_id) as total_sold')
             ->groupBy('fish_types.id', 'fish_types.name')

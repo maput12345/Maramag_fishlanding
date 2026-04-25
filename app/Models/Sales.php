@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Constants\SalesStatusConstant;
 use Carbon\Carbon;
@@ -106,6 +107,10 @@ class Sales extends Model
      */
     public function getPaidAmountAttribute() : float
     {
+        if (array_key_exists('paid_amount_total', $this->attributes)) {
+            return (float) ($this->attributes['paid_amount_total'] ?? 0);
+        }
+
         if ($this->relationLoaded('salesPayments')) {
             return (float) $this->salesPayments->sum('paid_amount');
         }
@@ -150,12 +155,12 @@ class Sales extends Model
      * @param array $salesData
      * @param array $salesDetails
      * @param int $brokerId
-     * @param int $userId
+     * @param array|null $initialPayment
      * @return Sales
      */
-    public static function createSalesWithDetails(array $salesData, array $salesDetails, int $brokerId): Sales
+    public static function createSalesWithDetails(array $salesData, array $salesDetails, int $brokerId, ?array $initialPayment = null): Sales
     {
-        return DB::transaction(function () use ($salesData, $salesDetails, $brokerId) {
+        return DB::transaction(function () use ($salesData, $salesDetails, $brokerId, $initialPayment) {
             $userId = Auth::id();
             $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
 
@@ -169,6 +174,18 @@ class Sales extends Model
 
             SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails);
             FishBox::updateFishBoxesForSales($brokerId, $salesDetails, $userId);
+
+            if (!empty($initialPayment['paid_amount'])) {
+                SalesPayment::create([
+                    'sale_id' => $sale->id,
+                    'paid_amount' => $initialPayment['paid_amount'],
+                    'payment_date' => $initialPayment['payment_date'],
+                    'payment_method' => $initialPayment['payment_method'],
+                ]);
+
+                $sale->updatePaidAmount();
+                $sale->updatePaymentStatus();
+            }
 
             return $sale->load(['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments']);
         });
@@ -213,21 +230,71 @@ class Sales extends Model
     }
 
     /**
-     * @param string|null $search
-     * @param string|null $status
-     * @param int|null $brokerId
-     * @param string|null $dateFrom
-     * @param string|null $dateTo
-     *
-     * @return LengthAwarePaginator
+     * Add aggregated payment totals without loading each payment row.
      */
-    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $brokerId, ?string $dateFrom = null, ?string $dateTo = null) : LengthAwarePaginator
+    public function scopeWithPaidAmount(Builder $query): Builder
     {
-        $query = self::with(['broker.user', 'buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments'])
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+        return $query->withSum('salesPayments as paid_amount_total', 'paid_amount');
+    }
+
+    /**
+     * Shared payments aggregate for reporting queries.
+     */
+    public static function paymentTotalsSubquery(): Builder
+    {
+        return SalesPayment::query()
+            ->selectRaw('sale_id, SUM(paid_amount) as paid_total')
+            ->groupBy('sale_id');
+    }
+
+    /**
+     * Shared sales-detail aggregate for reporting queries.
+     */
+    public static function salesDetailCountsSubquery(): Builder
+    {
+        return SalesDetails::query()
+            ->selectRaw('sale_id, COUNT(*) as fish_box_count')
+            ->groupBy('sale_id');
+    }
+
+    /**
+     * Apply a driver-safe date comparison.
+     */
+    public static function applyDateConstraint($query, string $column, string $operator, string $value)
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return $query->whereDate($column, $operator, $value);
+        }
+
+        return $query->where($column, $operator, $value);
+    }
+
+    /**
+     * Apply a driver-safe date range.
+     */
+    public static function applyDateRange($query, string $column, string $dateFrom, string $dateTo)
+    {
+        self::applyDateConstraint($query, $column, '>=', $dateFrom);
+        self::applyDateConstraint($query, $column, '<=', $dateTo);
+
+        return $query;
+    }
+
+    /**
+     * Apply shared filters while preserving the current sales workflow.
+     */
+    protected static function applySalesFilters(
+        Builder $query,
+        ?string $search = null,
+        ?string $status = null,
+        ?int $brokerId = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): Builder {
+        $query->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses());
 
         if ($brokerId) {
-            $query->where('broker_id', $brokerId);
+            $query->where('sales.broker_id', $brokerId);
         }
 
         if ($search) {
@@ -238,20 +305,63 @@ class Sales extends Model
         }
 
         if ($status) {
-            $query->where('status', $status);
+            $query->where('sales.status', $status);
         }
 
-        // Date range filtering
         if ($dateFrom) {
-            $query->whereDate('sales_date', '>=', $dateFrom);
+            self::applyDateConstraint($query, 'sales.sales_date', '>=', $dateFrom);
         }
 
         if ($dateTo) {
-            $query->whereDate('sales_date', '<=', $dateTo);
+            self::applyDateConstraint($query, 'sales.sales_date', '<=', $dateTo);
         }
 
+        return $query;
+    }
 
-        $sales = $query->orderBy('created_at', 'desc')->paginate(15);
+    /**
+     * Build a report-friendly query that already includes payment totals.
+     */
+    protected static function buildAggregateSalesQuery(
+        ?string $search = null,
+        ?string $status = null,
+        ?int $brokerId = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null,
+        bool $includeFishBoxCount = false
+    ): Builder {
+        $query = self::query()
+            ->leftJoinSub(self::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            });
+
+        if ($includeFishBoxCount) {
+            $query->leftJoinSub(self::salesDetailCountsSubquery(), 'sales_detail_counts', function ($join) {
+                $join->on('sales.id', '=', 'sales_detail_counts.sale_id');
+            });
+        }
+
+        return self::applySalesFilters($query, $search, $status, $brokerId, $dateFrom, $dateTo);
+    }
+
+    /**
+     * @param string|null $search
+     * @param string|null $status
+     * @param int|null $brokerId
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
+     *
+     * @return LengthAwarePaginator
+     */
+    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $brokerId, ?string $dateFrom = null, ?string $dateTo = null) : LengthAwarePaginator
+    {
+        $query = self::query()
+            ->withPaidAmount()
+            ->with(['buyer', 'salesDetails.fishBoxPurchase.fishType']);
+
+        $query = self::applySalesFilters($query, $search, $status, $brokerId, $dateFrom, $dateTo);
+
+        $sales = $query->orderBy('sales.created_at', 'desc')->paginate(15);
 
         // Add formatted items to each sale
         $sales->getCollection()->each(function ($sale) {
@@ -266,39 +376,25 @@ class Sales extends Model
      */
     public static function getSummaryForFilters(?string $search = null, ?string $status = null, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null): array
     {
-        $query = self::with('salesPayments')
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
-
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
-
-        if ($search) {
-            $query->whereHas('buyer', function ($buyerQuery) use ($search) {
-                $buyerQuery->whereRaw("TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?", ["%{$search}%"])
-                    ->orWhere('contact', 'like', "%{$search}%");
-            });
-        }
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        if ($dateFrom) {
-            $query->whereDate('sales_date', '>=', $dateFrom);
-        }
-
-        if ($dateTo) {
-            $query->whereDate('sales_date', '<=', $dateTo);
-        }
-
-        $sales = $query->get();
+        $summary = self::buildAggregateSalesQuery($search, $status, $brokerId, $dateFrom, $dateTo)
+            ->toBase()
+            ->selectRaw('
+                COUNT(sales.id) as sales_count,
+                COALESCE(SUM(sales.total_amount), 0) as gross_total,
+                COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as paid_total,
+                COALESCE(SUM(CASE
+                    WHEN sales.total_amount > COALESCE(payment_totals.paid_total, 0)
+                    THEN sales.total_amount - COALESCE(payment_totals.paid_total, 0)
+                    ELSE 0
+                END), 0) as balance_total
+            ')
+            ->first();
 
         return [
-            'count' => $sales->count(),
-            'gross_total' => (float) $sales->sum('total_amount'),
-            'paid_total' => (float) $sales->sum(fn ($sale) => $sale->paid_amount),
-            'balance_total' => (float) $sales->sum(fn ($sale) => $sale->remaining_amount),
+            'count' => (int) ($summary->sales_count ?? 0),
+            'gross_total' => (float) ($summary->gross_total ?? 0),
+            'paid_total' => (float) ($summary->paid_total ?? 0),
+            'balance_total' => (float) ($summary->balance_total ?? 0),
         ];
     }
 
@@ -321,8 +417,9 @@ class Sales extends Model
      */
     public static function getTotalSalesToday(?int $brokerId): float
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', today());
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateConstraint($query, 'sales_date', '=', today()->toDateString());
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
@@ -338,15 +435,15 @@ class Sales extends Model
      */
     public static function getTotalPaidAmountToday(?int $brokerId): float
     {
-        $query = self::with('salesPayments')
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', today());
-
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
-
-        return (float) $query->get()->sum(fn ($sale) => $sale->paid_amount);
+        return (float) (self::buildAggregateSalesQuery(
+            null,
+            null,
+            $brokerId,
+            today()->toDateString(),
+            today()->toDateString()
+        )->toBase()
+            ->selectRaw('COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as paid_total')
+            ->value('paid_total') ?? 0);
     }
 
     /**
@@ -356,15 +453,17 @@ class Sales extends Model
      */
     public static function getTotalPaidAmountYesterday(?int $brokerId): float
     {
-        $query = self::with('salesPayments')
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', Carbon::yesterday());
+        $yesterday = Carbon::yesterday()->toDateString();
 
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
-
-        return (float) $query->get()->sum(fn ($sale) => $sale->paid_amount);
+        return (float) (self::buildAggregateSalesQuery(
+            null,
+            null,
+            $brokerId,
+            $yesterday,
+            $yesterday
+        )->toBase()
+            ->selectRaw('COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as paid_total')
+            ->value('paid_total') ?? 0);
     }
 
     /**
@@ -375,14 +474,13 @@ class Sales extends Model
      */
     public static function getRecentSales($limit = 4, ?int $brokerId): Collection
     {
-        $query = self::with(['broker.user', 'buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesPayments'])
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+        $query = self::query()
+            ->withPaidAmount()
+            ->with(['buyer', 'salesDetails.fishBoxPurchase.fishType']);
 
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
+        $query = self::applySalesFilters($query, null, null, $brokerId);
 
-        $sales = $query->orderBy('created_at', 'desc')
+        $sales = $query->orderBy('sales.created_at', 'desc')
             ->limit($limit)
             ->get();
 
@@ -421,14 +519,17 @@ class Sales extends Model
      */
     public static function getTotalSalesBalance(?int $brokerId): float
     {
-        $query = self::with('salesPayments')
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
-
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
-
-        return (float) $query->get()->sum(fn ($sale) => $sale->remaining_amount);
+        return (float) (self::buildAggregateSalesQuery(
+            null,
+            null,
+            $brokerId
+        )->toBase()
+            ->selectRaw('COALESCE(SUM(CASE
+                WHEN sales.total_amount > COALESCE(payment_totals.paid_total, 0)
+                THEN sales.total_amount - COALESCE(payment_totals.paid_total, 0)
+                ELSE 0
+            END), 0) as balance_total')
+            ->value('balance_total') ?? 0);
     }
 
     /**
@@ -438,8 +539,9 @@ class Sales extends Model
      */
     public static function getTotalOrdersToday(?int $brokerId): int
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', today());
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateConstraint($query, 'sales_date', '=', today()->toDateString());
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
@@ -457,9 +559,14 @@ class Sales extends Model
      */
     public static function getDailySalesLast7Days(?int $brokerId): \Illuminate\Support\Collection
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', '>=', Carbon::now()->subDays(6))
-            ->whereDate('sales_date', '<=', Carbon::now());
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateRange(
+            $query,
+            'sales_date',
+            Carbon::now()->subDays(6)->toDateString(),
+            Carbon::now()->toDateString()
+        );
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
@@ -507,33 +614,33 @@ class Sales extends Model
             $dateTo = Carbon::now()->format('Y-m-d');
         }
 
-        $query = self::with(['salesDetails.fishBoxPurchase.fishType', 'salesPayments', 'buyer'])
-            ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
-
-        if ($brokerId) {
-            $query->where('broker_id', $brokerId);
-        }
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        $sales = $query->get();
-        $totalRevenue = (float) $sales->sum(fn ($sale) => $sale->paid_amount);
-        $totalOrders = $sales->count();
-        $totalBalance = (float) $sales->sum(fn ($sale) => $sale->remaining_amount);
-        $totalFishBoxes = $sales->sum(fn ($sale) => $sale->salesDetails->count());
+        $summary = self::buildAggregateSalesQuery(
+            null,
+            $status,
+            $brokerId,
+            $dateFrom,
+            $dateTo,
+            true
+        )->toBase()
+            ->selectRaw('
+            COUNT(sales.id) as total_orders,
+            COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as total_revenue,
+            COALESCE(SUM(CASE
+                WHEN sales.total_amount > COALESCE(payment_totals.paid_total, 0)
+                THEN sales.total_amount - COALESCE(payment_totals.paid_total, 0)
+                ELSE 0
+            END), 0) as total_balance,
+            COALESCE(SUM(COALESCE(sales_detail_counts.fish_box_count, 0)), 0) as total_fish_boxes
+        ')->first();
         $weeklySalesData = self::getDailySalesForPeriod($brokerId, $dateFrom, $dateTo, $status);
         $topItems = self::getTopSellingItems($brokerId, $dateFrom, $dateTo, 5, $status);
         $paymentMethods = SalesPayment::getPaymentMethodsBreakdown($brokerId, $dateFrom, $dateTo, $status);
 
         return [
-            'totalRevenue' => $totalRevenue,
-            'totalOrders' => $totalOrders,
-            'totalBalance' => $totalBalance,
-            'totalFishBoxes' => $totalFishBoxes,
+            'totalRevenue' => (float) ($summary->total_revenue ?? 0),
+            'totalOrders' => (int) ($summary->total_orders ?? 0),
+            'totalBalance' => (float) ($summary->total_balance ?? 0),
+            'totalFishBoxes' => (int) ($summary->total_fish_boxes ?? 0),
             'weeklySalesData' => $weeklySalesData,
             'topItems' => $topItems,
             'paymentMethods' => $paymentMethods,
@@ -553,9 +660,9 @@ class Sales extends Model
      */
     public static function getDailySalesForPeriod(?int $brokerId, string $dateFrom, string $dateTo, ?string $status = null): \Illuminate\Support\Collection
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
@@ -565,7 +672,11 @@ class Sales extends Model
             $query->where('status', $status);
         }
 
-        $weeklySales = $query->selectRaw('YEARWEEK(sales_date, 1) as week, MIN(sales_date) as week_start, MAX(sales_date) as week_end, SUM(total_amount) as total_sales')
+        $weekExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%W', sales_date)"
+            : 'YEARWEEK(sales_date, 1)';
+
+        $weeklySales = $query->selectRaw("{$weekExpression} as week, MIN(sales_date) as week_start, MAX(sales_date) as week_end, SUM(total_amount) as total_sales")
             ->groupBy('week')
             ->orderBy('week')
             ->get();
@@ -626,42 +737,39 @@ class Sales extends Model
      */
     public static function getTopSellingItems(?int $brokerId, string $dateFrom, string $dateTo, int $limit = 5, ?string $status = null): \Illuminate\Support\Collection
     {
-        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo)
-            ->with(['salesDetails.fishBoxPurchase.fishType']);
+        $query = SalesDetails::query()
+            ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
+            ->leftJoin('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
+            ->leftJoin('fish_types', 'fish_types.id', '=', 'fish_box_purchases.fish_type_id')
+            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateRange($query, 'sales.sales_date', $dateFrom, $dateTo);
 
         if ($brokerId) {
-            $query->where('broker_id', $brokerId);
+            $query->where('sales.broker_id', $brokerId);
         }
 
         if ($status) {
-            $query->where('status', $status);
+            $query->where('sales.status', $status);
         }
 
-        $sales = $query->get();
-
-        // Aggregate items and their quantities
-        $itemCounts = [];
-        foreach ($sales as $sale) {
-            foreach ($sale->salesDetails as $detail) {
-                $item = $detail->item;
-                if (!isset($itemCounts[$item])) {
-                    $itemCounts[$item] = [
-                        'name' => $item,
-                        'quantity' => 0,
-                        'revenue' => 0
-                    ];
-                }
-                $itemCounts[$item]['quantity'] += 1;
-                $itemCounts[$item]['revenue'] += (float) $detail->sub_total;
-            }
-        }
-
-        // Sort by quantity and take top items
-        return collect($itemCounts)
-            ->sortByDesc('quantity')
-            ->take($limit)
+        return $query
+            ->selectRaw("
+                COALESCE(fish_types.name, '') as name,
+                COUNT(sales_details.id) as item_quantity,
+                COALESCE(SUM(sales_details.sub_total), 0) as item_revenue
+            ")
+            ->groupBy(DB::raw("COALESCE(fish_types.name, '')"))
+            ->orderByDesc('item_quantity')
+            ->limit($limit)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'quantity' => (int) $item->item_quantity,
+                    'revenue' => (float) $item->item_revenue,
+                ];
+            })
             ->values();
     }
 

@@ -80,16 +80,16 @@
                                 <div class="text-sm text-gray-900">{{ $admin->created_at->format('M d, Y') }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $admin->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                <span class="app-status-badge {{ $admin->status === 'active' ? 'app-status-badge--active' : 'app-status-badge--inactive' }}">
                                     {{ ucfirst($admin->status) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><div class="flex items-center gap-2">
                                 <span class="relative group inline-block">
-                                    <a href="{{ route('admin.users.edit', $admin->user->id) }}" class="p-2 rounded-full hover:bg-gray-100 text-blue-600 hover:text-blue-800 transition-colors" aria-label="Edit">
+                                    <a href="{{ route('admin.users.edit', $admin->user->id) }}" class="app-icon-button app-icon-button--edit" aria-label="Edit">
                                         <x-heroicon-o-pencil-square class="w-6 h-6" />
                                     </a>
-                                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Edit</span>
+                                    <span class="app-tooltip">Edit</span>
                                 </span>
 
                                 @if($admin->status === 'active')
@@ -98,12 +98,12 @@
                                         @method('PATCH')
                                         <span class="relative group inline-block">
                                             <button type="submit"
-                                                    class="p-2 rounded-full hover:bg-gray-100 text-orange-600 hover:text-orange-800 transition-colors {{ $admin->user->id === auth()->id() ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                                    class="app-icon-button app-icon-button--deactivate {{ $admin->user->id === auth()->id() ? 'opacity-50 cursor-not-allowed' : '' }}"
                                                     {{ $admin->user->id === auth()->id() ? 'disabled' : '' }}
                                                     aria-label="Deactivate">
                                                 <x-heroicon-o-user-minus class="w-6 h-6" />
                                             </button>
-                                            <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Deactivate</span>
+                                            <span class="app-tooltip">Deactivate</span>
                                         </span>
                                     </form>
                                 @else
@@ -111,10 +111,10 @@
                                         @csrf
                                         @method('PATCH')
                                         <span class="relative group inline-block">
-                                            <button type="submit" class="p-2 rounded-full hover:bg-gray-100 text-green-600 hover:text-green-800 transition-colors" aria-label="Activate">
+                                            <button type="submit" class="app-icon-button app-icon-button--activate" aria-label="Activate">
                                                 <x-heroicon-o-user-plus class="w-6 h-6" />
                                             </button>
-                                            <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Activate</span>
+                                            <span class="app-tooltip">Activate</span>
                                         </span>
                                     </form>
                                 @endif

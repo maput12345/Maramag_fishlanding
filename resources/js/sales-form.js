@@ -16,11 +16,20 @@ function initializeSalesForm(config) {
     const container = document.getElementById('sales-details-container');
     const addBtn = document.getElementById('add-sales-detail-btn');
     const totalAmountDisplay = document.getElementById('total-amount-display');
+    const totalAmountInput = document.getElementById('total_amount');
+    const initialPaidAmountInput = document.getElementById('initial_paid_amount');
+    const initialPaymentMaxAmount = document.getElementById('initial-payment-max-amount');
+    const initialPaymentError = document.getElementById('initial-payment-error');
 
     if (!container || !addBtn || !totalAmountDisplay) return;
     if (container.dataset.salesFormInitialized === 'true') return;
 
     container.dataset.salesFormInitialized = 'true';
+
+    document.querySelectorAll('.sales-detail-row').forEach((row) => {
+        const fishTypeSelect = row.querySelector('.fish-type-select');
+        row.dataset.activeFishTypeId = fishTypeSelect?.value || '';
+    });
 
     // Get selected fish boxes (excluding a specific row)
     const getSelectedFishBoxes = (excludeRowIndex = null) => {
@@ -31,7 +40,7 @@ function initializeSalesForm(config) {
                 .filter(Boolean));
     };
 
-    // Get available fish boxes for a fish type
+        // Get available fish boxes for a fish name
     const getAvailableFishBoxesForType = (fishTypeId, excludeRowIndex = null) => {
         const selectedBoxes = getSelectedFishBoxes(excludeRowIndex);
         return SALES_CONFIG.fishBoxes.filter(box => {
@@ -89,6 +98,12 @@ function initializeSalesForm(config) {
         }
     });
 
+    if (initialPaidAmountInput) {
+        initialPaidAmountInput.addEventListener('input', () => {
+            validateInitialPayment();
+        });
+    }
+
     function handleQuantityChange(quantityInput) {
         const row = quantityInput.closest('.sales-detail-row');
         let quantity = parseInt(quantityInput.value) || 1;
@@ -100,17 +115,17 @@ function initializeSalesForm(config) {
             if (quantity > availableBoxes.length) {
                 quantityInput.value = availableBoxes.length;
                 quantity = availableBoxes.length; // Update the quantity variable
-                toastr.warning(`Maximum quantity for this fish type is ${availableBoxes.length} (available fish boxes)`);
+                toastr.warning(`Maximum quantity for this fish name is ${availableBoxes.length} (available fish boxes)`);
             }
         }
 
         fishBoxesContainer.innerHTML = '';
         for (let i = 0; i < quantity; i++) {
             const fishBoxItem = document.createElement('div');
-            fishBoxItem.className = 'fish-box-item mb-2';
+            fishBoxItem.className = 'fish-box-item';
             fishBoxItem.innerHTML = `
-                <select class="fish-box-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 cursor-not-allowed" disabled>
-                    <option value="">Auto-selected</option>
+                <select class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500" disabled>
+                    <option value="">Auto-select</option>
                 </select>
                 <input type="hidden" name="sales_details[${row.dataset.index}][box_id][]" class="fish-box-hidden-input">
             `;
@@ -132,6 +147,8 @@ function initializeSalesForm(config) {
         const itemInput = row.querySelector('.item-input');
         const unitPriceInput = row.querySelector('.unit-price-input');
         const suggestedPrice = SALES_CONFIG.fishPrices?.[fishTypeId];
+        const previousFishTypeId = row.dataset.activeFishTypeId || '';
+        const fishTypeChanged = previousFishTypeId !== String(fishTypeId);
 
         if (fishTypeId) {
             const availableBoxes = getAvailableFishBoxesForType(fishTypeId, row.dataset.index);
@@ -155,11 +172,17 @@ function initializeSalesForm(config) {
 
                 const fishType = SALES_CONFIG.fishTypes.find(ft => ft.id == fishTypeId);
                 if (fishType && itemInput) itemInput.value = fishType.name;
-                if (unitPriceInput && suggestedPrice && (!unitPriceInput.value || parseFloat(unitPriceInput.value) === 0)) {
+                if (
+                    unitPriceInput &&
+                    suggestedPrice !== undefined &&
+                    (fishTypeChanged || !unitPriceInput.value || parseFloat(unitPriceInput.value) === 0)
+                ) {
                     unitPriceInput.value = Number(suggestedPrice).toFixed(2);
                     calculateSubTotal(unitPriceInput);
                     updateTotalAmount();
                 }
+
+                row.dataset.activeFishTypeId = String(fishTypeId);
 
                 // Only update other rows if not called from updateAllRowsFishBoxAvailability
                 if (!skipUpdate) {
@@ -169,15 +192,17 @@ function initializeSalesForm(config) {
                 fishBoxesContainer.querySelectorAll('.fish-box-select').forEach(select => {
                     select.innerHTML = '<option value="">No boxes available</option>';
                 });
-                toastr.error('No fish boxes available for the selected fish type.');
+                toastr.error('No fish boxes available for the selected fish name.');
                 fishTypeSelect.value = '';
                 if (itemInput) itemInput.value = '';
+                row.dataset.activeFishTypeId = '';
             }
         } else {
             fishBoxesContainer.querySelectorAll('.fish-box-item').forEach(item => {
-                item.querySelector('.fish-box-select').innerHTML = '<option value="">Auto-selected</option>';
+                item.querySelector('.fish-box-select').innerHTML = '<option value="">Auto-select</option>';
                 item.querySelector('.fish-box-hidden-input').value = '';
             });
+            row.dataset.activeFishTypeId = '';
         }
     }
 
@@ -198,9 +223,49 @@ function initializeSalesForm(config) {
         const total = Array.from(document.querySelectorAll('.sub-total-input'))
             .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
 
-        totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
-        const totalAmountInput = document.getElementById('total_amount');
+        totalAmountDisplay.textContent = `PHP ${total.toFixed(2)}`;
         if (totalAmountInput) totalAmountInput.value = total.toFixed(2);
+        validateInitialPayment();
+    }
+
+    function setInitialPaymentError(message = '') {
+        if (!initialPaymentError || !initialPaidAmountInput) return;
+
+        initialPaymentError.textContent = message;
+        initialPaymentError.classList.toggle('hidden', !message);
+        initialPaidAmountInput.setCustomValidity(message);
+    }
+
+    function validateInitialPayment() {
+        if (!initialPaidAmountInput) {
+            return;
+        }
+
+        const maxPaymentAmount = parseFloat(totalAmountInput?.value || 0) || 0;
+        const currentAmount = parseFloat(initialPaidAmountInput.value);
+
+        initialPaidAmountInput.max = maxPaymentAmount.toFixed(2);
+
+        if (initialPaymentMaxAmount) {
+            initialPaymentMaxAmount.textContent = maxPaymentAmount.toFixed(2);
+        }
+
+        if (Number.isNaN(currentAmount)) {
+            setInitialPaymentError('');
+            return;
+        }
+
+        if (currentAmount > maxPaymentAmount) {
+            setInitialPaymentError(`Payment amount cannot exceed the remaining balance of PHP ${maxPaymentAmount.toFixed(2)}`);
+            return;
+        }
+
+        if (currentAmount <= 0) {
+            setInitialPaymentError('Payment amount must be greater than 0');
+            return;
+        }
+
+        setInitialPaymentError('');
     }
 
     // Initialize total amount

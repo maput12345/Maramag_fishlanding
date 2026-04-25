@@ -64,6 +64,14 @@ class FishType extends Model
      */
     public function isUsed(?int $brokerId = null): bool
     {
+        if ($brokerId === null && array_key_exists('fish_boxes_count', $this->attributes)) {
+            return (int) $this->attributes['fish_boxes_count'] > 0;
+        }
+
+        if ($brokerId === null && $this->relationLoaded('fishBoxes')) {
+            return $this->fishBoxes->isNotEmpty();
+        }
+
         $query = $this->fishBoxes();
 
         if ($brokerId) {
@@ -108,7 +116,9 @@ class FishType extends Model
      */
     public static function getPaginatedWithSearch(?string $search = null, ?int $brokerId = null, int $perPage = 12): LengthAwarePaginator
     {
-        $query = static::query();
+        $query = static::query()
+            ->select(['id', 'name', 'description', 'created_at'])
+            ->withCount('fishBoxes');
 
         if ($brokerId) {
             $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {

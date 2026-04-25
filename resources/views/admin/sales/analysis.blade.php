@@ -2,12 +2,15 @@
 <div class="space-y-6">
     <!-- Filters Section -->
     <div class="bg-white rounded-xl shadow-lg p-6">
-        <form method="GET" action="{{ route('admin.sales.index', ['tab' => 'analysis']) }}" x-data="{
+        <form method="GET" action="{{ route('admin.sales.index') }}" x-data="{
             dateFrom: '{{ request('date_from', $dateFrom) }}',
             dateTo: '{{ request('date_to', $dateTo) }}',
             brokerSearch: '{{ request('broker_search', '') }}'
         }">
             <input type="hidden" name="tab" value="analysis">
+            <div class="app-section-heading">
+                <h2 class="app-section-title">Broker Sales</h2>
+            </div>
             <div class="filter-layout">
                 <!-- Broker Search -->
                 <div class="search-field">
@@ -44,11 +47,11 @@
 
                 <!-- Action Buttons -->
                 <div class="buttons-field flex justify-end space-x-2">
-                    <a href="{{ route('admin.sales.index', ['tab' => 'analysis']) }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    <a href="{{ route('admin.sales.index') }}" class="app-button app-button--secondary">
                         Clear
                     </a>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                        Apply
+                    <button type="submit" class="app-button app-button--primary">
+                        Search
                     </button>
                 </div>
             </div>
@@ -121,7 +124,56 @@
     @else
         <div class="space-y-4 sm:space-y-6">
             @foreach($brokersWithSales as $broker)
-                <div class="bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden" x-data="{ expanded: false }" data-broker-id="{{ $broker->id }}">
+                @php
+                    $brokerFishBoxCount = $broker->sales->sum(fn($sale) => $sale->salesDetails->sum('quantity'));
+                    $brokerBuyerCount = $broker->sales
+                        ->map(fn($sale) => $sale->buyer_id ?: trim((string) $sale->buyer_name))
+                        ->filter(fn($buyerKey) => $buyerKey !== null && $buyerKey !== '')
+                        ->unique()
+                        ->count();
+                    $receiptSalesCount = $broker->sales->count();
+                    $receiptFishBoxCount = $brokerFishBoxCount;
+                    $receiptSalesForPrint = $broker->sales
+                        ->flatMap(function ($sale) {
+                            return $sale->salesDetails->map(function ($detail) use ($sale) {
+                                return [
+                                    'date' => \Carbon\Carbon::parse($sale->sales_date)->format('M d, Y'),
+                                    'buyer' => $sale->buyer_name,
+                                    'fish_name' => $detail->item,
+                                    'quantity' => $detail->quantity,
+                                    'fish_boxes' => $detail->fishBoxes()->map(fn($fishBox) => $fishBox->name)->values()->all(),
+                                ];
+                            });
+                        })
+                        ->values();
+                    $missingBoxesForPrint = $broker->missingFishBoxesForReceipt
+                        ->map(function ($fishBox) {
+                            $latestReceiptLog = $fishBox->inventoryLogs->first();
+
+                            return [
+                                'id' => $fishBox->id,
+                                'name' => $fishBox->name,
+                                'qr_code' => $fishBox->qr_code,
+                                'reported_at' => $latestReceiptLog?->created_at?->format('M d, Y h:i A'),
+                            ];
+                        })
+                        ->values();
+                @endphp
+                <div
+                    class="bg-white rounded-lg sm:rounded-xl shadow-lg overflow-hidden"
+                    x-data="{ expanded: false }"
+                    data-broker-id="{{ $broker->id }}"
+                    data-broker-sales-count="{{ $broker->sales->count() }}"
+                    data-broker-fishbox-count="{{ $brokerFishBoxCount }}"
+                    data-receipt-date-from="{{ $dateFrom }}"
+                    data-receipt-date-to="{{ $dateTo }}"
+                    data-receipt-date="{{ $receiptDate }}"
+                    data-receipt-sales-count="{{ $receiptSalesCount }}"
+                    data-receipt-fishbox-count="{{ $receiptFishBoxCount }}"
+                    data-receipt-watermark-logo-url="{{ asset('image/logo.png') }}"
+                    data-receipt-sales='@json($receiptSalesForPrint, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
+                    data-broker-missing-boxes-for-receipt='@json($missingBoxesForPrint, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
+                >
                     <!-- Broker Header -->
                     <div class="p-3 sm:p-4 border-b border-gray-200 cursor-pointer transition-colors {{ $loop->even ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-50' }}" @click="expanded = !expanded">
                         <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
@@ -162,13 +214,13 @@
                                     <!-- Total Fishboxes -->
                                     <div class="text-center border-2 border-orange-600 bg-orange-50 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 lg:px-2 xl:px-4 sm:min-w-[80px] lg:min-w-[85px] xl:min-w-[100px]">
                                         <p class="text-[10px] sm:text-xs text-orange-700 uppercase tracking-wider mb-0.5">Fishboxes</p>
-                                        <p class="text-base sm:text-lg lg:text-lg xl:text-xl font-bold text-orange-600">{{ $broker->sales->sum(fn($sale) => $sale->salesDetails->sum('quantity')) }}</p>
+                                        <p class="text-base sm:text-lg lg:text-lg xl:text-xl font-bold text-orange-600">{{ $brokerFishBoxCount }}</p>
                                     </div>
 
                                     <!-- Buyers -->
                                     <div class="text-center border-2 border-green-600 bg-green-50 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 lg:px-2 xl:px-4 sm:min-w-[80px] lg:min-w-[85px] xl:min-w-[100px]">
                                         <p class="text-[10px] sm:text-xs text-green-700 uppercase tracking-wider mb-0.5">Buyers</p>
-                                        <p class="text-base sm:text-lg lg:text-lg xl:text-xl font-bold text-green-600">{{ $broker->sales->count() }}</p>
+                                        <p class="text-base sm:text-lg lg:text-lg xl:text-xl font-bold text-green-600">{{ $brokerBuyerCount }}</p>
                                     </div>
                                 </div>
 
@@ -176,7 +228,7 @@
                                 <div class="flex items-center justify-center sm:justify-start space-x-2 sm:ml-2 lg:ml-1 xl:ml-4 flex-shrink-0">
                                     <button @click.stop="printBrokerSales({{ $broker->id }}, '{{ $broker->name }}', '{{ $broker->stall_name ?? '' }}')"
                                             class="text-green-600 hover:text-green-800 transition-colors p-1.5 sm:p-2 hover:bg-green-50 rounded-lg"
-                                            title="Print Sales">
+                                            title="Print Daily Receipt">
                                         <x-heroicon-o-printer class="w-6 h-6 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
                                     </button>
 

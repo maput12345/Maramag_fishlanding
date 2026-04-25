@@ -5,7 +5,6 @@ namespace App\Repositories;
 use App\Constants\FishBoxStatusConstant;
 use App\Models\Sales;
 use App\Models\Broker;
-use App\Models\InventoryLog;
 use App\Constants\SalesStatusConstant;
 use App\Models\FishBox;
 use App\Models\SalesDetails;
@@ -15,7 +14,17 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class SalesRepository
 {
+    /**
+     * Build a driver-safe broker full-name SQL expression.
+     */
+    private function brokerNameExpression(string $table = 'brokers'): string
+    {
+        if (Sales::query()->getConnection()->getDriverName() === 'sqlite') {
+            return "TRIM(COALESCE({$table}.first_name, '') || ' ' || COALESCE({$table}.middle_name, '') || ' ' || COALESCE({$table}.last_name, ''))";
+        }
 
+        return "TRIM(CONCAT_WS(' ', {$table}.first_name, {$table}.middle_name, {$table}.last_name))";
+    }
 
     /**
      * Get top brokers for admin dashboard with filters
@@ -28,29 +37,41 @@ class SalesRepository
      */
     public function getTopBrokersForAdmin(string $dateFrom, string $dateTo, ?string $status = null, int $limit = 5): Collection
     {
-        $query = Sales::with(['broker', 'salesPayments'])
-            ->active()
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $rows = Sales::query()
+            ->leftJoinSub(Sales::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            })
+            ->active();
+
+        Sales::applyDateRange($rows, 'sales.sales_date', $dateFrom, $dateTo);
 
         if ($status) {
-            $query->where('status', $status);
+            $rows->where('sales.status', $status);
         }
 
-        return $query->get()
-            ->groupBy('broker_id')
-            ->map(function ($sales) {
-                $firstSale = $sales->first();
+        $rows = $rows
+            ->selectRaw('
+                sales.broker_id,
+                COUNT(sales.id) as sales_count,
+                COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as total_sales
+            ')
+            ->groupBy('sales.broker_id')
+            ->orderByDesc('sales_count')
+            ->limit($limit)
+            ->get();
 
-                return [
-                    'broker' => $firstSale?->broker,
-                    'sales_count' => $sales->count(),
-                    'total_sales' => $sales->sum(fn ($sale) => $sale->paid_amount),
-                ];
-            })
-            ->sortByDesc('sales_count')
-            ->take($limit)
-            ->values();
+        $brokers = Broker::with('user')
+            ->whereIn('id', $rows->pluck('broker_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
+
+        return $rows->map(function ($row) use ($brokers) {
+            return [
+                'broker' => $brokers->get((int) $row->broker_id),
+                'sales_count' => (int) $row->sales_count,
+                'total_sales' => (float) $row->total_sales,
+            ];
+        });
     }
 
     /**
@@ -72,23 +93,30 @@ class SalesRepository
         $chartDays = min($daysDiff + 1, 7);
         $chartStartDate = $endDate->copy()->subDays($chartDays - 1);
 
+        $totalsByDate = Sales::query()
+            ->leftJoinSub(Sales::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            })
+            ->active();
+
+        Sales::applyDateRange($totalsByDate, 'sales.sales_date', $chartStartDate->format('Y-m-d'), $endDate->format('Y-m-d'));
+
+        if ($status) {
+            $totalsByDate->where('sales.status', $status);
+        }
+
+        $totalsByDate = $totalsByDate
+            ->selectRaw('sales.sales_date, COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as total_sales')
+            ->groupBy('sales.sales_date')
+            ->pluck('total_sales', 'sales.sales_date');
+
         for ($i = 0; $i < $chartDays; $i++) {
             $date = $chartStartDate->copy()->addDays($i);
             $dayName = $date->format('D');
 
-            $query = Sales::with('salesPayments')
-                ->active()
-                ->whereDate('sales_date', $date->format('Y-m-d'));
-
-            if ($status) {
-                $query->where('status', $status);
-            }
-
-            $sales = $query->get()->sum(fn ($sale) => $sale->paid_amount);
-
             $dailySales[] = [
                 'label' => $dayName,
-                'value' => (float) $sales
+                'value' => (float) ($totalsByDate[$date->format('Y-m-d')] ?? 0)
             ];
         }
 
@@ -105,9 +133,9 @@ class SalesRepository
      */
     public function getTotalRevenueForAdmin(string $dateFrom, string $dateTo, ?string $status = null): float
     {
-        $query = Sales::active()
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $query = Sales::active();
+
+        Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
 
         if ($status) {
             $query->where('status', $status);
@@ -126,9 +154,9 @@ class SalesRepository
      */
     public function getTotalOrdersForAdmin(string $dateFrom, string $dateTo, ?string $status = null): int
     {
-        $query = Sales::active()
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $query = Sales::active();
+
+        Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
 
         if ($status) {
             $query->where('status', $status);
@@ -148,10 +176,12 @@ class SalesRepository
      */
     public function getRecentOrdersForAdmin(string $dateFrom, string $dateTo, ?string $status = null, int $limit = 5): Collection
     {
-        $query = Sales::with(['broker.user', 'salesDetails'])
-            ->active()
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $query = Sales::query()
+            ->withPaidAmount()
+            ->with(['broker.user', 'salesDetails'])
+            ->active();
+
+        Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
 
         if ($status) {
             $query->where('status', $status);
@@ -174,15 +204,32 @@ class SalesRepository
         $statusBreakdown = [];
         $salesStatuses = SalesStatusConstant::getAllActiveStatuses();
 
-        foreach ($salesStatuses as $statusValue) {
-            $statusQuery = Sales::with('salesPayments')->active()->whereBetween('sales_date', [$dateFrom, $dateTo]);
-            if ($status) {
-                $statusQuery->where('status', $status);
-            }
+        $rows = Sales::query()
+            ->leftJoinSub(Sales::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            })
+            ->active();
 
-            $sales = (clone $statusQuery)->where('status', $statusValue)->get();
-            $count = $sales->count();
-            $totalAmount = $sales->sum(fn ($sale) => $sale->paid_amount);
+        Sales::applyDateRange($rows, 'sales.sales_date', $dateFrom, $dateTo);
+
+        if ($status) {
+            $rows->where('sales.status', $status);
+        }
+
+        $rows = $rows
+            ->selectRaw('
+                sales.status,
+                COUNT(sales.id) as sales_count,
+                COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as total_sales
+            ')
+            ->groupBy('sales.status')
+            ->get()
+            ->keyBy('status');
+
+        foreach ($salesStatuses as $statusValue) {
+            $row = $rows->get($statusValue);
+            $count = (int) ($row->sales_count ?? 0);
+            $totalAmount = (float) ($row->total_sales ?? 0);
 
             $statusBreakdown[$statusValue] = [
                 'count' => $count,
@@ -268,32 +315,40 @@ class SalesRepository
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
-        $brokerSalesData = Sales::with(['broker', 'salesDetails', 'salesPayments'])
-            ->active()
-            ->whereBetween('sales_date', [$startOfMonth, $endOfMonth])
+        $rows = Sales::query()
+            ->leftJoinSub(Sales::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            })
+            ->leftJoinSub(Sales::salesDetailCountsSubquery(), 'sales_detail_counts', function ($join) {
+                $join->on('sales.id', '=', 'sales_detail_counts.sale_id');
+            })
+            ->active();
+
+        Sales::applyDateRange($rows, 'sales.sales_date', $startOfMonth->format('Y-m-d'), $endOfMonth->format('Y-m-d'));
+
+        $rows = $rows->selectRaw('
+                sales.broker_id,
+                COUNT(sales.id) as sales_count,
+                COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as total_sales,
+                COALESCE(SUM(COALESCE(sales_detail_counts.fish_box_count, 0)), 0) as fishbox_count
+            ')
+            ->groupBy('sales.broker_id')
+            ->orderByDesc('sales_count')
+            ->limit(5)
             ->get();
 
-        return $brokerSalesData
-            ->groupBy('broker_id')
-            ->map(function ($sales) {
-                $firstSale = $sales->first();
+        $brokers = Broker::with('user')
+            ->whereIn('id', $rows->pluck('broker_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
 
-                return [
-                    'broker' => $firstSale?->broker,
-                    'sales_count' => $sales->count(),
-                    'total_sales' => $sales->sum(fn ($sale) => $sale->paid_amount),
-                    'fishbox_count' => $sales->sum(fn ($sale) => $sale->salesDetails->count()),
-                ];
-            })
-            ->sortByDesc('sales_count')
-            ->take(5)
-            ->values()
-            ->map(function ($brokerData) {
+        return $rows
+            ->map(function ($brokerData) use ($brokers) {
             return [
-                'broker' => $brokerData['broker'],
-                'sales_count' => $brokerData['sales_count'],
-                'total_sales' => $brokerData['total_sales'],
-                'fishbox_count' => $brokerData['fishbox_count']
+                'broker' => $brokers->get((int) $brokerData->broker_id),
+                'sales_count' => (int) $brokerData->sales_count,
+                'total_sales' => (float) $brokerData->total_sales,
+                'fishbox_count' => (int) $brokerData->fishbox_count
             ];
         });
     }
@@ -310,38 +365,87 @@ class SalesRepository
     public function getBrokersWithSalesDetails(string $dateFrom, string $dateTo, ?string $brokerSearch = null): LengthAwarePaginator
     {
         // Build query with eager loading and constraints
-        $brokersQuery = Broker::with([
-            'user',
+        $brokersQuery = Broker::query()
+        ->select(['id', 'user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'stall_name'])
+        ->with([
+            'user:id,email',
             'sales' => function ($query) use ($dateFrom, $dateTo) {
-                $query->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-                    ->whereDate('sales_date', '>=', $dateFrom)
-                    ->whereDate('sales_date', '<=', $dateTo)
-                    ->with('salesDetails')
+                $query->select(['id', 'broker_id', 'buyer_id', 'sales_date', 'status', 'created_at'])
+                    ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
+                    ->with([
+                        'buyer:id,first_name,middle_name,last_name,contact',
+                        'salesDetails:id,sale_id,fish_box_purchase_id,unit_price,sub_total,discount',
+                        'salesDetails.fishBoxPurchase:id,fish_box_id,fish_type_id',
+                        'salesDetails.fishBoxPurchase.fishType:id,name,description',
+                        'salesDetails.fishBoxPurchase.fishBox' => function ($fishBoxQuery) {
+                            $fishBoxQuery->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
+                                ->withBrokerBoxNumber();
+                        },
+                    ])
                     ->orderBy('sales_date', 'desc');
+
+                Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
             }
         ])
         // Only get brokers who have sales in the date range
         ->whereHas('sales', function ($query) use ($dateFrom, $dateTo) {
-            $query->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-                ->whereDate('sales_date', '>=', $dateFrom)
-                ->whereDate('sales_date', '<=', $dateTo);
+            $query->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+            Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
         });
 
         // Apply broker search filter if provided
         if ($brokerSearch) {
-            $brokersQuery->where(function ($query) use ($brokerSearch) {
+            $brokerNameExpression = $this->brokerNameExpression();
+
+            $brokersQuery->where(function ($query) use ($brokerSearch, $brokerNameExpression) {
                 $query->where('stall_name', 'like', "%{$brokerSearch}%")
-                    ->orWhereRaw(
-                        "TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?",
-                        ["%{$brokerSearch}%"]
-                    );
+                    ->orWhereRaw("{$brokerNameExpression} like ?", ["%{$brokerSearch}%"]);
             });
         }
 
         $brokersQuery->orderBy('stall_name', 'asc');
 
-        // Paginate the brokers (10 per page)
-        return $brokersQuery->paginate(10);
+        $brokers = $brokersQuery->paginate(10);
+        $brokerIds = $brokers->getCollection()->pluck('id')->all();
+        $missingFishBoxesByBroker = new Collection();
+        $receiptCutoff = rescue(
+            fn () => Carbon::parse($dateTo)->endOfDay(),
+            Carbon::now()->endOfDay(),
+            report: false
+        );
+
+        if ($brokerIds !== []) {
+            $missingFishBoxesByBroker = FishBox::query()
+                ->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
+                ->withBrokerBoxNumber()
+                ->with([
+                    'inventoryLogs' => function ($logQuery) use ($receiptCutoff) {
+                        $logQuery
+                            ->where('fish_inventory.created_at', '<=', $receiptCutoff)
+                            ->orderBy('fish_inventory.created_at', 'desc')
+                            ->orderBy('fish_inventory.id', 'desc');
+                    },
+                ])
+                ->whereIn('fish_boxes.broker_id', $brokerIds)
+                ->whereHas('inventoryLogs', function ($logQuery) use ($receiptCutoff) {
+                    $logQuery
+                        ->where('fish_inventory.created_at', '<=', $receiptCutoff);
+                })
+                ->orderBy('fish_boxes.id')
+                ->get()
+                ->filter(function (FishBox $fishBox) {
+                    return $fishBox->inventoryLogs->first()?->status === FishBoxStatusConstant::MISSING;
+                })
+                ->groupBy('broker_id');
+        }
+
+        $brokers->getCollection()->transform(function (Broker $broker) use ($missingFishBoxesByBroker) {
+            $broker->setRelation('missingFishBoxesForReceipt', $missingFishBoxesByBroker->get($broker->id, collect()));
+
+            return $broker;
+        });
+
+        return $brokers;
     }
 
     /**
@@ -354,23 +458,24 @@ class SalesRepository
      */
     public function getTotalFishBoxesSold(string $dateFrom, string $dateTo, ?string $brokerSearch = null): int
     {
-        $query = Sales::whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-            ->whereDate('sales_date', '>=', $dateFrom)
-            ->whereDate('sales_date', '<=', $dateTo);
+        $query = SalesDetails::query()
+            ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
+            ->join('brokers', 'brokers.id', '=', 'sales.broker_id')
+            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses());
+
+        Sales::applyDateRange($query, 'sales.sales_date', $dateFrom, $dateTo);
 
         // Filter by broker search if provided
         if ($brokerSearch) {
-            $query->whereHas('broker', function ($brokerQuery) use ($brokerSearch) {
-                $brokerQuery->where('stall_name', 'like', "%{$brokerSearch}%")
-                    ->orWhereRaw(
-                        "TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?",
-                        ["%{$brokerSearch}%"]
-                    );
+            $brokerNameExpression = $this->brokerNameExpression('brokers');
+
+            $query->where(function ($brokerQuery) use ($brokerSearch, $brokerNameExpression) {
+                $brokerQuery->where('brokers.stall_name', 'like', "%{$brokerSearch}%")
+                    ->orWhereRaw("{$brokerNameExpression} like ?", ["%{$brokerSearch}%"]);
             });
         }
 
-        return $query->with('salesDetails')->get()
-            ->sum(fn ($sale) => $sale->salesDetails->count());
+        return (int) $query->count('sales_details.id');
     }
 
     /**

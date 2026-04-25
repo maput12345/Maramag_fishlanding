@@ -2174,82 +2174,112 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! qr-code-styling */ "./node_modules/qr-code-styling/lib/qr-code-styling.js");
 /* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(qr_code_styling__WEBPACK_IMPORTED_MODULE_0__);
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
-// QR Code Modal functionality
+// QR Code modal and bulk-print functionality
 window.QRCodeModal = {
   init: function init() {
     this.bindEvents();
   },
   bindEvents: function bindEvents() {
     var _this = this;
-    // Listen for QR code button clicks
-    document.addEventListener('click', function (e) {
-      if (e.target.closest('.qr-code-btn')) {
-        e.preventDefault();
-        var button = e.target.closest('.qr-code-btn');
-        var qrData = button.dataset.qrData;
-        var fishBoxName = button.dataset.fishBoxName;
-        _this.showQRModal(qrData, fishBoxName);
-      }
-    });
-
-    // Close modal when clicking outside or on close button
-    document.addEventListener('click', function (e) {
-      if (e.target.classList.contains('qr-modal-overlay') || e.target.closest('.qr-modal-close')) {
-        _this.hideQRModal();
-      }
-    });
-
-    // Close modal on Escape key
+    document.addEventListener('click', /*#__PURE__*/function () {
+      var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(e) {
+        var qrButton, qrData, fishBoxName, bulkPrintButton;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.n) {
+            case 0:
+              qrButton = e.target.closest('.qr-code-btn');
+              if (!qrButton) {
+                _context.n = 1;
+                break;
+              }
+              e.preventDefault();
+              qrData = qrButton.dataset.qrData;
+              fishBoxName = qrButton.dataset.fishBoxName;
+              _this.showQRModal(qrData, fishBoxName);
+              return _context.a(2);
+            case 1:
+              bulkPrintButton = e.target.closest('.bulk-qr-print-btn');
+              if (!bulkPrintButton) {
+                _context.n = 3;
+                break;
+              }
+              e.preventDefault();
+              _context.n = 2;
+              return _this.printBulkQRCodes(bulkPrintButton);
+            case 2:
+              return _context.a(2);
+            case 3:
+              if (e.target.classList.contains('qr-modal-overlay') || e.target.closest('.qr-modal-close')) {
+                _this.hideQRModal();
+              }
+            case 4:
+              return _context.a(2);
+          }
+        }, _callee);
+      }));
+      return function (_x) {
+        return _ref.apply(this, arguments);
+      };
+    }());
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         _this.hideQRModal();
       }
     });
   },
-  showQRModal: function showQRModal(qrData, fishBoxName) {
-    // Create modal HTML
-    var modalHTML = "\n            <div id=\"qr-modal\" class=\"fixed inset-0 z-50 overflow-y-auto qr-modal-overlay\" aria-labelledby=\"modal-title\" role=\"dialog\" aria-modal=\"true\">\n                <div class=\"flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\">\n                    <div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" aria-hidden=\"true\"></div>\n                    <span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span>\n\n                    <div class=\"relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full\">\n                        <!-- Modal Header -->\n                        <div class=\"bg-white px-6 py-4 border-b border-gray-200\">\n                            <div class=\"flex items-center justify-between\">\n                                <h3 class=\"text-lg font-semibold text-gray-900\" id=\"modal-title\">\n                                    QR Code - ".concat(fishBoxName, "\n                                </h3>\n                                <button class=\"qr-modal-close text-gray-400 hover:text-gray-600 transition-colors\">\n                                    <svg class=\"w-6 h-6\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n                                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n\n                        <!-- Modal Body -->\n                        <div class=\"bg-white px-6 py-6\">\n                            <div class=\"flex flex-col items-center\">\n                                <div id=\"qr-code-container\" class=\"mb-4\"></div>\n                                <p class=\"text-sm text-gray-600 text-center mb-4\">\n                                    Scan this QR code to view fish box details\n                                </p>\n                                <div class=\"flex space-x-3\">\n                                    <button id=\"download-png\" class=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm\">\n                                        Download PNG\n                                    </button>\n                                    <button id=\"download-svg\" class=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm\">\n                                        Download SVG\n                                    </button>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ");
-
-    // Add modal to DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-    // Generate QR Code
-    this.generateQRCode(qrData);
-  },
-  generateQRCode: function generateQRCode(data) {
-    var qrCode = new (qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default())({
-      width: 256,
-      height: 256,
-      type: "svg",
+  getQRCodeOptions: function getQRCodeOptions(data) {
+    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
+    return {
+      width: size,
+      height: size,
+      type: 'svg',
       data: data,
       dotsOptions: {
-        color: "#2563eb",
-        // Blue color to match theme
-        type: "rounded"
+        color: '#2563eb',
+        type: 'rounded'
       },
       backgroundOptions: {
-        color: "#ffffff"
+        color: '#ffffff'
       },
       cornersSquareOptions: {
-        color: "#1d4ed8",
-        type: "extra-rounded"
+        color: '#1d4ed8',
+        type: 'extra-rounded'
       },
       cornersDotOptions: {
-        color: "#1e40af",
-        type: "dot"
+        color: '#1e40af',
+        type: 'dot'
       },
       qrOptions: {
         errorCorrectionLevel: 'M'
       }
-    });
-
-    // Append QR code to container
+    };
+  },
+  createQRCode: function createQRCode(data) {
+    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
+    return new (qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default())(this.getQRCodeOptions(data, size));
+  },
+  showQRModal: function showQRModal(qrData, fishBoxName) {
+    this.hideQRModal();
+    var modalHTML = "\n            <div id=\"qr-modal\" class=\"fixed inset-0 z-50 overflow-y-auto qr-modal-overlay\" aria-labelledby=\"modal-title\" role=\"dialog\" aria-modal=\"true\">\n                <div class=\"flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\">\n                    <div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" aria-hidden=\"true\"></div>\n                    <span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span>\n\n                    <div class=\"relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full\">\n                        <div class=\"bg-white px-6 py-4 border-b border-gray-200\">\n                            <div class=\"flex items-center justify-between\">\n                                <h3 class=\"text-lg font-semibold text-gray-900\" id=\"modal-title\">\n                                    QR Code - ".concat(this.escapeHtml(fishBoxName), "\n                                </h3>\n                                <button class=\"qr-modal-close text-gray-400 hover:text-gray-600 transition-colors\" type=\"button\">\n                                    <svg class=\"w-6 h-6\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n                                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n\n                        <div class=\"bg-white px-6 py-6\">\n                            <div class=\"flex flex-col items-center\">\n                                <div id=\"qr-code-container\" class=\"mb-4\"></div>\n                                <p class=\"text-sm text-gray-600 text-center mb-4\">\n                                    Scan this QR code to view fish box details\n                                </p>\n                                <div class=\"flex space-x-3\">\n                                    <button id=\"download-png\" type=\"button\" class=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm\">\n                                        Download PNG\n                                    </button>\n                                    <button id=\"download-svg\" type=\"button\" class=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm\">\n                                        Download SVG\n                                    </button>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ");
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    this.generateQRCode(qrData);
+  },
+  generateQRCode: function generateQRCode(data) {
+    var qrCode = this.createQRCode(data, 256);
     var container = document.getElementById('qr-code-container');
     qrCode.append(container);
-
-    // Bind download buttons
     document.getElementById('download-png').addEventListener('click', function () {
       qrCode.download({
         name: "qr-code-".concat(Date.now()),
@@ -2262,9 +2292,166 @@ window.QRCodeModal = {
         extension: 'svg'
       });
     });
-
-    // Store qrCode instance for potential future use
     this.currentQRCode = qrCode;
+  },
+  getBulkPrintBoxes: function getBulkPrintBoxes(button) {
+    var sourceId = button.dataset.bulkQrSource;
+    var sourceElement = sourceId ? document.getElementById(sourceId) : null;
+    if (!sourceElement) {
+      return [];
+    }
+    try {
+      var parsedBoxes = JSON.parse(sourceElement.textContent || '[]');
+      return Array.isArray(parsedBoxes) ? parsedBoxes : [];
+    } catch (error) {
+      console.error('Unable to parse bulk QR data.', error);
+      return [];
+    }
+  },
+  renderBulkQrMarkup: function renderBulkQrMarkup(qrData) {
+    var _this2 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var tempContainer, qrCode;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.n) {
+          case 0:
+            tempContainer = document.createElement('div');
+            qrCode = _this2.createQRCode(qrData, 180);
+            qrCode.append(tempContainer);
+            _context2.n = 1;
+            return new Promise(function (resolve) {
+              window.requestAnimationFrame(function () {
+                return resolve();
+              });
+            });
+          case 1:
+            return _context2.a(2, tempContainer.innerHTML);
+        }
+      }, _callee2);
+    }))();
+  },
+  printBulkQRCodes: function printBulkQRCodes(button) {
+    var _this3 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var fishBoxes, originalContent, qrCards, _t6;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.p = _context4.n) {
+          case 0:
+            if (!button.disabled) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2);
+          case 1:
+            fishBoxes = _this3.getBulkPrintBoxes(button);
+            if (!(fishBoxes.length === 0)) {
+              _context4.n = 2;
+              break;
+            }
+            _this3.notify('No fish boxes match the current filters for bulk QR printing.', 'info');
+            return _context4.a(2);
+          case 2:
+            originalContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = "\n            <svg class=\"w-4 h-4 animate-spin\" fill=\"none\" viewBox=\"0 0 24 24\">\n                <circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle>\n                <path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z\"></path>\n            </svg>\n            <span>Preparing QR...</span>\n        ";
+            _context4.p = 3;
+            _context4.n = 4;
+            return Promise.all(fishBoxes.map(/*#__PURE__*/function () {
+              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(fishBox) {
+                var _t, _t2, _t3, _t4, _t5;
+                return _regenerator().w(function (_context3) {
+                  while (1) switch (_context3.n) {
+                    case 0:
+                      _t = _objectSpread;
+                      _t2 = _objectSpread({}, fishBox);
+                      _t3 = {};
+                      _context3.n = 1;
+                      return _this3.renderBulkQrMarkup(fishBox.qr_code);
+                    case 1:
+                      _t4 = _context3.v;
+                      _t5 = {
+                        qrMarkup: _t4
+                      };
+                      return _context3.a(2, _t(_t2, _t3, _t5));
+                  }
+                }, _callee3);
+              }));
+              return function (_x2) {
+                return _ref2.apply(this, arguments);
+              };
+            }()));
+          case 4:
+            qrCards = _context4.v;
+            _this3.printDocument(_this3.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || ''));
+            _context4.n = 6;
+            break;
+          case 5:
+            _context4.p = 5;
+            _t6 = _context4.v;
+            console.error('Bulk QR print failed.', _t6);
+            _this3.notify('Bulk QR print could not be prepared. Please try again.', 'error');
+          case 6:
+            _context4.p = 6;
+            button.disabled = false;
+            button.innerHTML = originalContent;
+            return _context4.f(6);
+          case 7:
+            return _context4.a(2);
+        }
+      }, _callee4, null, [[3, 5, 6, 7]]);
+    }))();
+  },
+  printDocument: function printDocument(printMarkup) {
+    var iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(iframe);
+    var iframeWindow = iframe.contentWindow;
+    var iframeDocument = iframeWindow === null || iframeWindow === void 0 ? void 0 : iframeWindow.document;
+    if (!iframeWindow || !iframeDocument) {
+      iframe.remove();
+      throw new Error('Print frame could not be created.');
+    }
+    iframe.onload = function () {
+      window.setTimeout(function () {
+        iframeWindow.focus();
+        iframeWindow.print();
+        window.setTimeout(function () {
+          iframe.remove();
+        }, 1000);
+      }, 250);
+    };
+    iframeDocument.open();
+    iframeDocument.write(printMarkup);
+    iframeDocument.close();
+  },
+  buildBulkPrintDocument: function buildBulkPrintDocument(fishBoxes, filterSummary) {
+    var _this4 = this;
+    var generatedAt = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date());
+    var filterLine = filterSummary ? "<p class=\"subtitle\">".concat(this.escapeHtml(filterSummary), "</p>") : "<p class=\"subtitle\">All fish boxes matching the current filters are included in this printout.</p>";
+    var cardsMarkup = fishBoxes.map(function (fishBox) {
+      return "\n            <article class=\"qr-card\">\n                <div class=\"qr-card__code\">\n                    ".concat(fishBox.qrMarkup, "\n                </div>\n                <div class=\"qr-card__meta\">\n                    <h2>").concat(_this4.escapeHtml(fishBox.name), "</h2>\n                    <p>").concat(_this4.escapeHtml(fishBox.fish_name || 'Unassigned'), "</p>\n                    <span class=\"status\">").concat(_this4.escapeHtml(fishBox.status), "</span>\n                    <div class=\"qr-value\">").concat(_this4.escapeHtml(fishBox.qr_code), "</div>\n                </div>\n            </article>\n        ");
+    }).join('');
+    return "\n            <!DOCTYPE html>\n            <html lang=\"en\">\n                <head>\n                    <meta charset=\"utf-8\">\n                    <title>Broker Fish Box QR Codes</title>\n                    <style>\n                        * {\n                            box-sizing: border-box;\n                        }\n\n                        body {\n                            margin: 0;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n\n                        .sheet {\n                            padding: 28px 30px 36px;\n                        }\n\n                        .sheet-header {\n                            border-bottom: 2px solid #0f172a;\n                            margin-bottom: 24px;\n                            padding-bottom: 14px;\n                        }\n\n                        .sheet-header h1 {\n                            margin: 0 0 8px;\n                            font-size: 24px;\n                        }\n\n                        .sheet-header p {\n                            margin: 4px 0;\n                            color: #475569;\n                            font-size: 13px;\n                        }\n\n                        .summary-row {\n                            display: flex;\n                            justify-content: space-between;\n                            align-items: baseline;\n                            gap: 16px;\n                            margin-top: 10px;\n                        }\n\n                        .summary-row strong {\n                            font-size: 14px;\n                        }\n\n                        .qr-grid {\n                            display: grid;\n                            grid-template-columns: repeat(3, minmax(0, 1fr));\n                            gap: 16px;\n                        }\n\n                        .qr-card {\n                            border: 1px solid #cbd5e1;\n                            border-radius: 18px;\n                            padding: 18px;\n                            min-height: 290px;\n                            display: flex;\n                            flex-direction: column;\n                            align-items: center;\n                            justify-content: space-between;\n                            page-break-inside: avoid;\n                        }\n\n                        .qr-card__code {\n                            width: 180px;\n                            height: 180px;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                        }\n\n                        .qr-card__code svg {\n                            width: 180px;\n                            height: 180px;\n                        }\n\n                        .qr-card__meta {\n                            width: 100%;\n                            text-align: center;\n                        }\n\n                        .qr-card__meta h2 {\n                            margin: 0;\n                            font-size: 18px;\n                            line-height: 1.2;\n                        }\n\n                        .qr-card__meta p {\n                            margin: 6px 0 10px;\n                            color: #475569;\n                            font-size: 13px;\n                        }\n\n                        .status {\n                            display: inline-flex;\n                            align-items: center;\n                            justify-content: center;\n                            border-radius: 999px;\n                            background: #dbeafe;\n                            color: #1d4ed8;\n                            font-size: 11px;\n                            font-weight: 700;\n                            letter-spacing: 0.08em;\n                            padding: 5px 10px;\n                            text-transform: uppercase;\n                        }\n\n                        .qr-value {\n                            margin-top: 12px;\n                            color: #64748b;\n                            font-family: \"Courier New\", monospace;\n                            font-size: 11px;\n                            word-break: break-all;\n                        }\n\n                        @page {\n                            margin: 12mm;\n                        }\n\n                        @media print {\n                            .sheet {\n                                padding: 0;\n                            }\n                        }\n                    </style>\n                </head>\n                <body>\n                    <main class=\"sheet\">\n                        <header class=\"sheet-header\">\n                            <h1>Fish Box QR Codes</h1>\n                            ".concat(filterLine, "\n                            <div class=\"summary-row\">\n                                <strong>Total Boxes: ").concat(fishBoxes.length, "</strong>\n                                <span>Generated: ").concat(this.escapeHtml(generatedAt), "</span>\n                            </div>\n                        </header>\n\n                        <section class=\"qr-grid\">\n                            ").concat(cardsMarkup, "\n                        </section>\n                    </main>\n                </body>\n            </html>\n        ");
+  },
+  escapeHtml: function escapeHtml(value) {
+    return String(value !== null && value !== void 0 ? value : '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  },
+  notify: function notify(message) {
+    var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'info';
+    if (window.toastr && typeof window.toastr[type] === 'function') {
+      window.toastr[type](message);
+      return;
+    }
+    window.alert(message);
   },
   hideQRModal: function hideQRModal() {
     var modal = document.getElementById('qr-modal');
@@ -2274,8 +2461,6 @@ window.QRCodeModal = {
     this.currentQRCode = null;
   }
 };
-
-// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
   window.QRCodeModal.init();
 });

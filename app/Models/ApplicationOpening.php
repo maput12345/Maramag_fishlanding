@@ -17,12 +17,15 @@ class ApplicationOpening extends Model
         'opened_by_employee_id',
         'start_date',
         'end_date',
+        'bidding_date',
+        'bidding_location',
         'opening_status',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'bidding_date' => 'date',
     ];
 
     /**

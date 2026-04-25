@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Broker;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkRestockFishBoxesRequest;
 use App\Constants\FishBoxStatusConstant;
 use App\Models\FishType;
 use App\Models\FishBox;
@@ -13,9 +14,27 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class FishBoxController extends Controller
 {
+    /**
+     * Show the broker's current missing fish box tracking page.
+     */
+    public function tracking(Request $request): View
+    {
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $search = $request->get('search');
+        $trackingFishBoxes = FishBox::getBrokerMissingTracking($brokerId, $search, 12, 'tracking_page');
+        $missingCount = FishBox::missing()->where('broker_id', $brokerId)->count();
+
+        return view('broker.fish-boxes.tracking', compact(
+            'trackingFishBoxes',
+            'missingCount',
+            'search'
+        ));
+    }
+
     /**
      * Get data for fish boxes tab
      *
@@ -36,22 +55,34 @@ class FishBoxController extends Controller
 
         // Filter fish boxes by current broker
         $fishBoxes = FishBox::getPaginatedWithFilters($search, $status, $fishType, 12, $brokerId);
-        $fishBoxSummary = [
-            'total' => FishBox::where('broker_id', $brokerId)->count(),
-            'in_stock' => FishBox::where('broker_id', $brokerId)->inStock()->count(),
-            'sold' => FishBox::where('broker_id', $brokerId)->sold()->count(),
-            'returned' => FishBox::where('broker_id', $brokerId)->returned()->count(),
-            'missing' => FishBox::where('broker_id', $brokerId)->missing()->count(),
-        ];
+        $bulkQrFishBoxes = FishBox::getFilteredForBulkQrPrint($search, $status, $fishType, $brokerId);
+        $fishBoxSummary = FishBox::getStatusSummary($brokerId);
+        $fishTypeDefaultCosts = FishBox::getDefaultCostMapForBroker($brokerId);
+        $bulkRestockEligibleCount = FishBox::countEligibleForBulkRestock($brokerId);
+        $bulkRestockEligibleBoxes = collect();
 
         $editingFishBox = null;
 
         // Check if we're in edit mode
         if ($request && $request->get('modal') === 'edit' && $request->has('edit')) {
-            $editingFishBox = FishBox::find($request->get('edit'));
+            $editingFishBox = FishBox::getFishBoxByIdAndBroker((int) $request->get('edit'), $brokerId);
         }
 
-        return compact('fishBoxStatuses', 'fishTypes', 'fishBoxes', 'editingFishBox', 'fishBoxSummary');
+        if ($request && $request->get('modal') === 'bulk-restock') {
+            $bulkRestockEligibleBoxes = FishBox::getEligibleForBulkRestock($brokerId);
+        }
+
+        return compact(
+            'fishBoxStatuses',
+            'fishTypes',
+            'fishBoxes',
+            'editingFishBox',
+            'fishBoxSummary',
+            'bulkQrFishBoxes',
+            'fishTypeDefaultCosts',
+            'bulkRestockEligibleCount',
+            'bulkRestockEligibleBoxes'
+        );
     }
 
     /**
@@ -65,11 +96,21 @@ class FishBoxController extends Controller
         $validated = $request->validated();
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
+        $costPrice = $this->resolveCostPriceForBroker(
+            $brokerId,
+            (int) $validated['fish_type_id'],
+            $validated['cost_price'] ?? null
+        );
+
+        if ($costPrice === null) {
+            return $this->redirectMissingCostPrice();
+        }
+
         $createdBoxes = FishBox::createFishBoxes(
             $validated['fish_type_id'],
             $validated['quantity'],
             $brokerId,
-            (float) $validated['cost_price'],
+            $costPrice,
             $userId
         );
 
@@ -94,6 +135,24 @@ class FishBoxController extends Controller
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
         $validated = $request->validated();
         $userId = Auth::id();
+        $costPrice = $this->resolveCostPriceForBroker(
+            $brokerId,
+            (int) $validated['fish_type_id'],
+            $validated['cost_price'] ?? null,
+            $fishBox->currentPurchase?->cost_price !== null ? (float) $fishBox->currentPurchase->cost_price : null
+        );
+
+        if ($costPrice === null) {
+            return $this->redirectMissingCostPrice();
+        }
+
+        $validated['cost_price'] = $costPrice;
+
+        if ($this->wouldOverwriteHistoricalPurchase($fishBox, $validated)) {
+            return redirect()->back()
+                ->with('error', 'This fish box already has sales history. Use Bulk Assign / Daily Restock to start a new daily stock record instead of editing the old one.')
+                ->withInput();
+        }
 
         $fishBox->updateBoxAndPurchase($validated, $userId);
 
@@ -160,6 +219,13 @@ class FishBoxController extends Controller
                 ], 400);
             }
 
+            if (!$fishBox->canBeReturned()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only sold or missing fish boxes can be returned.'
+                ], 400);
+            }
+
             $newStatus = FishBoxStatusConstant::RETURNED;
             // Update the fish box status based on current status
             FishBox::updateStatus($fishBox->id, $newStatus, Auth::id());
@@ -219,9 +285,9 @@ class FishBoxController extends Controller
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
 
-        if ($fishBox->status !== FishBoxStatusConstant::SOLD) {
+        if (!$fishBox->canBeReturned()) {
             return redirect()->back()
-                ->with('error', 'Only sold fish boxes can be returned.');
+                ->with('error', 'Only sold or missing fish boxes can be returned.');
         }
 
         FishBox::updateFishBoxesForReturned($fishBox->id, Auth::id());
@@ -247,5 +313,100 @@ class FishBoxController extends Controller
 
         return redirect()->back()
             ->with('success', "{$returnedCount} fish boxes returned to stock successfully!");
+    }
+
+    /**
+     * Bulk assign fish type and daily cost to reusable fish boxes.
+     */
+    public function bulkRestock(BulkRestockFishBoxesRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $userId = Auth::id();
+        $brokerId = Broker::getBrokerIdByUserId($userId);
+        $costPrice = $this->resolveCostPriceForBroker(
+            $brokerId,
+            (int) $validated['fish_type_id'],
+            $validated['cost_price'] ?? null
+        );
+
+        if ($costPrice === null) {
+            return $this->redirectMissingCostPrice();
+        }
+
+        $restockedCount = FishBox::bulkRestock(
+            $brokerId,
+            array_map('intval', $validated['fish_box_ids']),
+            (int) $validated['fish_type_id'],
+            $costPrice,
+            $userId
+        );
+
+        if ($restockedCount === 0) {
+            return redirect()->back()
+                ->with('error', 'No eligible fish boxes were selected for daily restocking.')
+                ->withInput();
+        }
+
+        $message = $restockedCount === 1
+            ? 'Fish box restocked successfully.'
+            : "{$restockedCount} fish boxes restocked successfully.";
+
+        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            ->with('success', $message);
+    }
+
+    /**
+     * Resolve a restock cost from manual input or the fish-price default.
+     */
+    private function resolveCostPriceForBroker(
+        int $brokerId,
+        int $fishTypeId,
+        mixed $submittedCostPrice,
+        ?float $fallbackCostPrice = null
+    ): ?float {
+        if ($submittedCostPrice !== null && $submittedCostPrice !== '') {
+            return (float) $submittedCostPrice;
+        }
+
+        $defaultCostPrice = FishBox::getDefaultCostPriceForBrokerFishType($brokerId, $fishTypeId);
+
+        if ($defaultCostPrice !== null) {
+            return $defaultCostPrice;
+        }
+
+        return $fallbackCostPrice;
+    }
+
+    /**
+     * Redirect back when neither a manual nor default cost price is available.
+     */
+    private function redirectMissingCostPrice(): RedirectResponse
+    {
+        return redirect()->back()
+            ->withErrors([
+                'cost_price' => 'Set a default cost price in Fish Prices or enter a manual cost price.',
+            ])
+            ->withInput();
+    }
+
+    /**
+     * Prevent manual edits from rewriting purchase rows already referenced by sales history.
+     */
+    private function wouldOverwriteHistoricalPurchase(FishBox $fishBox, array $validated): bool
+    {
+        $purchase = $fishBox->currentPurchase;
+
+        if (!$purchase || !$fishBox->currentPurchaseHasSalesHistory()) {
+            return false;
+        }
+
+        $fishTypeChanged = isset($validated['fish_type_id'])
+            && (int) $validated['fish_type_id'] !== (int) $purchase->fish_type_id;
+
+        $incomingCost = isset($validated['cost_price']) ? number_format((float) $validated['cost_price'], 2, '.', '') : null;
+        $currentCost = $purchase->cost_price !== null ? number_format((float) $purchase->cost_price, 2, '.', '') : null;
+        $costChanged = $incomingCost !== null && $incomingCost !== $currentCost;
+
+        return $fishTypeChanged || $costChanged;
     }
 }

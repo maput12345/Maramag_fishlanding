@@ -71,7 +71,7 @@ function getRecordTypeFromForm(form) {
     const action = form.action;
 
     if (action.includes('fish-types')) {
-        return 'Fish Type';
+        return 'Fish Name';
     } else if (action.includes('fish-boxes')) {
         return 'Fish Box';
     } else if (action.includes('inventory')) {

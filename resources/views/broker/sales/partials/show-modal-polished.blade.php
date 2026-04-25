@@ -1,4 +1,9 @@
 {{-- Show Sales Modal --}}
+@php
+    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
+        : false;
+@endphp
 @if(request('modal') === 'show')
     @if(!$viewingSales)
         <x-app-modal
@@ -173,7 +178,7 @@
                                     <div class="mr-3 rounded-lg bg-indigo-100 p-2">
                                         <x-heroicon-o-archive-box class="h-5 w-5 text-indigo-600" />
                                     </div>
-                                    <h4 class="text-lg font-semibold text-gray-900">Items Sold</h4>
+                                    <h4 class="text-lg font-semibold text-gray-900">Commodities Sold</h4>
                                     <span class="ml-2 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
                                         {{ $viewingSales->salesDetails->count() }} fish boxes
                                     </span>
@@ -184,9 +189,9 @@
                                     <thead class="bg-gray-50">
                                         <tr>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Box</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Type</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Name</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Purchase Date</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Unit Price</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Price per Box</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sub Total</th>
                                         </tr>
@@ -210,7 +215,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                                    {{ $detail->fishBoxPurchase?->fishType?->name ?? 'Unknown fish type' }}
+                                                    {{ $detail->fishBoxPurchase?->fishType?->name ?? 'Unknown fish name' }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                                     {{ $detail->fishBoxPurchase?->purchase_date?->format('M d, Y') ?? '-' }}
@@ -230,7 +235,7 @@
                                                 <td colspan="6" class="px-6 py-12 text-center">
                                                     <div class="flex flex-col items-center">
                                                         <x-heroicon-o-archive-box class="mb-2 h-12 w-12 text-gray-400" />
-                                                        <p class="text-sm text-gray-500">No items found for this sale.</p>
+                                                        <p class="text-sm text-gray-500">No commodities found for this sale.</p>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -261,7 +266,9 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Method</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                                @unless($brokerViewReadOnly)
+                                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                                @endunless
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-200 bg-white">
@@ -292,20 +299,22 @@
                                                             Recorded
                                                         </span>
                                                     </td>
-                                                    <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                                                        <form action="{{ route('broker.sales-payments.destroy', $payment->id) }}"
-                                                              method="POST"
-                                                              class="inline"
-                                                              data-swal="delete">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit"
-                                                                    class="rounded-lg p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800"
-                                                                    title="Delete Payment">
-                                                                <x-heroicon-o-trash class="h-4 w-4" />
-                                                            </button>
-                                                        </form>
-                                                    </td>
+                                                    @unless($brokerViewReadOnly)
+                                                        <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                                                            <form action="{{ route('broker.sales-payments.destroy', $payment->id) }}"
+                                                                  method="POST"
+                                                                  class="inline"
+                                                                  data-swal="delete">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit"
+                                                                        class="rounded-lg p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800"
+                                                                        title="Delete Payment">
+                                                                    <x-heroicon-o-trash class="h-4 w-4" />
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    @endunless
                                                 </tr>
                                             @endforeach
                                         </tbody>
@@ -320,12 +329,14 @@
                                     </div>
                                     <h4 class="mb-2 text-lg font-medium text-gray-900">No Payment History</h4>
                                     <p class="mb-4 text-gray-500">This sale does not have any payment records yet.</p>
-                                    <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'payment', 'sale' => $viewingSales->id])) }}"
-                                       data-sales-modal-link
-                                       class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700">
-                                        <x-heroicon-o-plus class="mr-2 h-4 w-4" />
-                                        Add Payment
-                                    </a>
+                                    @unless($brokerViewReadOnly)
+                                        <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'payment', 'sale' => $viewingSales->id])) }}"
+                                           data-sales-modal-link
+                                           class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700">
+                                            <x-heroicon-o-plus class="mr-2 h-4 w-4" />
+                                            Add Payment
+                                        </a>
+                                    @endunless
                                 </div>
                             </div>
                         @endif
@@ -333,7 +344,7 @@
 
             <div class="flex flex-col gap-4 border-t border-gray-200 pt-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex items-center space-x-4">
-                    @if($viewingSales->status !== \App\Constants\SalesStatusConstant::PAID)
+                    @if(!$brokerViewReadOnly && $viewingSales->status !== \App\Constants\SalesStatusConstant::PAID)
                         <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'payment', 'sale' => $viewingSales->id])) }}"
                            data-sales-modal-link
                            class="inline-flex items-center justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700">
@@ -341,7 +352,7 @@
                             Add Payment
                         </a>
                         <span class="text-sm text-gray-500">
-                            Outstanding: <span class="font-semibold text-orange-600">PHP {{ number_format($viewingSales->remaining_amount, 2) }}</span>
+                            Outstanding Balance: <span class="font-semibold text-orange-600">PHP {{ number_format($viewingSales->remaining_amount, 2) }}</span>
                         </span>
                     @endif
                 </div>
@@ -350,15 +361,17 @@
                        type="button"
                        data-sales-modal-close
                        data-close-url="{{ $salesBaseUrl }}"
-                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                        class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
                         Close
                     </button>
-                    <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'edit', 'edit' => $viewingSales->id])) }}"
-                       data-sales-modal-link
-                       class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
-                        <x-heroicon-o-pencil-square class="mr-2 h-4 w-4" />
-                        Edit Sale
-                    </a>
+                    @unless($brokerViewReadOnly)
+                        <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'edit', 'edit' => $viewingSales->id])) }}"
+                           data-sales-modal-link
+                           class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
+                            <x-heroicon-o-pencil-square class="mr-2 h-4 w-4" />
+                            Edit Sale
+                        </a>
+                    @endunless
                 </div>
             </div>
         </x-app-modal>

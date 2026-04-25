@@ -170,7 +170,7 @@
                                     <div class="bg-indigo-100 p-2 rounded-lg mr-3">
                                         <x-heroicon-o-archive-box class="w-5 h-5 text-indigo-600" />
                                     </div>
-                                    <h4 class="text-lg font-semibold text-gray-900">Items Sold</h4>
+                                    <h4 class="text-lg font-semibold text-gray-900">Commodities Sold</h4>
                                     <span class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                         {{ $viewingSales->salesDetails->sum(function($detail) { return is_array($detail->box_id) ? count($detail->box_id) : 1; }) }} fish boxes
                                     </span>
@@ -182,7 +182,7 @@
                                         <tr>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish Box</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price per Box</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub Total</th>
                                         </tr>
@@ -343,7 +343,7 @@
                                 Add Payment
                             </a>
                             <span class="hidden sm:block text-sm text-gray-500 text-center sm:text-left">
-                                Outstanding: <span class="font-semibold text-orange-600">₱{{ number_format($viewingSales->remaining_amount, 2) }}</span>
+                                Outstanding Balance: <span class="font-semibold text-orange-600">₱{{ number_format($viewingSales->remaining_amount, 2) }}</span>
                             </span>
                         @endif
                     </div>

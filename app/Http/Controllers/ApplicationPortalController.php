@@ -70,12 +70,7 @@ class ApplicationPortalController extends Controller
         }
 
         $requirementDefinitions = RequirementType::officialChecklistMapByName();
-        $requirementTypes = RequirementType::whereIn('requirement_name', array_keys($requirementDefinitions))
-            ->get()
-            ->sortBy(function (RequirementType $requirementType) use ($requirementDefinitions) {
-                return $requirementDefinitions[$requirementType->requirement_name]['sort_order'] ?? PHP_INT_MAX;
-            })
-            ->values();
+        $requirementTypes = RequirementType::officialChecklistTypes();
 
         return view('applications.create', compact('opening', 'requirementTypes', 'requirementDefinitions'));
     }
@@ -88,13 +83,7 @@ class ApplicationPortalController extends Controller
         $this->ensureApplicantAccess();
 
         $validated = $request->validated();
-        $requirementDefinitions = RequirementType::officialChecklistMapByName();
-        $requirementTypes = RequirementType::whereIn('requirement_name', array_keys($requirementDefinitions))
-            ->get()
-            ->sortBy(function (RequirementType $requirementType) use ($requirementDefinitions) {
-                return $requirementDefinitions[$requirementType->requirement_name]['sort_order'] ?? PHP_INT_MAX;
-            })
-            ->values();
+        $requirementTypes = RequirementType::officialChecklistTypes();
 
         DB::transaction(function () use ($validated, $opening, $requirementTypes, $request) {
             $application = BrokerApplication::create([

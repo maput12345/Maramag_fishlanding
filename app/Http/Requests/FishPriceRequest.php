@@ -26,6 +26,7 @@ class FishPriceRequest extends FormRequest
                 ? ['required', 'exists:broker_fish_type,id']
                 : ['nullable', 'exists:broker_fish_type,id'],
             'price' => ['required', 'numeric', 'min:0'],
+            'default_cost_price' => ['nullable', 'numeric', 'min:0'],
             'price_date' => ['required', 'date'],
         ];
     }
@@ -43,6 +44,8 @@ class FishPriceRequest extends FormRequest
             'price.required' => 'Please enter the fish price.',
             'price.numeric' => 'Fish price must be a valid number.',
             'price.min' => 'Fish price must be at least 0.',
+            'default_cost_price.numeric' => 'Default cost price must be a valid number.',
+            'default_cost_price.min' => 'Default cost price must be at least 0.',
             'price_date.required' => 'Please select the effective date.',
             'price_date.date' => 'Please enter a valid effective date.',
         ];

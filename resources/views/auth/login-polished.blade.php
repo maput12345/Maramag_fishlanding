@@ -9,8 +9,8 @@
 
 
             <div class="login-form-header">
-                <h1>Sign In</h1>
-                <p>Sign in with your email and password.</p>
+                <h1>Log In</h1>
+                <p>Log in with your email and password.</p>
             </div>
 
             @if(session('message'))
@@ -72,19 +72,18 @@
                 </div>
 
                 <button type="submit" class="login-submit login-submit--split">
-                    Sign In
+                    Log In
                 </button>
             </form>
 
             <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <p class="font-semibold text-slate-900">Looking for a vacant stall application?</p>
-                <p class="mt-1">Create an applicant account first, then submit your broker application when LEEO opens a stall.</p>
+                <p class="font-semibold text-slate-900">Looking for a vacant stall?</p>
                 <a href="{{ route('register') }}" class="mt-3 inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-slate-800">
-                    Broker Application
+                    Apply here!
                 </a>
             </div>
 
-            <p class="login-support-note">Need access? Please contact your LEEO administrator.</p>
+            <p class="login-support-note">Need access? Please contact LEEO administrator LEEO@domain.com*.</p>
         </section>
 
         <aside class="login-welcome-panel">

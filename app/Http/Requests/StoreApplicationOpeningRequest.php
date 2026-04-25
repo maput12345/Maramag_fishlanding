@@ -19,6 +19,8 @@ class StoreApplicationOpeningRequest extends FormRequest
             'stall_id' => ['required', 'exists:stalls,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'bidding_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'bidding_location' => ['required', 'string', 'max:255'],
         ];
     }
 

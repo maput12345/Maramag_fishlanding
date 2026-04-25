@@ -1,4 +1,7 @@
 @php
+    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
+        : false;
     $breadcrumbs = [
         ['title' => 'Sales']
     ];
@@ -9,6 +12,11 @@
     );
 
     $salesBaseUrl = route('broker.sales.sales', $salesBaseQuery);
+    $topbarAction = [
+        'label' => $brokerViewReadOnly ? null : 'Create Sale',
+        'url' => $brokerViewReadOnly ? null : route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])),
+        'modal' => true,
+    ];
 
     $salesModalBreadcrumbs = [
         'create' => 'Create Sale',
@@ -37,14 +45,6 @@
                 <div class="flex-1">
                     <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Sales</h1>
                 </div>
-                <div class="flex space-x-3">
-                    <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])) }}"
-                       data-sales-modal-link
-                       class="flex w-full items-center justify-center rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700 sm:w-auto sm:px-4">
-                        <x-heroicon-o-plus class="mr-2 h-4 w-4" />
-                        Create Sale
-                    </a>
-                </div>
             </div>
         </div>
 
@@ -53,19 +53,19 @@
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Sales Records</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($salesSummary['count'] ?? 0) }}</p>
+                <p class="summary-stat-value text-gray-900">{{ number_format($salesSummary['count'] ?? 0) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
-                <p class="text-sm font-medium text-gray-500">Gross Amount</p>
-                <p class="mt-2 text-3xl font-bold text-blue-600">PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                <p class="text-sm font-medium text-gray-500">Sales Amount</p>
+                <p class="summary-stat-value text-blue-600">{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
-                <p class="text-sm font-medium text-gray-500">Collected</p>
-                <p class="mt-2 text-3xl font-bold text-green-600">PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                <p class="text-sm font-medium text-gray-500">Total Collection</p>
+                <p class="summary-stat-value text-green-600">{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
-                <p class="text-sm font-medium text-gray-500">Outstanding</p>
-                <p class="mt-2 text-3xl font-bold text-orange-600">PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
+                <p class="summary-stat-value text-orange-600">{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
             </div>
         </div>
 
@@ -126,7 +126,7 @@
                         </a>
                         <button type="submit"
                                 class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 lg:px-4">
-                            Apply
+                            Search
                         </button>
                     </div>
                 </div>
@@ -148,7 +148,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Items</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Commodities</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Buyer</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total Amount</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Paid Amount</th>
@@ -196,7 +196,7 @@
                                            title="Print Receipt">
                                             <x-heroicon-o-printer class="h-5 w-5" />
                                         </a>
-                                        @if($sale->status !== \App\Constants\SalesStatusConstant::PAID)
+                                        @if(!$brokerViewReadOnly && $sale->status !== \App\Constants\SalesStatusConstant::PAID)
                                             <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'edit', 'edit' => $sale->id])) }}"
                                                data-sales-modal-link
                                                class="text-blue-600 transition-colors hover:text-blue-900"
@@ -210,15 +210,17 @@
                                                 <x-heroicon-o-currency-dollar class="h-5 w-5" />
                                             </a>
                                         @endif
-                                        <form action="{{ route('broker.sales.destroy', $sale->id) }}" method="POST" class="inline-block" data-swal="delete">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="text-red-600 transition-colors hover:text-red-900"
-                                                    title="Delete Sale">
-                                                <x-heroicon-o-trash class="inline h-5 w-5" />
-                                            </button>
-                                        </form>
+                                        @unless($brokerViewReadOnly)
+                                            <form action="{{ route('broker.sales.destroy', $sale->id) }}" method="POST" class="inline-block" data-swal="delete">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="text-red-600 transition-colors hover:text-red-900"
+                                                        title="Delete Sale">
+                                                    <x-heroicon-o-trash class="inline h-5 w-5" />
+                                                </button>
+                                            </form>
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>
@@ -228,13 +230,17 @@
                                     <div class="flex flex-col items-center">
                                         <x-heroicon-o-shopping-cart class="mb-4 h-16 w-16 text-gray-400" />
                                         <h3 class="mb-2 text-lg font-medium text-gray-900">No sales found</h3>
-                                        <p class="mb-6 text-gray-500">Get started by creating your first sale.</p>
-                                        <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])) }}"
-                                           data-sales-modal-link
-                                           class="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition-colors hover:bg-green-700">
-                                            <x-heroicon-o-plus class="h-5 w-5" />
-                                            <span>Create Sale</span>
-                                        </a>
+                                        <p class="mb-6 text-gray-500">
+                                            {{ $brokerViewReadOnly ? 'No sales matched the current filters for this broker.' : 'Get started by creating your first sale.' }}
+                                        </p>
+                                        @unless($brokerViewReadOnly)
+                                            <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])) }}"
+                                               data-sales-modal-link
+                                               class="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition-colors hover:bg-green-700">
+                                                <x-heroicon-o-plus class="h-5 w-5" />
+                                                <span>Create Sale</span>
+                                            </a>
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>
@@ -257,14 +263,14 @@
     </div>
 
     <template id="sales-detail-row-template">
-        <div class="sales-detail-row rounded-xl border border-gray-200 bg-gray-50 p-6">
+        <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6">
             <div class="flex flex-wrap gap-4">
                 <div class="min-w-[200px] flex-1">
-                    <label class="mb-2 block text-sm font-medium text-gray-700">Fish Type</label>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Fish Name</label>
                     <select name="sales_details[INDEX][fish_type_id]"
-                            class="fish-type-select w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                            class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                             required>
-                        <option value="">Select Fish Type</option>
+                        <option value="">Select Fish Name</option>
                         @foreach($fishTypes ?? [] as $fishType)
                             <option value="{{ $fishType->id }}">{{ $fishType->name }}</option>
                         @endforeach
@@ -273,10 +279,10 @@
 
                 <div class="min-w-[200px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Fish Box</label>
-                    <div class="fish-boxes-container max-h-32 space-y-1 overflow-y-auto">
-                        <div class="fish-box-item mb-1">
-                            <select class="fish-box-select w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm" disabled>
-                                <option value="">Auto-selected</option>
+                    <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
+                        <div class="fish-box-item">
+                            <select class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500" disabled>
+                                <option value="">Auto-select</option>
                             </select>
                             <input type="hidden" name="sales_details[INDEX][box_id][]" class="fish-box-hidden-input">
                         </div>
@@ -284,30 +290,29 @@
                 </div>
 
                 <div class="min-w-[150px] flex-1">
-                    <label class="mb-2 block text-sm font-medium text-gray-700">Unit Price</label>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
                     <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                           class="unit-price-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="0.00">
                 </div>
 
                 <div class="min-w-[120px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">QTY</label>
                     <input type="number" name="sales_details[INDEX][quantity]" value="1" min="1"
-                           class="quantity-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           class="quantity-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="1">
                 </div>
 
                 <div class="min-w-[150px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
                     <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
-                           class="sub-total-input w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm"
+                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-500"
                            readonly>
                 </div>
 
-                <div class="flex-shrink-0">
-                    <label class="mb-2 block text-sm font-medium text-gray-700">&nbsp;</label>
-                    <button type="button" class="remove-detail-btn rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800">
-                        <x-heroicon-o-trash class="h-5 w-5" />
+                <div class="flex items-end">
+                    <button type="button" class="remove-detail-btn rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Remove sales detail">
+                        <x-heroicon-o-trash class="h-6 w-6" />
                     </button>
                 </div>
             </div>
@@ -317,11 +322,56 @@
         </div>
     </template>
 
+    <script>
+        window.salesQrScannerConfig = {
+            lookupUrlTemplate: @json(route('broker.fish-boxes.qr', ['qrCode' => '__QR_CODE__']))
+        };
+    </script>
     <script src="{{ asset('js/print-receipt.js') }}" defer></script>
+    <script src="{{ asset('js/qr-scanner-legacy.min.js') }}" defer></script>
     <script src="{{ asset('js/sales-qr-scanner.js') }}" defer></script>
     <script src="{{ asset('js/sales-form.js') }}" defer></script>
     <script src="{{ asset('js/sales-page.js') }}" defer></script>
     <script>
+        function getCurrentSalesFormConfig() {
+            const configNode = document.querySelector('[data-sales-form-config]');
+
+            if (!configNode) {
+                return null;
+            }
+
+            try {
+                return JSON.parse(configNode.textContent);
+            } catch (error) {
+                console.error('Unable to parse sales form config.', error);
+                return null;
+            }
+        }
+
+        function initializeSalesFormWhenReady(attempt = 0) {
+            if (typeof initializeSalesForm !== 'function') {
+                return;
+            }
+
+            const config = getCurrentSalesFormConfig();
+            if (!config) {
+                return;
+            }
+
+            const container = document.getElementById('sales-details-container');
+            const addBtn = document.getElementById('add-sales-detail-btn');
+            const totalAmountDisplay = document.getElementById('total-amount-display');
+
+            if (container && addBtn && totalAmountDisplay) {
+                initializeSalesForm(config);
+                return;
+            }
+
+            if (attempt < 10) {
+                window.requestAnimationFrame(() => initializeSalesFormWhenReady(attempt + 1));
+            }
+        }
+
         window.initializeBrokerSalesPage = function(scope = document) {
             if (typeof SalesQRScanner === 'function' && !window.salesQrScanner) {
                 window.salesQrScanner = new SalesQRScanner();
@@ -339,38 +389,35 @@
                 });
             }
 
-            if (typeof initializeSalesForm === 'function') {
-                initializeSalesForm({
-                    fishBoxes: @json($fishBoxes ?? []),
-                    fishTypes: @json($fishTypes ?? []),
-                    fishPrices: @json($fishPriceMap ?? []),
-                    detailIndex: {{ count($salesDetails) }}
-                });
-            }
+            initializeSalesFormWhenReady();
         };
 
         document.addEventListener('DOMContentLoaded', function() {
             window.initializeBrokerSalesPage(document);
         });
 
-        function paymentForm() {
+        function paymentForm(config = {}) {
             return {
-                paidAmount: 0,
-                maxPaymentAmount: {{ $saleForPayment ? $saleForPayment->remaining_amount : 0 }},
+                paidAmount: Number(config.initialPaidAmount ?? 0),
+                maxPaymentAmount: Number(config.maxPaymentAmount ?? 0),
                 paymentError: '',
 
                 initializePaymentForm() {
+                    if (this.paidAmount > 0) {
+                        this.validatePaymentAmount();
+                    }
                 },
 
                 validatePaymentAmount() {
                     this.paymentError = '';
+                    const currentAmount = Number(this.paidAmount) || 0;
 
-                    if (this.paidAmount > this.maxPaymentAmount) {
+                    if (currentAmount > this.maxPaymentAmount) {
                         this.paymentError = 'Payment amount cannot exceed the remaining balance of PHP ' + this.maxPaymentAmount.toFixed(2);
                         return false;
                     }
 
-                    if (this.paidAmount <= 0) {
+                    if (currentAmount <= 0) {
                         this.paymentError = 'Payment amount must be greater than 0';
                         return false;
                     }

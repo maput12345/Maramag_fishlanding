@@ -40,13 +40,17 @@ class AdminDashboardController extends Controller
         // Get top fish types sold
         $topFishTypes = InventoryLog::getTopFishTypesSold();
 
+        // Get current missing boxes with broker ownership
+        $currentMissingBoxes = FishBox::getCurrentMissingBoxes();
+
         return view('admin.dashboard', compact(
             'totalBrokers',
             'totalFishBoxesSold',
             'totalFishBoxesMissing',
             'totalFishBoxesReturned',
             'topBrokers',
-            'topFishTypes'
+            'topFishTypes',
+            'currentMissingBoxes'
         ));
     }
 }

@@ -37,7 +37,7 @@
         <a href="{{ route('broker.sales.sales') }}" class="metric-card metric-card--success">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Collected Today</p>
+                    <p class="metric-card__eyebrow">Daily Collection</p>
                     <p class="metric-card__value">PHP {{ number_format($salesToday, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
@@ -117,7 +117,7 @@
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">My Sales Performance</h3>
+                        <h3 class="panel-card__title">Daily Sales Performance</h3>
                     </div>
                 </div>
 
@@ -156,7 +156,7 @@
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Top Selling Items</h3>
+                        <h3 class="panel-card__title">Top Selling Commodities</h3>
                     </div>
                     <span class="panel-card__hint">All Time</span>
                 </div>

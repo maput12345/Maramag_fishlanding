@@ -82,9 +82,19 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('/{id}', 'destroy')->name('destroy');
     });
 
+    Route::post('/admin/brokers/{broker}/switch-view', [UserManagementController::class, 'startBrokerView'])
+        ->name('admin.broker-view.start');
+    Route::delete('/admin/broker-view', [UserManagementController::class, 'stopBrokerView'])
+        ->name('admin.broker-view.stop');
+    Route::post('/admin/broker-view/support-actions', [UserManagementController::class, 'enableBrokerSupportActions'])
+        ->name('admin.broker-view.support.enable');
+    Route::delete('/admin/broker-view/support-actions', [UserManagementController::class, 'disableBrokerSupportActions'])
+        ->name('admin.broker-view.support.disable');
+
 
     // Sales Management routes - grouped by controller
     Route::controller(SalesManagementController::class)->prefix('admin/sales')->name('admin.sales.')->group(function () {
+        Route::get('/tracking', 'fishboxTracking')->name('tracking');
         Route::get('/', 'index')->name('index');
     });
 
@@ -92,6 +102,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/stalls', 'storeStall')->name('stalls.store');
         Route::post('/openings', 'storeOpening')->name('openings.store');
+        Route::patch('/openings/{opening}', 'updateOpening')->name('openings.update');
         Route::patch('/openings/{opening}/status', 'updateOpeningStatus')->name('openings.status');
         Route::get('/{application}', 'show')->name('show');
         Route::patch('/{application}/review', 'review')->name('review');
@@ -126,9 +137,11 @@ Route::middleware(['auth', 'broker'])->group(function () {
 
     // Fish Box Management routes for brokers
     Route::controller(FishBoxController::class)->prefix('broker')->name('broker.')->group(function () {
+        Route::get('/fish-box-tracking', 'tracking')->name('fish-boxes.tracking');
         Route::post('/fish-boxes', 'store')->name('fish-boxes.store');
         Route::put('/fish-boxes/{id}', 'update')->name('fish-boxes.update');
         Route::delete('/fish-boxes/{id}', 'destroy')->name('fish-boxes.destroy');
+        Route::post('/fish-boxes/bulk-restock', 'bulkRestock')->name('fish-boxes.bulk-restock');
         Route::post('/fish-boxes/return-to-stock', 'returnToStock')->name('fish-boxes.return-to-stock');
         Route::post('/fish-boxes/return-via-qr', 'returnFishBoxViaQr')->name('fish-boxes.return-via-qr');
         Route::patch('/fish-boxes/{id}/mark-missing', 'markAsMissing')->name('fish-boxes.mark-missing');

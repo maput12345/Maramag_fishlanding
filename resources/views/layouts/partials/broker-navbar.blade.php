@@ -1,3 +1,29 @@
+@php
+    $resolvedTopbarAction = $topbarAction ?? [
+        'label' => 'Create Sale',
+        'url' => route('broker.sales.sales', ['modal' => 'create']),
+        'modal' => false,
+    ];
+
+    $impersonatedBroker = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::getImpersonatedBrokerForAdmin(auth()->user())
+        : null;
+    $brokerSupportActionsEnabled = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::areAdminBrokerSupportActionsEnabled(auth()->user())
+        : false;
+    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+        ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
+        : false;
+
+    if ($brokerViewReadOnly) {
+        $resolvedTopbarAction = [
+            'label' => null,
+            'url' => null,
+            'modal' => false,
+        ];
+    }
+@endphp
+
 <!-- Broker Navbar Component -->
 <header class="app-topbar">
     <div class="flex items-center justify-between px-6 py-4">
@@ -40,13 +66,30 @@
         </div>
 
         <div class="flex items-center space-x-4">
-            <!-- New Sale Button -->
-            <a href="{{ route('broker.sales.sales', ['modal' => 'create']) }}" class="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                New Sale
-            </a>
+            @if(!empty($resolvedTopbarAction['url']) && !empty($resolvedTopbarAction['label']))
+                <a
+                    href="{{ $resolvedTopbarAction['url'] }}"
+                    class="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                    @if(!empty($resolvedTopbarAction['modal'])) data-sales-modal-link @endif
+                >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    {{ $resolvedTopbarAction['label'] }}
+                </a>
+
+                <a
+                    href="{{ $resolvedTopbarAction['url'] }}"
+                    class="inline-flex md:hidden items-center justify-center rounded-xl bg-green-600 p-3 text-white shadow-sm transition-colors hover:bg-green-700"
+                    aria-label="{{ $resolvedTopbarAction['label'] }}"
+                    title="{{ $resolvedTopbarAction['label'] }}"
+                    @if(!empty($resolvedTopbarAction['modal'])) data-sales-modal-link @endif
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                </a>
+            @endif
             <!-- User Dropdown -->
             <div class="relative" x-data="{ open: false }">
                 <button @click="open = !open" class="app-user-trigger flex items-center space-x-2 text-sm text-gray-700 transition-colors hover:text-gray-900">
@@ -70,12 +113,46 @@
                         <div class="px-4 py-2 text-sm text-gray-700 border-b">
                             <div class="font-medium">{{ auth()->user()->name }}</div>
                             <div class="text-xs text-gray-500">{{ auth()->user()->email }}</div>
-                            <div class="text-xs text-blue-600 font-medium">Broker</div>
+                            <div class="text-xs font-medium {{ $impersonatedBroker ? ($brokerViewReadOnly ? 'text-amber-600' : 'text-red-600') : 'text-blue-600' }}">
+                                @if($impersonatedBroker)
+                                    {{ $brokerViewReadOnly ? 'Admin read-only broker view' : 'Admin support actions enabled' }}
+                                @else
+                                    Broker
+                                @endif
+                            </div>
                         </div>
                         <a href="{{ url()->current() }}?modal=profile" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <x-heroicon-o-user class="w-4 h-4 mr-3" />
                             Profile
                         </a>
+                        @if($impersonatedBroker)
+                            @if($brokerSupportActionsEnabled)
+                                <form method="POST" action="{{ route('admin.broker-view.support.disable') }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50">
+                                        <x-heroicon-o-lock-closed class="w-4 h-4 mr-3" />
+                                        Return to Read-Only
+                                    </button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('admin.broker-view.support.enable') }}">
+                                    @csrf
+                                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-amber-700 hover:bg-amber-50">
+                                        <x-heroicon-o-lock-open class="w-4 h-4 mr-3" />
+                                        Enable Support Actions
+                                    </button>
+                                </form>
+                            @endif
+                            <form method="POST" action="{{ route('admin.broker-view.stop') }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-amber-700 hover:bg-amber-50">
+                                    <x-heroicon-o-arrow-uturn-left class="w-4 h-4 mr-3" />
+                                    Return to Admin
+                                </button>
+                            </form>
+                        @endif
                         <hr class="my-1">
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

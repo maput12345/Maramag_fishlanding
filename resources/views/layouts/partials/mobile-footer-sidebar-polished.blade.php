@@ -1,4 +1,9 @@
 <!-- Mobile Footer Sidebar Component -->
+@php
+    $isAdminSalesMenuActive = request()->routeIs('admin.sales.index');
+    $isAdminFishBoxTrackingActive = request()->routeIs('admin.sales.tracking');
+@endphp
+
 <div class="app-mobile-dock fixed bottom-0 left-0 right-0 z-50 border-t md:hidden">
     <div class="flex items-center justify-around py-2">
         <div class="group relative">
@@ -19,9 +24,25 @@
 
         <div class="group relative">
             <a href="{{ route('admin.sales.index') }}"
-               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ request()->routeIs('admin.sales.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
-                <x-heroicon-o-chart-bar class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('admin.sales.*') ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                <span class="mt-1 text-xs font-medium">Reports</span>
+               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isAdminSalesMenuActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-banknotes class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ $isAdminSalesMenuActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                <span class="mt-1 text-xs font-medium">Sale</span>
+            </a>
+        </div>
+
+        <div class="group relative">
+            <a href="{{ route('admin.sales.tracking') }}"
+               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isAdminFishBoxTrackingActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-archive-box class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ $isAdminFishBoxTrackingActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                <span class="mt-1 text-xs font-medium">Tracking</span>
+            </a>
+        </div>
+
+        <div class="group relative">
+            <a href="{{ route('admin.applications.index') }}"
+               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ request()->routeIs('admin.applications.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-clipboard-document-check class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('admin.applications.*') ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                <span class="mt-1 text-xs font-medium">Applicant</span>
             </a>
         </div>
     </div>

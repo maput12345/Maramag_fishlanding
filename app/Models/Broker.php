@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Constants\FishBoxStatusConstant;
 use App\Constants\UserStatusConstant;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +17,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Broker extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const ADMIN_IMPERSONATION_SESSION_KEY = 'admin_impersonated_broker_id';
+    public const ADMIN_IMPERSONATION_RETURN_URL_SESSION_KEY = 'admin_impersonation_return_url';
+    public const ADMIN_SUPPORT_ACTIONS_SESSION_KEY = 'admin_broker_support_actions_enabled';
 
     protected $fillable = [
         'user_id',
@@ -76,6 +82,15 @@ class Broker extends Model
     public function fishBoxes(): HasMany
     {
         return $this->hasMany(FishBox::class, 'broker_id');
+    }
+
+    /**
+     * Get reusable fish boxes currently marked as missing.
+     */
+    public function missingFishBoxes(): HasMany
+    {
+        return $this->hasMany(FishBox::class, 'broker_id')
+            ->where('box_status', FishBoxStatusConstant::MISSING);
     }
 
     /**
@@ -257,9 +272,130 @@ class Broker extends Model
      */
     public static function getBrokerIdByUserId($userId): ?int
     {
+        $authenticatedUser = Auth::user();
+
+        if ($authenticatedUser && (int) $authenticatedUser->id === (int) $userId && $authenticatedUser->isAdmin()) {
+            $impersonatedBroker = static::getImpersonatedBrokerForAdmin($authenticatedUser);
+
+            if ($impersonatedBroker) {
+                return $impersonatedBroker->id;
+            }
+        }
+
         $broker = self::where('user_id', $userId)->first();
 
         return $broker ? $broker->id : null;
+    }
+
+    /**
+     * Resolve the broker currently being impersonated by an admin user.
+     */
+    public static function getImpersonatedBrokerForAdmin(?User $user = null): ?self
+    {
+        $user ??= Auth::user();
+
+        if (!$user || !$user->isAdmin()) {
+            return null;
+        }
+
+        $brokerId = session(self::ADMIN_IMPERSONATION_SESSION_KEY);
+
+        if (!$brokerId) {
+            return null;
+        }
+
+        $broker = static::query()
+            ->with('user:id,email,status')
+            ->find($brokerId);
+
+        if (!$broker) {
+            static::stopAdminImpersonation();
+
+            return null;
+        }
+
+        return $broker;
+    }
+
+    /**
+     * Determine whether the given admin is currently impersonating a broker.
+     */
+    public static function isAdminImpersonatingBroker(?User $user = null): bool
+    {
+        return static::getImpersonatedBrokerForAdmin($user) !== null;
+    }
+
+    /**
+     * Determine whether admin support actions are enabled for the current broker-view session.
+     */
+    public static function areAdminBrokerSupportActionsEnabled(?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (!$user || !$user->isAdmin() || !static::isAdminImpersonatingBroker($user)) {
+            return false;
+        }
+
+        return (bool) session(self::ADMIN_SUPPORT_ACTIONS_SESSION_KEY, false);
+    }
+
+    /**
+     * Determine whether the current admin broker-view session should stay read-only.
+     */
+    public static function isAdminBrokerViewReadOnly(?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        return static::isAdminImpersonatingBroker($user)
+            && !static::areAdminBrokerSupportActionsEnabled($user);
+    }
+
+    /**
+     * Store the broker view context for the current admin session.
+     */
+    public static function startAdminImpersonation(self $broker, ?string $returnUrl = null): void
+    {
+        session([
+            self::ADMIN_IMPERSONATION_SESSION_KEY => $broker->id,
+            self::ADMIN_IMPERSONATION_RETURN_URL_SESSION_KEY => $returnUrl,
+            self::ADMIN_SUPPORT_ACTIONS_SESSION_KEY => false,
+        ]);
+    }
+
+    /**
+     * Enable broker write actions for the current admin broker-view session.
+     */
+    public static function enableAdminBrokerSupportActions(): void
+    {
+        session([self::ADMIN_SUPPORT_ACTIONS_SESSION_KEY => true]);
+    }
+
+    /**
+     * Disable broker write actions for the current admin broker-view session.
+     */
+    public static function disableAdminBrokerSupportActions(): void
+    {
+        session([self::ADMIN_SUPPORT_ACTIONS_SESSION_KEY => false]);
+    }
+
+    /**
+     * Clear the broker view context for the current admin session.
+     */
+    public static function stopAdminImpersonation(): void
+    {
+        session()->forget([
+            self::ADMIN_IMPERSONATION_SESSION_KEY,
+            self::ADMIN_IMPERSONATION_RETURN_URL_SESSION_KEY,
+            self::ADMIN_SUPPORT_ACTIONS_SESSION_KEY,
+        ]);
+    }
+
+    /**
+     * Get the admin return URL saved when broker view started.
+     */
+    public static function getAdminImpersonationReturnUrl(): ?string
+    {
+        return session(self::ADMIN_IMPERSONATION_RETURN_URL_SESSION_KEY);
     }
 
     /**

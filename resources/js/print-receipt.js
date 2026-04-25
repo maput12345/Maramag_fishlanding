@@ -8,6 +8,8 @@ class PrintReceipt {
             return;
         }
 
+        const watermarkLogoUrl = receiptContent.dataset.watermarkLogoUrl || '';
+
         // Create a new window for printing
         const printWindow = window.open('', '_blank', 'width=800,height=600');
 
@@ -18,6 +20,13 @@ class PrintReceipt {
 
         // Get the receipt HTML
         const receiptHTML = receiptContent.innerHTML;
+        const watermarkHTML = watermarkLogoUrl
+            ? `
+                <div class="receipt-watermark" aria-hidden="true">
+                    <img src="${watermarkLogoUrl}" alt="">
+                </div>
+            `
+            : '';
 
         // Create the complete HTML document for printing
         const printHTML = `
@@ -32,6 +41,34 @@ class PrintReceipt {
                         padding: 20px;
                         background: white;
                         color: #333;
+                        position: relative;
+                    }
+                    .print-sheet {
+                        position: relative;
+                        min-height: calc(100vh - 40px);
+                    }
+                    .print-sheet__content {
+                        position: relative;
+                        z-index: 1;
+                    }
+                    .receipt-watermark {
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: min(620px, 82vw);
+                        display: block;
+                        pointer-events: none;
+                        z-index: 0;
+                        text-align: center;
+                    }
+                    .receipt-watermark img {
+                        display: block;
+                        width: 100%;
+                        max-width: 100%;
+                        margin: 0 auto;
+                        opacity: 0.07;
+                        filter: grayscale(100%);
                     }
                     .max-w-md {
                         max-width: none;
@@ -119,6 +156,8 @@ class PrintReceipt {
                         body {
                             margin: 0;
                             padding: 0;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
                         }
                         @page {
                             margin: 0.5in;
@@ -128,7 +167,12 @@ class PrintReceipt {
                 </style>
             </head>
             <body>
-                ${receiptHTML}
+                <div class="print-sheet">
+                    ${watermarkHTML}
+                    <div class="print-sheet__content">
+                        ${receiptHTML}
+                    </div>
+                </div>
             </body>
             </html>
         `;
@@ -139,9 +183,21 @@ class PrintReceipt {
 
         // Wait for content to load, then print
         printWindow.onload = function() {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
+            const triggerPrint = () => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            };
+
+            const watermarkImage = printWindow.document.querySelector('.receipt-watermark img');
+            if (watermarkImage && !watermarkImage.complete) {
+                const completeAndPrint = () => setTimeout(triggerPrint, 150);
+                watermarkImage.addEventListener('load', completeAndPrint, { once: true });
+                watermarkImage.addEventListener('error', completeAndPrint, { once: true });
+                return;
+            }
+
+            setTimeout(triggerPrint, 150);
         };
     }
 }

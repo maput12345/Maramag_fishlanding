@@ -26,12 +26,11 @@ class FishTypesController extends Controller
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
         $fishTypes = FishType::getPaginatedWithSearch($request->get('search'), $brokerId);
-        $assignedFishTypeIds = BrokerFishType::where('broker_id', $brokerId)->pluck('fish_type_id');
         $fishTypeSummary = [
-            'assigned' => $assignedFishTypeIds->count(),
+            'assigned' => BrokerFishType::where('broker_id', $brokerId)->count(),
             'with_prices' => BrokerFishType::where('broker_id', $brokerId)->whereHas('latestPrice')->count(),
-            'used' => FishType::whereIn('id', $assignedFishTypeIds)
-                ->whereHas('fishBoxes', function ($purchaseQuery) use ($brokerId) {
+            'used' => BrokerFishType::where('broker_id', $brokerId)
+                ->whereHas('fishType.fishBoxes', function ($purchaseQuery) use ($brokerId) {
                     $purchaseQuery->whereHas('fishBox', function ($fishBoxQuery) use ($brokerId) {
                         $fishBoxQuery->where('broker_id', $brokerId);
                     });

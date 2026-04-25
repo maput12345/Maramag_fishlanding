@@ -50,6 +50,12 @@
 </div>
 
 <!-- Broker List Tab Content -->
+@php
+    $activeBrokerViewId = auth()->user()?->isAdmin()
+        ? \App\Models\Broker::getImpersonatedBrokerForAdmin(auth()->user())?->id
+        : null;
+@endphp
+
 <div class="space-y-4">
     <!-- Broker Users Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -86,18 +92,33 @@
                             <div class="text-sm text-gray-900">{{ $broker->user->email }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $broker->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            <span class="app-status-badge {{ $broker->status === 'active' ? 'app-status-badge--active' : 'app-status-badge--inactive' }}">
                                 {{ ucfirst($broker->status) }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $broker->created_at->format('M d, Y') }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center gap-2">
+                                @if(auth()->user()?->isAdmin())
+                                    @if($activeBrokerViewId === $broker->id)
+                                        <span class="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                                            Viewing Now
+                                        </span>
+                                    @elseif($broker->user?->status === \App\Constants\UserStatusConstant::ACTIVE)
+                                        <form method="POST" action="{{ route('admin.broker-view.start', $broker) }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100">
+                                                Broker View
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
+
                                 <span class="relative group inline-block">
-                                    <a href="{{ route('admin.users.edit', $broker->user->id) }}" class="p-2 rounded-full hover:bg-gray-100 text-blue-600 hover:text-blue-800 transition-colors" aria-label="Edit">
+                                    <a href="{{ route('admin.users.edit', $broker->user->id) }}" class="app-icon-button app-icon-button--edit" aria-label="Edit">
                                         <x-heroicon-o-pencil-square class="w-6 h-6" />
                                     </a>
-                                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Edit</span>
+                                    <span class="app-tooltip">Edit</span>
                                 </span>
 
                                 @if($broker->status === 'active')
@@ -105,10 +126,10 @@
                                         @csrf
                                         @method('PATCH')
                                         <span class="relative group inline-block">
-                                            <button type="submit" class="p-2 rounded-full hover:bg-gray-100 text-orange-600 hover:text-orange-800 transition-colors" aria-label="Deactivate">
+                                            <button type="submit" class="app-icon-button app-icon-button--deactivate" aria-label="Deactivate">
                                                 <x-heroicon-o-user-minus class="w-6 h-6" />
                                             </button>
-                                            <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Deactivate</span>
+                                            <span class="app-tooltip">Deactivate</span>
                                         </span>
                                     </form>
                                 @else
@@ -116,10 +137,10 @@
                                         @csrf
                                         @method('PATCH')
                                         <span class="relative group inline-block">
-                                            <button type="submit" class="p-2 rounded-full hover:bg-gray-100 text-green-600 hover:text-green-800 transition-colors" aria-label="Activate">
+                                            <button type="submit" class="app-icon-button app-icon-button--activate" aria-label="Activate">
                                                 <x-heroicon-o-user-plus class="w-6 h-6" />
                                             </button>
-                                            <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Activate</span>
+                                            <span class="app-tooltip">Activate</span>
                                         </span>
                                     </form>
                                 @endif
@@ -128,10 +149,10 @@
                                     @csrf
                                     @method('DELETE')
                                     <span class="relative group inline-block">
-                                        <button type="submit" class="p-2 rounded-full hover:bg-gray-100 text-red-600 hover:text-red-800 transition-colors" aria-label="Delete">
+                                        <button type="submit" class="app-icon-button app-icon-button--delete" aria-label="Delete">
                                             <x-heroicon-o-trash class="w-6 h-6" />
                                         </button>
-                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Delete</span>
+                                        <span class="app-tooltip">Delete</span>
                                     </span>
                                 </form>
                             </div>

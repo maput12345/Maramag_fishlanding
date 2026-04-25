@@ -11,12 +11,13 @@
 <div class="w-full max-w-2xl mx-auto">
                 <!-- Page Header -->
                 <div class="mb-8">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-3xl font-bold text-gray-900">{{ $title ?? 'User Form' }}</h1>
-                            <p class="text-gray-600 mt-2">{{ $description ?? 'Manage user information.' }}</p>
+                    <div class="app-page-header">
+                        <div class="app-page-header__content">
+                            <p class="app-page-kicker">Administration</p>
+                            <h1 class="app-page-title">{{ $title ?? 'User Form' }}</h1>
+                            <p class="app-page-description">{{ $description ?? 'Manage user information.' }}</p>
                         </div>
-                        <a href="{{ route('admin.users.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        <a href="{{ route('admin.users.index') }}" class="app-button app-button--secondary">
                             <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
@@ -205,11 +206,11 @@
                             <!-- Submit Button -->
                             <div class="flex justify-end space-x-3">
                                 <a href="{{ route('admin.users.index') }}"
-                                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-medium transition-colors">
+                                   class="app-button app-button--secondary">
                                     Cancel
                                 </a>
                                 <button type="submit"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                        class="app-button app-button--primary">
                                     {{ isset($user) && $user->id ? 'Update User' : 'Create User' }}
                                 </button>
                             </div>

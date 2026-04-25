@@ -76,22 +76,22 @@ class SalesPayment extends Model
      */
     public static function getPaymentMethodsBreakdown(?int $brokerId, string $dateFrom, string $dateTo, ?string $status = null): \Illuminate\Support\Collection
     {
-        $query = static::whereHas('sales', function ($q) use ($brokerId, $dateFrom, $dateTo, $status) {
-            $q->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-              ->whereDate('sales_date', '>=', $dateFrom)
-              ->whereDate('sales_date', '<=', $dateTo);
+        $query = static::query()
+            ->join('sales', 'sales.id', '=', 'payments.sale_id')
+            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses());
 
-            if ($brokerId) {
-                $q->where('broker_id', $brokerId);
-            }
+        Sales::applyDateRange($query, 'sales.sales_date', $dateFrom, $dateTo);
 
-            if ($status) {
-                $q->where('status', $status);
-            }
-        });
+        if ($brokerId) {
+            $query->where('sales.broker_id', $brokerId);
+        }
 
-        $payments = $query->selectRaw('payment_method, COUNT(*) as transactions, SUM(paid_amount) as amount')
-            ->groupBy('payment_method')
+        if ($status) {
+            $query->where('sales.status', $status);
+        }
+
+        $payments = $query->selectRaw('payments.payment_method, COUNT(*) as transactions, SUM(payments.paid_amount) as amount')
+            ->groupBy('payments.payment_method')
             ->get();
 
         $totalAmount = $payments->sum('amount');
@@ -112,14 +112,15 @@ class SalesPayment extends Model
      */
     public static function getTotalSalesToday(?int $brokerId): float
     {
-        $query = self::whereDate('payment_date', today());
+        $query = self::query();
+
+        Sales::applyDateConstraint($query, 'payment_date', '=', today()->toDateString());
 
         if ($brokerId) {
-            $query->whereHas('sales', function ($saleQuery) use ($brokerId) {
-                $saleQuery->where('broker_id', $brokerId);
-            });
+            $query->join('sales', 'sales.id', '=', 'payments.sale_id')
+                ->where('sales.broker_id', $brokerId);
         }
 
-        return $query->sum('paid_amount');
+        return (float) $query->sum('payments.paid_amount');
     }
 }

@@ -1,4 +1,9 @@
 <!-- Admin Sidebar Component -->
+@php
+    $isAdminSalesMenuActive = request()->routeIs('admin.sales.index');
+    $isAdminFishBoxTrackingActive = request()->routeIs('admin.sales.tracking');
+@endphp
+
 <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="app-sidebar admin-sidebar fixed left-0 top-0 z-40 hidden min-h-screen overflow-hidden transition-all duration-300 ease-in-out md:block">
     <div class="app-sidebar-brand border-b p-4">
         <div class="flex items-center space-x-2">
@@ -43,14 +48,25 @@
          </div>
 
 
-         <!-- Sales & Analytics -->
+         <!-- Sale -->
          <div>
             <a href="{{ route('admin.sales.index') }}"
                class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
-                      {{ request()->routeIs('admin.sales.*') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
-                <x-heroicon-o-chart-bar class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                           {{ request()->routeIs('admin.sales.*') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Sales & Analytics</span>
+                      {{ $isAdminSalesMenuActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-banknotes class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
+                           {{ $isAdminSalesMenuActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Sale</span>
+             </a>
+         </div>
+
+         <!-- Fish Box Tracking -->
+         <div>
+            <a href="{{ route('admin.sales.tracking') }}"
+               class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                      {{ $isAdminFishBoxTrackingActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-archive-box class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
+                           {{ $isAdminFishBoxTrackingActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Box Tracking</span>
              </a>
          </div>
 
@@ -60,7 +76,7 @@
                       {{ request()->routeIs('admin.applications.*') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <x-heroicon-o-clipboard-document-check class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
                            {{ request()->routeIs('admin.applications.*') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Applications</span>
+                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Applicant</span>
              </a>
          </div>
      </div>

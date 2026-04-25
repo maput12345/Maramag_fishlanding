@@ -13,11 +13,13 @@ class FishPrice extends Model
     protected $fillable = [
         'broker_fish_type_id',
         'price',
+        'default_cost_price',
         'price_date',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'default_cost_price' => 'decimal:2',
         'price_date' => 'date',
     ];
 
