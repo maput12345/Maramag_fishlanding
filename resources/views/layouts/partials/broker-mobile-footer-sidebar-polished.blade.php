@@ -64,6 +64,18 @@
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>
+
+        <div class="group relative">
+            <a href="{{ route('broker.financial-statements.index') }}"
+               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ request()->routeIs('broker.financial-statements.*') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-calculator class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('broker.financial-statements.*') ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                <span class="mt-1 text-xs font-medium">Finance</span>
+            </a>
+            <div class="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                Income Statement
+                <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
+            </div>
+        </div>
     </div>
 
     <div class="border-t border-gray-200 bg-gray-50 px-4 py-2">

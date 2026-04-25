@@ -338,8 +338,17 @@ class SalesQRScanner {
         }
     }
 
+    getActiveSalesFormRoot() {
+        const modalRoots = Array.from(document.querySelectorAll('[data-app-modal-root]'));
+
+        return modalRoots.reverse().find((modalRoot) => modalRoot.offsetParent !== null)
+            || modalRoots.at(-1)
+            || document;
+    }
+
     addFishBoxToSalesDetails(fishBox) {
-        const container = document.getElementById('sales-details-container');
+        const salesFormRoot = this.getActiveSalesFormRoot();
+        const container = salesFormRoot.querySelector('#sales-details-container');
         if (!container) {
             return;
         }
@@ -408,6 +417,14 @@ class SalesQRScanner {
 
             fishTypeSelect.disabled = true;
             fishTypeSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+
+            if (typeof window.refreshSalesSuggestedPriceForRow === 'function') {
+                window.refreshSalesSuggestedPriceForRow(targetRow, {
+                    force: true,
+                    overwriteZero: true,
+                    showMissingPriceWarning: true,
+                });
+            }
         }
 
         const quantityInput = targetRow.querySelector('.quantity-input');
@@ -433,6 +450,10 @@ class SalesQRScanner {
         const itemInput = targetRow.querySelector('.item-input');
         if (itemInput) {
             itemInput.value = fishTypeName;
+        }
+
+        if (fishTypeSelect) {
+            fishTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         const fishBoxesContainer = targetRow.querySelector('.fish-boxes-container');

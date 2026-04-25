@@ -186,20 +186,7 @@ c("Image load error"):b()};a.addEventListener("load",d);a.addEventListener("erro
 /******/ 	
 /******/ 	/* webpack/runtime/publicPath */
 /******/ 	(() => {
-/******/ 		var scriptUrl;
-/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
-/******/ 		var document = __webpack_require__.g.document;
-/******/ 		if (!scriptUrl && document) {
-/******/ 			if (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT") scriptUrl = document.currentScript.src;
-/******/ 			if (!scriptUrl) {
-/******/ 				var scripts = document.getElementsByTagName("script");
-/******/ 				if (scripts.length) scriptUrl = scripts[scripts.length - 1].src;
-/******/ 			}
-/******/ 		}
-/******/ 		if (scriptUrl) {
-/******/ 			scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/js\/[^\/]+$/, "/");
-/******/ 		}
-/******/ 		__webpack_require__.p = scriptUrl || "/";
+/******/ 		__webpack_require__.p = "/";
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/jsonp chunk loading */
@@ -311,6 +298,16 @@ function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = 
 function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/* global __webpack_public_path__ */
+
+if (typeof document !== 'undefined') {
+  var _document$getElements;
+  var currentScript = document.currentScript;
+  var scriptSource = (currentScript === null || currentScript === void 0 ? void 0 : currentScript.src) || ((_document$getElements = document.getElementsByTagName('script')[document.getElementsByTagName('script').length - 1]) === null || _document$getElements === void 0 ? void 0 : _document$getElements.src);
+  if (scriptSource) {
+    __webpack_require__.p = new URL('../', scriptSource).toString();
+  }
+}
 
 var QRScanner = /*#__PURE__*/function () {
   function QRScanner() {
@@ -426,7 +423,7 @@ var QRScanner = /*#__PURE__*/function () {
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              if (!this.isProcessing && this.keepScanning) {
+              if (!(this.isProcessing || !this.keepScanning)) {
                 _context.n = 1;
                 break;
               }
@@ -669,10 +666,6 @@ var QRScanner = /*#__PURE__*/function () {
       }
       this.isProcessing = false;
     }
-
-    /**
-     * Clear any pending scanner restart.
-     */
   }, {
     key: "clearRestartTimeout",
     value: function clearRestartTimeout() {
@@ -681,29 +674,17 @@ var QRScanner = /*#__PURE__*/function () {
         this.restartTimeout = null;
       }
     }
-
-    /**
-     * Prevent the same just-returned QR code from being scanned again immediately.
-     */
   }, {
     key: "isDuplicateSuccessfulScan",
     value: function isDuplicateSuccessfulScan(qrCode) {
       return this.lastSuccessfulQrCode === qrCode && this.lastSuccessfulAt !== null && Date.now() - this.lastSuccessfulAt < 4000;
     }
-
-    /**
-     * Remember the last successful QR scan.
-     */
   }, {
     key: "markSuccessfulScan",
     value: function markSuccessfulScan(qrCode) {
       this.lastSuccessfulQrCode = qrCode;
       this.lastSuccessfulAt = Date.now();
     }
-
-    /**
-     * Update scanner status area.
-     */
   }, {
     key: "updateStatusMessage",
     value: function updateStatusMessage(html) {
@@ -712,10 +693,6 @@ var QRScanner = /*#__PURE__*/function () {
         statusElement.innerHTML = html;
       }
     }
-
-    /**
-     * Restart scanning after a successful return while keeping the modal open.
-     */
   }, {
     key: "restartScannerAfterSuccess",
     value: function restartScannerAfterSuccess(message) {
@@ -730,12 +707,15 @@ var QRScanner = /*#__PURE__*/function () {
           while (1) switch (_context4.n) {
             case 0:
               _this4.restartTimeout = null;
-              if (!_this4.keepScanning || !_this4.modal || _this4.modal.classList.contains('hidden')) {
-                return _context4.a(2);
+              if (!(!_this4.keepScanning || !_this4.modal || _this4.modal.classList.contains('hidden'))) {
+                _context4.n = 1;
+                break;
               }
-              _context4.n = 1;
-              return _this4.startScanner();
+              return _context4.a(2);
             case 1:
+              _context4.n = 2;
+              return _this4.startScanner();
+            case 2:
               return _context4.a(2);
           }
         }, _callee4);
@@ -758,8 +738,6 @@ var QRScanner = /*#__PURE__*/function () {
 
       // Stop scanner immediately
       this.stopScanner();
-
-      // Show processing message
       this.updateStatusMessage("\n            <div class=\"text-center\">\n                <div class=\"flex items-center justify-center space-x-2 mb-2\">\n                    <div class=\"animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600\"></div>\n                    <p class=\"text-blue-600 font-medium\">Processing QR Code...</p>\n                </div>\n                <div class=\"bg-blue-50 border border-blue-200 rounded-lg p-2\">\n                    <p class=\"text-xs text-blue-700 font-mono\">".concat(qrCode, "</p>\n                </div>\n            </div>\n        "));
 
       // Call backend handler

@@ -29,6 +29,12 @@
     if (request()->filled('modal') && isset($salesModalBreadcrumbs[request('modal')])) {
         $breadcrumbs[] = ['title' => $salesModalBreadcrumbs[request('modal')]];
     }
+
+    $printReceiptScriptUrl = asset('js/print-receipt.js') . '?v=' . filemtime(public_path('js/print-receipt.js'));
+    $qrScannerLegacyScriptUrl = asset('js/qr-scanner-legacy.min.js') . '?v=' . filemtime(public_path('js/qr-scanner-legacy.min.js'));
+    $salesQrScannerScriptUrl = asset('js/sales-qr-scanner.js') . '?v=' . filemtime(public_path('js/sales-qr-scanner.js'));
+    $salesFormScriptUrl = asset('js/sales-form.js') . '?v=' . filemtime(public_path('js/sales-form.js'));
+    $salesPageScriptUrl = asset('js/sales-page.js') . '?v=' . filemtime(public_path('js/sales-page.js'));
 @endphp
 
 @extends('layouts.broker')
@@ -272,7 +278,13 @@
                             required>
                         <option value="">Select Fish Name</option>
                         @foreach($fishTypes ?? [] as $fishType)
-                            <option value="{{ $fishType->id }}">{{ $fishType->name }}</option>
+                            @php
+                                $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+                            @endphp
+                            <option value="{{ $fishType->id }}"
+                                    data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}">
+                                {{ $fishType->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -327,14 +339,22 @@
             lookupUrlTemplate: @json(route('broker.fish-boxes.qr', ['qrCode' => '__QR_CODE__']))
         };
     </script>
-    <script src="{{ asset('js/print-receipt.js') }}" defer></script>
-    <script src="{{ asset('js/qr-scanner-legacy.min.js') }}" defer></script>
-    <script src="{{ asset('js/sales-qr-scanner.js') }}" defer></script>
-    <script src="{{ asset('js/sales-form.js') }}" defer></script>
-    <script src="{{ asset('js/sales-page.js') }}" defer></script>
+    <script src="{{ $printReceiptScriptUrl }}" defer></script>
+    <script src="{{ $qrScannerLegacyScriptUrl }}" defer></script>
+    <script src="{{ $salesQrScannerScriptUrl }}" defer></script>
+    <script src="{{ $salesFormScriptUrl }}" defer></script>
+    <script src="{{ $salesPageScriptUrl }}" defer></script>
     <script>
-        function getCurrentSalesFormConfig() {
-            const configNode = document.querySelector('[data-sales-form-config]');
+        function getActiveSalesModalRoot() {
+            const modalRoots = Array.from(document.querySelectorAll('[data-app-modal-root]'));
+
+            return modalRoots.reverse().find((modalRoot) => modalRoot.offsetParent !== null)
+                || modalRoots.at(-1)
+                || null;
+        }
+
+        function getCurrentSalesFormConfig(modalRoot = getActiveSalesModalRoot()) {
+            const configNode = modalRoot?.querySelector('[data-sales-form-config]');
 
             if (!configNode) {
                 return null;
@@ -349,25 +369,20 @@
         }
 
         function initializeSalesFormWhenReady(attempt = 0) {
-            if (typeof initializeSalesForm !== 'function') {
+            const maxAttempts = 30;
+            const hasInitializer = typeof initializeSalesForm === 'function';
+            const modalRoot = getActiveSalesModalRoot();
+            const config = hasInitializer ? getCurrentSalesFormConfig(modalRoot) : null;
+            const container = modalRoot?.querySelector('#sales-details-container');
+            const addBtn = modalRoot?.querySelector('#add-sales-detail-btn');
+            const totalAmountDisplay = modalRoot?.querySelector('#total-amount-display');
+
+            if (hasInitializer && config && container && addBtn && totalAmountDisplay && modalRoot) {
+                initializeSalesForm(config, modalRoot);
                 return;
             }
 
-            const config = getCurrentSalesFormConfig();
-            if (!config) {
-                return;
-            }
-
-            const container = document.getElementById('sales-details-container');
-            const addBtn = document.getElementById('add-sales-detail-btn');
-            const totalAmountDisplay = document.getElementById('total-amount-display');
-
-            if (container && addBtn && totalAmountDisplay) {
-                initializeSalesForm(config);
-                return;
-            }
-
-            if (attempt < 10) {
+            if (attempt < maxAttempts) {
                 window.requestAnimationFrame(() => initializeSalesFormWhenReady(attempt + 1));
             }
         }
@@ -377,7 +392,8 @@
                 window.salesQrScanner = new SalesQRScanner();
             }
 
-            const scanBtn = document.getElementById('scan-qr-btn');
+            const modalRoot = getActiveSalesModalRoot();
+            const scanBtn = modalRoot?.querySelector('#scan-qr-btn');
             if (scanBtn && !scanBtn.dataset.salesQrBound) {
                 scanBtn.dataset.salesQrBound = 'true';
                 scanBtn.addEventListener('click', function() {

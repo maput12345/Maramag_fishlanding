@@ -88,11 +88,24 @@ class SalesController extends Controller
         // Filter fish types to only show those with available fish boxes in both create and edit modes
         $availableFishTypeIds = $fishBoxes->pluck('fish_type_id')->unique()->filter()->toArray();
         $fishTypes = $allFishTypes->whereIn('id', $availableFishTypeIds);
-        $fishPriceMap = BrokerFishType::with('latestPrice')
+        $fishPriceMap = BrokerFishType::query()
+            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->with([
+                'latestPrice' => function ($query) {
+                    $query->select([
+                        'fish_prices.id',
+                        'fish_prices.broker_fish_type_id',
+                        'fish_prices.price',
+                    ]);
+                },
+            ])
             ->where('broker_id', $brokerId)
             ->get()
-            ->mapWithKeys(function ($assignment) {
-                return [$assignment->fish_type_id => (float) ($assignment->latestPrice?->price ?? 0)];
+            ->filter(fn (BrokerFishType $assignment): bool => $assignment->latestPrice !== null)
+            ->mapWithKeys(function (BrokerFishType $assignment): array {
+                return [
+                    (string) $assignment->fish_type_id => (float) $assignment->latestPrice->price,
+                ];
             })
             ->all();
         $salesSummary = Sales::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);

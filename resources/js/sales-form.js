@@ -10,30 +10,64 @@ let SALES_CONFIG = {};
  * Initialize sales form
  * @param {Object} config - Configuration object with fishBoxes, fishTypes, fishPrices, and detailIndex
  */
-function initializeSalesForm(config) {
-    SALES_CONFIG = config;
+function initializeSalesForm(config, scope = document) {
+    const normalizeFishPrices = (fishPrices) => {
+        if (!fishPrices || typeof fishPrices !== 'object') {
+            return {};
+        }
 
-    const container = document.getElementById('sales-details-container');
-    const addBtn = document.getElementById('add-sales-detail-btn');
-    const totalAmountDisplay = document.getElementById('total-amount-display');
-    const totalAmountInput = document.getElementById('total_amount');
-    const initialPaidAmountInput = document.getElementById('initial_paid_amount');
-    const initialPaymentMaxAmount = document.getElementById('initial-payment-max-amount');
-    const initialPaymentError = document.getElementById('initial-payment-error');
+        return Object.entries(fishPrices).reduce((carry, [key, value]) => {
+            carry[String(key)] = value;
+            return carry;
+        }, {});
+    };
+
+    SALES_CONFIG = {
+        ...config,
+        fishPrices: normalizeFishPrices(config.fishPrices || {}),
+    };
+    const salesFormMode = SALES_CONFIG.mode || 'create';
+    const root = scope && typeof scope.querySelector === 'function'
+        ? scope
+        : document;
+
+    const container = root.querySelector('#sales-details-container');
+    const addBtn = root.querySelector('#add-sales-detail-btn');
+    const totalAmountDisplay = root.querySelector('#total-amount-display');
+    const totalAmountInput = root.querySelector('#total_amount');
+    const initialPaidAmountInput = root.querySelector('#initial_paid_amount');
+    const initialPaymentMaxAmount = root.querySelector('#initial-payment-max-amount');
+    const initialPaymentError = root.querySelector('#initial-payment-error');
 
     if (!container || !addBtn || !totalAmountDisplay) return;
     if (container.dataset.salesFormInitialized === 'true') return;
 
     container.dataset.salesFormInitialized = 'true';
 
-    document.querySelectorAll('.sales-detail-row').forEach((row) => {
+    root.querySelectorAll('.sales-detail-row').forEach((row) => {
         const fishTypeSelect = row.querySelector('.fish-type-select');
         row.dataset.activeFishTypeId = fishTypeSelect?.value || '';
     });
 
+    const hydrateSuggestedPriceOptions = (scope = container) => {
+        scope.querySelectorAll('.fish-type-select option[value]').forEach((option) => {
+            const fishTypeId = option.value ? String(option.value) : '';
+
+            if (!fishTypeId) {
+                return;
+            }
+
+            const suggestedPrice = SALES_CONFIG.fishPrices?.[fishTypeId];
+
+            if (suggestedPrice !== undefined && suggestedPrice !== null && suggestedPrice !== '') {
+                option.dataset.suggestedPrice = String(suggestedPrice);
+            }
+        });
+    };
+
     // Get selected fish boxes (excluding a specific row)
     const getSelectedFishBoxes = (excludeRowIndex = null) => {
-        return Array.from(document.querySelectorAll('.sales-detail-row'))
+        return Array.from(root.querySelectorAll('.sales-detail-row'))
             .filter(row => row.dataset.index !== excludeRowIndex)
             .flatMap(row => Array.from(row.querySelectorAll('.fish-box-hidden-input'))
                 .map(input => input.value)
@@ -49,9 +83,143 @@ function initializeSalesForm(config) {
         });
     };
 
+    const getFishTypeName = (fishTypeId) => {
+        const fishType = SALES_CONFIG.fishTypes.find(ft => String(ft.id) === String(fishTypeId));
+        return fishType?.name || 'this fish name';
+    };
+
+    const getSuggestedPrice = (row, fishTypeId) => {
+        if (!fishTypeId) {
+            return null;
+        }
+
+        const normalizedFishTypeId = String(fishTypeId);
+        const suggestedPrice = SALES_CONFIG.fishPrices?.[normalizedFishTypeId];
+
+        if (suggestedPrice !== undefined && suggestedPrice !== null && suggestedPrice !== '') {
+            const parsedPrice = Number(suggestedPrice);
+            if (Number.isFinite(parsedPrice)) {
+                return parsedPrice;
+            }
+        }
+
+        const selectedOption = row
+            ?.querySelector('.fish-type-select')
+            ?.selectedOptions?.[0];
+        const optionSuggestedPrice = selectedOption?.dataset?.suggestedPrice;
+
+        if (optionSuggestedPrice === undefined || optionSuggestedPrice === null || optionSuggestedPrice === '') {
+            return null;
+        }
+
+        const parsedOptionSuggestedPrice = Number(optionSuggestedPrice);
+
+        return Number.isFinite(parsedOptionSuggestedPrice) ? parsedOptionSuggestedPrice : null;
+    };
+
+    const bindRowEvents = (row) => {
+        if (!row || row.dataset.salesRowBound === 'true') {
+            return;
+        }
+
+        row.dataset.salesRowBound = 'true';
+
+        const fishTypeSelect = row.querySelector('.fish-type-select');
+        const unitPriceInput = row.querySelector('.unit-price-input');
+        const quantityInput = row.querySelector('.quantity-input');
+
+        if (fishTypeSelect) {
+            fishTypeSelect.addEventListener('change', () => {
+                handleFishTypeChange(fishTypeSelect);
+            });
+        }
+
+        if (unitPriceInput) {
+            const onUnitPriceChange = () => {
+                calculateSubTotal(unitPriceInput);
+                updateTotalAmount();
+            };
+
+            unitPriceInput.addEventListener('input', onUnitPriceChange);
+            unitPriceInput.addEventListener('change', onUnitPriceChange);
+        }
+
+        if (quantityInput) {
+            quantityInput.addEventListener('input', () => {
+                handleQuantityChange(quantityInput);
+            });
+
+            quantityInput.addEventListener('change', () => {
+                calculateSubTotal(quantityInput);
+                updateTotalAmount();
+            });
+        }
+    };
+
+    const applySuggestedPriceToRow = (row, options = {}) => {
+        const {
+            force = false,
+            overwriteZero = false,
+            clearOnMissing = false,
+            showMissingPriceWarning = false,
+        } = options;
+
+        const fishTypeSelect = row.querySelector('.fish-type-select');
+        const unitPriceInput = row.querySelector('.unit-price-input');
+
+        if (!fishTypeSelect || !unitPriceInput) {
+            return;
+        }
+
+        const fishTypeId = fishTypeSelect.value;
+
+        if (!fishTypeId) {
+            if (clearOnMissing) {
+                unitPriceInput.value = '';
+                calculateSubTotal(unitPriceInput);
+                updateTotalAmount();
+            }
+
+            row.dataset.missingPriceWarningShownFor = '';
+            return;
+        }
+
+        const suggestedPrice = getSuggestedPrice(row, fishTypeId);
+        const currentUnitPrice = parseFloat(unitPriceInput.value);
+        const hasCurrentUnitPrice = unitPriceInput.value !== '' && !Number.isNaN(currentUnitPrice);
+        const shouldPopulate = force || !hasCurrentUnitPrice || (overwriteZero && currentUnitPrice === 0);
+
+        if (suggestedPrice !== null) {
+            if (shouldPopulate) {
+                unitPriceInput.value = suggestedPrice.toFixed(2);
+            }
+
+            calculateSubTotal(unitPriceInput);
+            updateTotalAmount();
+            row.dataset.missingPriceWarningShownFor = '';
+            return;
+        }
+
+        if (clearOnMissing && shouldPopulate) {
+            unitPriceInput.value = '';
+            calculateSubTotal(unitPriceInput);
+            updateTotalAmount();
+        }
+
+        if (showMissingPriceWarning && row.dataset.missingPriceWarningShownFor !== String(fishTypeId)) {
+            row.dataset.missingPriceWarningShownFor = String(fishTypeId);
+
+            if (window.toastr) {
+                toastr.info(
+                    `No automatic selling price is set for ${getFishTypeName(fishTypeId)} yet. You can encode it in Inventory > Fish Prices or type a manual amount here.`
+                );
+            }
+        }
+    };
+
     // Update all rows fish box availability
     const updateAllRowsFishBoxAvailability = () => {
-        document.querySelectorAll('.sales-detail-row').forEach(row => {
+        root.querySelectorAll('.sales-detail-row').forEach(row => {
             const fishTypeSelect = row.querySelector('.fish-type-select');
             if (fishTypeSelect && fishTypeSelect.value) handleFishTypeChange(fishTypeSelect, true);
         });
@@ -66,6 +234,8 @@ function initializeSalesForm(config) {
         newRow.dataset.index = SALES_CONFIG.detailIndex;
         newRow.innerHTML = newRow.innerHTML.replaceAll('INDEX', SALES_CONFIG.detailIndex);
         container.appendChild(newRow);
+        hydrateSuggestedPriceOptions(newRow);
+        bindRowEvents(newRow);
         SALES_CONFIG.detailIndex++;
         updateTotalAmount();
     });
@@ -76,25 +246,6 @@ function initializeSalesForm(config) {
             e.target.closest('.sales-detail-row').remove();
             updateTotalAmount();
             updateAllRowsFishBoxAvailability();
-        }
-    });
-
-    // Handle input changes
-    container.addEventListener('change', (e) => {
-        if (e.target.classList.contains('fish-type-select')) {
-            handleFishTypeChange(e.target);
-        } else if (e.target.classList.contains('unit-price-input') || e.target.classList.contains('quantity-input')) {
-            calculateSubTotal(e.target);
-            updateTotalAmount();
-        }
-    });
-
-    container.addEventListener('input', (e) => {
-        if (e.target.classList.contains('quantity-input')) {
-            handleQuantityChange(e.target);
-        } else if (e.target.classList.contains('unit-price-input')) {
-            calculateSubTotal(e.target);
-            updateTotalAmount();
         }
     });
 
@@ -145,10 +296,10 @@ function initializeSalesForm(config) {
         const fishTypeId = fishTypeSelect.value;
         const fishBoxesContainer = row.querySelector('.fish-boxes-container');
         const itemInput = row.querySelector('.item-input');
-        const unitPriceInput = row.querySelector('.unit-price-input');
-        const suggestedPrice = SALES_CONFIG.fishPrices?.[fishTypeId];
         const previousFishTypeId = row.dataset.activeFishTypeId || '';
         const fishTypeChanged = previousFishTypeId !== String(fishTypeId);
+
+        hydrateSuggestedPriceOptions(row);
 
         if (fishTypeId) {
             const availableBoxes = getAvailableFishBoxesForType(fishTypeId, row.dataset.index);
@@ -172,15 +323,12 @@ function initializeSalesForm(config) {
 
                 const fishType = SALES_CONFIG.fishTypes.find(ft => ft.id == fishTypeId);
                 if (fishType && itemInput) itemInput.value = fishType.name;
-                if (
-                    unitPriceInput &&
-                    suggestedPrice !== undefined &&
-                    (fishTypeChanged || !unitPriceInput.value || parseFloat(unitPriceInput.value) === 0)
-                ) {
-                    unitPriceInput.value = Number(suggestedPrice).toFixed(2);
-                    calculateSubTotal(unitPriceInput);
-                    updateTotalAmount();
-                }
+                applySuggestedPriceToRow(row, {
+                    force: fishTypeChanged,
+                    overwriteZero: true,
+                    clearOnMissing: fishTypeChanged,
+                    showMissingPriceWarning: true,
+                });
 
                 row.dataset.activeFishTypeId = String(fishTypeId);
 
@@ -202,6 +350,9 @@ function initializeSalesForm(config) {
                 item.querySelector('.fish-box-select').innerHTML = '<option value="">Auto-select</option>';
                 item.querySelector('.fish-box-hidden-input').value = '';
             });
+            applySuggestedPriceToRow(row, {
+                clearOnMissing: true,
+            });
             row.dataset.activeFishTypeId = '';
         }
     }
@@ -220,7 +371,7 @@ function initializeSalesForm(config) {
     }
 
     function updateTotalAmount() {
-        const total = Array.from(document.querySelectorAll('.sub-total-input'))
+        const total = Array.from(root.querySelectorAll('.sub-total-input'))
             .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
 
         totalAmountDisplay.textContent = `PHP ${total.toFixed(2)}`;
@@ -269,6 +420,23 @@ function initializeSalesForm(config) {
     }
 
     // Initialize total amount
+    root.querySelectorAll('.sales-detail-row').forEach((row) => {
+        hydrateSuggestedPriceOptions(row);
+        bindRowEvents(row);
+        applySuggestedPriceToRow(row, {
+            overwriteZero: salesFormMode === 'create',
+        });
+    });
+
+    window.refreshSalesSuggestedPriceForRow = (row, options = {}) => {
+        if (!row) {
+            return;
+        }
+
+        hydrateSuggestedPriceOptions(row);
+        applySuggestedPriceToRow(row, options);
+    };
+
     updateTotalAmount();
 }
 

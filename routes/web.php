@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ApplicationManagementController;
 use App\Http\Controllers\ApplicationPortalController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Broker\FinancialStatementController;
 use App\Http\Controllers\Broker\FishTypesController;
 use App\Http\Controllers\Broker\FishBoxController;
 use App\Http\Controllers\Broker\FishPricesController;
@@ -115,6 +116,9 @@ Route::middleware(['auth', 'broker'])->group(function () {
     Route::get('/broker/dashboard', [BrokerDashboardController::class, 'index'])->name('broker.dashboard');
     Route::get('/broker/analytics', [SalesManagementController::class, 'analytics'])->name('broker.sales.analytics');
     Route::get('/broker/sales', [SalesManagementController::class, 'sales'])->name('broker.sales.sales');
+    Route::get('/broker/financial-statement', [FinancialStatementController::class, 'index'])->name('broker.financial-statements.index');
+    Route::post('/broker/financial-statement/entries', [FinancialStatementController::class, 'store'])->name('broker.financial-statements.entries.store');
+    Route::delete('/broker/financial-statement/entries/{entry}', [FinancialStatementController::class, 'destroy'])->name('broker.financial-statements.entries.destroy');
 
     // Fishbox Management routes for brokers
     Route::controller(FishboxManagementController::class)->prefix('broker')->name('broker.')->group(function () {

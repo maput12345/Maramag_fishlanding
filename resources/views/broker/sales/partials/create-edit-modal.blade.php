@@ -86,6 +86,7 @@
                     'fishBoxes' => $fishBoxes ?? [],
                     'fishTypes' => $fishTypes ?? [],
                     'fishPrices' => $fishPriceMap ?? [],
+                    'mode' => request('modal') === 'edit' ? 'edit' : 'create',
                     'detailIndex' => count($salesDetails ?? []),
                 ];
             @endphp
@@ -121,6 +122,9 @@
                     <label class="block text-sm font-medium text-gray-700">
                         Sales Details <span class="text-red-500">*</span>
                     </label>
+                    <p class="text-xs text-gray-500">
+                        Price per box auto-fills from your current broker fish price list when available. If a fish has no saved selling price yet, you can still enter it manually here.
+                    </p>
 
                     <div class="space-y-4" id="sales-details-container">
                         @foreach($salesDetails as $index => $detail)
@@ -133,7 +137,11 @@
                                                 required>
                                             <option value="">Select Fish Name</option>
                                             @foreach($fishTypes as $fishType)
+                                                @php
+                                                    $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+                                                @endphp
                                                 <option value="{{ $fishType->id }}"
+                                                        data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}"
                                                         {{ (string)($detail['fish_type_id'] ?? '') === (string)$fishType->id ? 'selected' : '' }}>
                                                     {{ $fishType->name }}
                                                 </option>
