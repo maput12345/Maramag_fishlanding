@@ -1,7 +1,7 @@
 /**
  * Print broker sales report using the currently filtered range.
  */
-window.printBrokerSales = function(brokerId, brokerName, stallName) {
+window.printBrokerSales = async function(brokerId, brokerName, stallName) {
     // Get date range from URL or form inputs
     const urlParams = new URLSearchParams(window.location.search);
     let dateFrom = urlParams.get('date_from');
@@ -26,6 +26,37 @@ window.printBrokerSales = function(brokerId, brokerName, stallName) {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const formatCurrency = (amount) => `PHP ${Number(amount || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+
+    const getInclusiveDayCount = (from, to) => {
+        if (!from && !to) {
+            return 1;
+        }
+
+        const parseDate = (value) => {
+            if (!value) return null;
+            const parts = value.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        };
+
+        const startDate = parseDate(from || to);
+        const endDate = parseDate(to || from);
+
+        if (!startDate || !endDate) {
+            return 1;
+        }
+
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        const diff = Math.round((endDate - startDate) / millisecondsPerDay);
+
+        return Math.max(diff + 1, 1);
+    };
+
     // Find the broker's table in the DOM
     const brokerCard = document.querySelector(`[data-broker-id="${brokerId}"]`);
     if (!brokerCard) {
@@ -44,92 +75,86 @@ window.printBrokerSales = function(brokerId, brokerName, stallName) {
     const selectedPeriodLabel = hasRange
         ? `${formattedDateFrom} to ${formattedDateTo}`
         : formattedDateTo || formattedDateFrom || formattedReceiptDate;
-    const salesCount = Number(brokerCard.dataset.receiptSalesCount || 0);
-    const soldFishBoxesCount = Number(brokerCard.dataset.receiptFishboxCount || 0);
+    let soldFishBoxesCount = Number(brokerCard.dataset.receiptFishboxCount || 0);
+    const leeoCommissionPerBox = Number(brokerCard.dataset.receiptLeeoCommissionPerBox || 5);
+    const dailyBrokerFee = 100;
     const watermarkLogoUrl = brokerCard.dataset.receiptWatermarkLogoUrl || '';
 
-    let receiptSales = [];
-    try {
-        receiptSales = JSON.parse(brokerCard.dataset.receiptSales || '[]');
-    } catch (error) {
-        receiptSales = [];
+    const receiptDataUrl = brokerCard.dataset.receiptDataUrl;
+
+    if (receiptDataUrl) {
+        try {
+            const requestUrl = new URL(receiptDataUrl, window.location.origin);
+            if (dateFrom) {
+                requestUrl.searchParams.set('date_from', dateFrom);
+            }
+            if (dateTo) {
+                requestUrl.searchParams.set('date_to', dateTo);
+            }
+
+            const freshResponse = await fetch(requestUrl.toString(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (freshResponse.ok) {
+                const freshData = await freshResponse.json();
+                soldFishBoxesCount = Number(freshData.fish_box_count || soldFishBoxesCount);
+                dateFrom = freshData.receipt_date_from || dateFrom;
+                dateTo = freshData.receipt_date_to || dateTo;
+            }
+        } catch (error) {
+            console.error('Unable to refresh broker receipt data before printing.', error);
+        }
     }
 
-    let missingBoxes = [];
-    try {
-        missingBoxes = JSON.parse(brokerCard.dataset.brokerMissingBoxesForReceipt || '[]');
-    } catch (error) {
-        missingBoxes = [];
-    }
-
-    const missingBoxesCount = missingBoxes.length;
-    const tableHTML = receiptSales.length > 0
-        ? `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left; background-color: #f3f4f6;">Date</th>
-                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left; background-color: #f3f4f6;">Buyer</th>
-                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left; background-color: #f3f4f6;">Fish Name</th>
-                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left; background-color: #f3f4f6;">Quantity</th>
-                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left; background-color: #f3f4f6;">Fish Boxes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${receiptSales.map((saleRow) => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 12px;">${saleRow.date}</td>
-                            <td style="border: 1px solid #ddd; padding: 12px;">${saleRow.buyer}</td>
-                            <td style="border: 1px solid #ddd; padding: 12px;">${saleRow.fish_name}</td>
-                            <td style="border: 1px solid #ddd; padding: 12px;">${saleRow.quantity}</td>
-                            <td style="border: 1px solid #ddd; padding: 12px;">${(saleRow.fish_boxes || []).join(', ') || '-'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `
-        : `
-            <div style="margin-top: 20px; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 18px 20px; background: #f8fafc;">
-                <h2 style="margin: 0 0 8px; font-size: 18px; color: #0f172a;">No Sales Recorded</h2>
-                <p style="margin: 0; font-size: 13px; color: #475569;">No sales were recorded for this broker in the selected filter${selectedPeriodLabel ? ` (${selectedPeriodLabel})` : ''}.</p>
-            </div>
-        `;
+    const billingDays = getInclusiveDayCount(dateFrom, dateTo);
+    const commissionPayableAmount = soldFishBoxesCount * leeoCommissionPerBox;
+    const dailyFeeAmount = billingDays * dailyBrokerFee;
+    const totalPayableAmount = commissionPayableAmount + dailyFeeAmount;
 
     const summaryHTML = `
-        <div style="display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap;">
-            <div style="flex: 1 1 180px; border: 1px solid #dbeafe; border-radius: 12px; padding: 14px 16px; background: #eff6ff;">
-                <div style="font-size: 12px; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.08em;">Sales in Filter</div>
-                <div style="margin-top: 6px; font-size: 24px; font-weight: 700; color: #111827;">${salesCount}</div>
-            </div>
-            <div style="flex: 1 1 180px; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 16px; background: #fff7ed;">
-                <div style="font-size: 12px; color: #c2410c; text-transform: uppercase; letter-spacing: 0.08em;">Sold Fish Boxes</div>
-                <div style="margin-top: 6px; font-size: 24px; font-weight: 700; color: #111827;">${soldFishBoxesCount}</div>
-            </div>
-            <div style="flex: 1 1 180px; border: 1px solid #fecaca; border-radius: 12px; padding: 14px 16px; background: #fef2f2;">
-                <div style="font-size: 12px; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.08em;">Missing Boxes</div>
-                <div style="margin-top: 6px; font-size: 24px; font-weight: 700; color: #111827;">${missingBoxesCount}</div>
+        <div style="margin: 24px 0 0;">
+            <div style="border: 1px solid #dbe4f0; border-radius: 16px; overflow: hidden; background: #ffffff;">
+                <div style="padding: 18px 22px; border-bottom: 1px solid #e5e7eb; background: #f8fafc;">
+                    <h2 style="margin: 0; font-size: 20px; color: #0f172a;">Broker Payable Summary</h2>
+                </div>
+                <div style="padding: 22px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Sold Fish Boxes</div>
+                            <div style="font-size: 12px; color: #64748b;">Total boxes sold in the selected period</div>
+                        </div>
+                        <div style="font-size: 24px; font-weight: 700; color: #111827;">${soldFishBoxesCount}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">LEEO Commission</div>
+                            <div style="font-size: 12px; color: #64748b;">${soldFishBoxesCount} box(es) x ${formatCurrency(leeoCommissionPerBox)}</div>
+                        </div>
+                        <div style="font-size: 18px; font-weight: 700; color: #111827;">${formatCurrency(commissionPayableAmount)}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Daily Fee</div>
+                            <div style="font-size: 12px; color: #64748b;">${billingDays} day(s) x ${formatCurrency(dailyBrokerFee)}</div>
+                        </div>
+                        <div style="font-size: 18px; font-weight: 700; color: #111827;">${formatCurrency(dailyFeeAmount)}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; gap: 16px;">
+                        <div>
+                            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Total Payable to LEEO</div>
+                        </div>
+                        <div style="font-size: 26px; font-weight: 800; color: #047857;">${formatCurrency(totalPayableAmount)}</div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
-
-    const missingBoxesHTML = missingBoxesCount > 0
-        ? `
-            <div style="margin-top: 24px; border: 1px solid #fecaca; border-radius: 14px; padding: 18px 20px; background: #fff5f5;">
-                <h2 style="margin: 0 0 8px; font-size: 18px; color: #991b1b;">Missing Boxes</h2>
-                <p style="margin: 0 0 12px; font-size: 13px; color: #7f1d1d;">
-                    These fish boxes were still marked missing as of ${formattedReceiptDate}. They stay on the receipt until a return is logged.
-                </p>
-                <ul style="margin: 0; padding-left: 18px; color: #1f2937;">
-                    ${missingBoxes.map((fishBox) => `<li style="margin-bottom: 6px;"><strong>${fishBox.name}</strong> <span style="color: #6b7280;">(${fishBox.qr_code})</span>${fishBox.reported_at ? ` <span style="color: #991b1b;">- reported ${fishBox.reported_at}</span>` : ''}</li>`).join('')}
-                </ul>
-            </div>
-        `
-        : `
-            <div style="margin-top: 24px; border: 1px solid #d1fae5; border-radius: 14px; padding: 18px 20px; background: #ecfdf5;">
-                <h2 style="margin: 0 0 8px; font-size: 18px; color: #065f46;">Missing Boxes</h2>
-                <p style="margin: 0; font-size: 13px; color: #047857;">No fish boxes were still marked missing for this broker on ${formattedReceiptDate}.</p>
-            </div>
-        `;
 
     // Build stall info
     const stallInfo = stallName ? `<p><strong>Stall:</strong> ${stallName}</p>` : '';
@@ -231,16 +256,14 @@ window.printBrokerSales = function(brokerId, brokerName, stallName) {
                     ${watermarkHTML}
                     <div class="print-shell">
                         <div class="header">
-                            <h1>Sales Report</h1>
+                            <h1>Broker Receipt</h1>
                             <p><strong>Broker:</strong> ${brokerName}</p>
                             ${stallInfo}
                             ${selectedPeriodLabel ? `<p><strong>Period:</strong> ${selectedPeriodLabel}</p>` : ''}
                         </div>
                         ${summaryHTML}
-                        ${tableHTML}
-                        ${missingBoxesHTML}
                         <div class="footer">
-                            <p>POS System - Sales Report</p>
+                            <p>POS System - Broker Receipt</p>
                             <p><strong>Generated:</strong> ${new Date().toLocaleString('en-US', {
                                 month: 'short',
                                 day: 'numeric',

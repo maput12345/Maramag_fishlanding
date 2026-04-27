@@ -42,7 +42,7 @@
                         <input type="text"
                                name="search"
                                x-model="search"
-                               placeholder="Search fish box, fish name, QR code, or buyer..."
+                               placeholder="Search fish box, fish, QR code, or buyer..."
                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <x-heroicon-o-magnifying-glass class="h-4 w-4 text-gray-400" />
@@ -79,7 +79,7 @@
                     <tr>
                         <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
                         <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish Box</th>
-                        <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish Name</th>
+                        <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish</th>
                         <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Buyer</th>
                         <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
                         <th class="px-3 py-3 md:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Status</th>

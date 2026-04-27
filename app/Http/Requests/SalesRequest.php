@@ -53,7 +53,7 @@ class SalesRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $boxIds = collect($this->input('sales_details', []))
+            $flattenedBoxIds = collect($this->input('sales_details', []))
                 ->flatMap(function ($detail): array {
                     if (!is_array($detail)) {
                         return [];
@@ -65,12 +65,20 @@ class SalesRequest extends FormRequest
                 })
                 ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
                 ->map(fn ($boxId): int => (int) $boxId)
-                ->unique()
                 ->values();
 
-            if ($boxIds->isEmpty()) {
+            if ($flattenedBoxIds->isEmpty()) {
                 return;
             }
+
+            if ($flattenedBoxIds->count() !== $flattenedBoxIds->unique()->count()) {
+                $validator->errors()->add('sales_details', 'A fish box can only be used once per transaction.');
+                return;
+            }
+
+            $boxIds = $flattenedBoxIds
+                ->unique()
+                ->values();
 
             $brokerId = $this->resolveCurrentBrokerId();
 

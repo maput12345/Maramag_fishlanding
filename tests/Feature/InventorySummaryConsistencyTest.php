@@ -66,12 +66,29 @@ class InventorySummaryConsistencyTest extends TestCase
         $summary = FishBox::getStatusSummary($broker->id);
 
         $this->assertSame([
+            'unassigned' => 0,
             'in_stock' => 1,
             'sold' => 1,
             'returned' => 1,
             'missing' => 1,
             'total' => 4,
         ], $summary);
+    }
+
+    public function test_create_empty_boxes_registers_unassigned_boxes_without_purchase_cycles(): void
+    {
+        [$broker] = $this->createBrokerPair();
+
+        $createdBoxes = FishBox::createEmptyBoxes(2, $broker->id);
+        $summary = FishBox::getStatusSummary($broker->id);
+
+        $this->assertCount(2, $createdBoxes);
+        $this->assertCount(2, collect($createdBoxes)->pluck('qr_code')->filter()->unique());
+        $this->assertTrue(collect($createdBoxes)->every(fn (FishBox $fishBox): bool => $fishBox->status === FishBoxStatusConstant::UNASSIGNED));
+        $this->assertTrue(collect($createdBoxes)->every(fn (FishBox $fishBox): bool => $fishBox->currentPurchase === null));
+        $this->assertTrue(collect($createdBoxes)->every(fn (FishBox $fishBox): bool => !$fishBox->canBeEdited()));
+        $this->assertSame(2, $summary['unassigned']);
+        $this->assertSame(2, $summary['total']);
     }
 
     public function test_inventory_log_summary_groups_statuses_for_the_given_day(): void
@@ -664,6 +681,12 @@ class InventorySummaryConsistencyTest extends TestCase
             'box_status' => FishBoxStatusConstant::RETURNED,
         ]);
 
+        $unassignedBox = FishBox::create([
+            'broker_id' => $broker->id,
+            'qr_code' => 'restock-unassigned-box',
+            'box_status' => FishBoxStatusConstant::UNASSIGNED,
+        ]);
+
         $inStockBox = FishBox::create([
             'broker_id' => $broker->id,
             'qr_code' => 'restock-stock-box',
@@ -725,28 +748,33 @@ class InventorySummaryConsistencyTest extends TestCase
 
         $restockedCount = FishBox::bulkRestock(
             $broker->id,
-            [$returnedBox->id, $inStockBox->id, $soldBox->id],
+            [$returnedBox->id, $unassignedBox->id, $inStockBox->id, $soldBox->id],
             $tuna->id,
             5000,
             $broker->user_id
         );
 
         $returnedBox->refresh()->load('currentPurchase.fishType');
+        $unassignedBox->refresh()->load('currentPurchase.fishType');
         $inStockBox->refresh()->load('currentPurchase.fishType');
         $soldBox->refresh()->load('currentPurchase.fishType');
 
-        $this->assertSame(2, $restockedCount);
+        $this->assertSame(3, $restockedCount);
         $this->assertSame(FishBoxStatusConstant::IN_STOCK, $returnedBox->status);
+        $this->assertSame(FishBoxStatusConstant::IN_STOCK, $unassignedBox->status);
         $this->assertSame(FishBoxStatusConstant::IN_STOCK, $inStockBox->status);
         $this->assertSame(FishBoxStatusConstant::SOLD, $soldBox->status);
 
+        $this->assertNotNull($unassignedBox->currentPurchase);
         $this->assertNotSame($returnedPurchase->id, $returnedBox->currentPurchase?->id);
         $this->assertNotSame($inStockPurchase->id, $inStockBox->currentPurchase?->id);
         $this->assertSame($soldPurchase->id, $soldBox->currentPurchase?->id);
 
         $this->assertSame($tuna->id, $returnedBox->currentPurchase?->fish_type_id);
+        $this->assertSame($tuna->id, $unassignedBox->currentPurchase?->fish_type_id);
         $this->assertSame($tuna->id, $inStockBox->currentPurchase?->fish_type_id);
         $this->assertSame('5000.00', $returnedBox->currentPurchase?->cost_price);
+        $this->assertSame('5000.00', $unassignedBox->currentPurchase?->cost_price);
         $this->assertSame('5000.00', $inStockBox->currentPurchase?->cost_price);
 
         $this->assertSame($returnedPurchase->id, $saleDetail->fresh()->fish_box_purchase_id);

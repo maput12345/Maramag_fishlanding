@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Constants\FishBoxStatusConstant;
 
 class Sales extends Model
@@ -163,6 +164,10 @@ class Sales extends Model
         return DB::transaction(function () use ($salesData, $salesDetails, $brokerId, $initialPayment) {
             $userId = Auth::id();
             $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
+            $purchaseIdsByBoxId = static::resolveSellablePurchaseIds(
+                static::lockFishBoxesForUpdate($brokerId, static::extractRequestedBoxIds($salesDetails)),
+                static::extractRequestedBoxIds($salesDetails)
+            );
 
             $sale = self::create([
                 'sales_date' => $salesData['sales_date'],
@@ -172,7 +177,7 @@ class Sales extends Model
                 'status' => SalesStatusConstant::ACTIVE
             ]);
 
-            SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails);
+            SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails, $purchaseIdsByBoxId);
             FishBox::updateFishBoxesForSales($brokerId, $salesDetails, $userId);
 
             if (!empty($initialPayment['paid_amount'])) {
@@ -205,28 +210,140 @@ class Sales extends Model
         DB::transaction(function () use ($sale, $salesData, $salesDetails, $brokerId) {
             $userId = Auth::id();
             $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
+            $lockedSale = self::query()
+                ->with('salesDetails.fishBoxPurchase')
+                ->whereKey($sale->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $existingBoxIds = $lockedSale->salesDetails
+                ->map(fn (SalesDetails $detail): ?int => $detail->fishBoxPurchase?->fish_box_id ? (int) $detail->fishBoxPurchase->fish_box_id : null)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $requestedBoxIds = static::extractRequestedBoxIds($salesDetails);
+            $lockedFishBoxes = static::lockFishBoxesForUpdate(
+                $brokerId,
+                array_values(array_unique(array_merge($existingBoxIds, $requestedBoxIds)))
+            );
 
-            $sale->update([
+            $lockedSale->update([
                 'sales_date' => $salesData['sales_date'],
                 'buyer_id' => $buyer->id,
                 'total_amount' => $salesData['total_amount'],
             ]);
 
-            foreach ($sale->salesDetails as $detail) {
+            foreach ($lockedSale->salesDetails as $detail) {
                 $fishBoxId = $detail->fishBoxPurchase?->fish_box_id;
 
                 if ($fishBoxId) {
                     FishBox::updateStatus($fishBoxId, FishBoxStatusConstant::IN_STOCK, $userId);
-                    InventoryLog::deleteLogForFishBox($fishBoxId, $sale->created_at);
+                    InventoryLog::deleteLogForFishBox($fishBoxId, $lockedSale->created_at);
+
+                    $lockedFishBox = $lockedFishBoxes->get((int) $fishBoxId);
+
+                    if ($lockedFishBox) {
+                        $lockedFishBox->box_status = FishBoxStatusConstant::IN_STOCK;
+                    }
                 }
             }
 
-            $sale->salesDetails()->delete();
-            SalesDetails::createSalesDetails($sale->id, $brokerId, $salesDetails);
+            $lockedSale->salesDetails()->delete();
+            $purchaseIdsByBoxId = static::resolveSellablePurchaseIds($lockedFishBoxes, $requestedBoxIds);
+
+            SalesDetails::createSalesDetails($lockedSale->id, $brokerId, $salesDetails, $purchaseIdsByBoxId);
             FishBox::updateFishBoxesForSales($brokerId, $salesDetails, $userId);
-            $sale->refresh();
-            $sale->updatePaymentStatus();
+            $lockedSale->refresh();
+            $lockedSale->updatePaymentStatus();
         });
+    }
+
+    /**
+     * Extract a unique list of requested physical fish box IDs from sale details.
+     *
+     * @return array<int, int>
+     */
+    private static function extractRequestedBoxIds(array $salesDetails): array
+    {
+        return collect($salesDetails)
+            ->flatMap(function ($detail): array {
+                if (!is_array($detail)) {
+                    return [];
+                }
+
+                $boxIds = $detail['box_id'] ?? [];
+
+                return is_array($boxIds) ? $boxIds : [$boxIds];
+            })
+            ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+            ->map(fn ($boxId): int => (int) $boxId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Lock the selected fish boxes so concurrent sales cannot reuse them mid-transaction.
+     */
+    private static function lockFishBoxesForUpdate(int $brokerId, array $boxIds): Collection
+    {
+        if ($boxIds === []) {
+            return new Collection();
+        }
+
+        $lockedFishBoxes = FishBox::query()
+            ->with([
+                'currentPurchase' => function ($query) {
+                    $query->select([
+                        'fish_box_purchases.id',
+                        'fish_box_purchases.fish_box_id',
+                        'fish_box_purchases.fish_type_id',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->whereIn('id', $boxIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($lockedFishBoxes->count() !== count($boxIds)) {
+            throw ValidationException::withMessages([
+                'sales_details' => 'One or more selected fish boxes are no longer available. Refresh the sales form and try again.',
+            ]);
+        }
+
+        return $lockedFishBoxes;
+    }
+
+    /**
+     * Ensure every selected fish box is still sellable and return the locked purchase IDs to attach.
+     *
+     * @param Collection<int, FishBox> $lockedFishBoxes
+     * @param array<int, int> $requestedBoxIds
+     * @return array<int, int>
+     */
+    private static function resolveSellablePurchaseIds(Collection $lockedFishBoxes, array $requestedBoxIds): array
+    {
+        $purchaseIdsByBoxId = [];
+
+        foreach ($requestedBoxIds as $boxId) {
+            $fishBox = $lockedFishBoxes->get($boxId);
+
+            if (
+                !$fishBox
+                || $fishBox->status !== FishBoxStatusConstant::IN_STOCK
+                || !$fishBox->currentPurchase
+            ) {
+                throw ValidationException::withMessages([
+                    'sales_details' => 'One or more selected fish boxes were already used in another transaction. Refresh the sales form and try again.',
+                ]);
+            }
+
+            $purchaseIdsByBoxId[$boxId] = (int) $fishBox->currentPurchase->id;
+        }
+
+        return $purchaseIdsByBoxId;
     }
 
     /**
@@ -240,11 +357,17 @@ class Sales extends Model
     /**
      * Shared payments aggregate for reporting queries.
      */
-    public static function paymentTotalsSubquery(): Builder
+    public static function paymentTotalsSubquery(?string $paymentDateTo = null): Builder
     {
-        return SalesPayment::query()
+        $query = SalesPayment::query()
             ->selectRaw('sale_id, SUM(paid_amount) as paid_total')
             ->groupBy('sale_id');
+
+        if ($paymentDateTo) {
+            self::applyDateConstraint($query, 'payment_date', '<=', $paymentDateTo);
+        }
+
+        return $query;
     }
 
     /**
@@ -517,13 +640,23 @@ class Sales extends Model
      *
      * @return float
      */
-    public static function getTotalSalesBalance(?int $brokerId): float
+    public static function getTotalSalesBalance(?int $brokerId, ?string $asOfDate = null): float
     {
-        return (float) (self::buildAggregateSalesQuery(
-            null,
-            null,
-            $brokerId
-        )->toBase()
+        $query = self::query()
+            ->leftJoinSub(self::paymentTotalsSubquery($asOfDate), 'payment_totals', function ($join) {
+                $join->on('sales.id', '=', 'payment_totals.sale_id');
+            })
+            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses());
+
+        if ($brokerId) {
+            $query->where('sales.broker_id', $brokerId);
+        }
+
+        if ($asOfDate) {
+            self::applyDateConstraint($query, 'sales.sales_date', '<=', $asOfDate);
+        }
+
+        return (float) ($query->toBase()
             ->selectRaw('COALESCE(SUM(CASE
                 WHEN sales.total_amount > COALESCE(payment_totals.paid_total, 0)
                 THEN sales.total_amount - COALESCE(payment_totals.paid_total, 0)

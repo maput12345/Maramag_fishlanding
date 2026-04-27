@@ -11,6 +11,7 @@ use App\Models\InventoryLog;
 use App\Repositories\SalesRepository;
 use App\Repositories\InventoryRepository;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -47,8 +48,14 @@ class SalesManagementController extends Controller
     /**
      * Show the dedicated admin fish box tracking page.
      */
-    public function fishboxTracking(Request $request): View
+    public function fishboxTracking(Request $request): View|RedirectResponse
     {
+        if (!$request->user()?->isAdmin()) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('error', 'Only admin accounts can access fish box tracking.');
+        }
+
         $data = $this->getFishboxTrackingData($request);
 
         return view('admin.sales.tracking', $data);
@@ -96,6 +103,24 @@ class SalesManagementController extends Controller
         $salesController = new SalesController();
         $data = $salesController->getIndexData($request);
         return view('broker.sales.sales-polished', $data);
+    }
+
+    /**
+     * Return a fresh broker receipt snapshot for admin printing.
+     */
+    public function brokerReceiptData(Request $request, Broker $broker): JsonResponse
+    {
+        $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
+        $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+        $snapshot = $this->salesRepository->getBrokerReceiptSnapshot($broker->id, $dateFrom, $dateTo);
+
+        if (!$snapshot) {
+            return response()->json([
+                'message' => 'Broker receipt data not found.',
+            ], 404);
+        }
+
+        return response()->json($snapshot);
     }
 
     /**

@@ -69,7 +69,7 @@
         <div class="metric-card metric-card--primary">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Total Orders</p>
+                    <p class="metric-card__eyebrow">Transactions</p>
                     <p class="metric-card__value">{{ number_format($totalOrders) }}</p>
                 </div>
                 <span class="metric-card__icon">
@@ -81,7 +81,7 @@
         <div class="metric-card metric-card--success">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Total Revenue</p>
+                    <p class="metric-card__eyebrow">Total Sales</p>
                     <p class="metric-card__value">PHP {{ number_format($totalRevenue, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
@@ -93,7 +93,7 @@
         <div class="metric-card metric-card--warning">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Outstanding Balance</p>
+                    <p class="metric-card__eyebrow">Outstanding Receivable Balance</p>
                     <p class="metric-card__value">PHP {{ number_format($totalBalance, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">

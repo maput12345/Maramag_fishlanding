@@ -38,6 +38,7 @@ class BulkRestockFishBoxesRequest extends FormRequest
                         ->whereKey($value)
                         ->where('broker_id', $brokerId)
                         ->whereIn('box_status', [
+                            FishBoxStatusConstant::UNASSIGNED,
                             FishBoxStatusConstant::IN_STOCK,
                             FishBoxStatusConstant::RETURNED,
                         ])

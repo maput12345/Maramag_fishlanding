@@ -1,6 +1,32 @@
 {{-- Print Receipt Modal --}}
 @if(request('modal') === 'print')
     @if($printingSales)
+        @php
+            $receiptLineItems = $printingSales->salesDetails
+                ->groupBy(function ($detail) {
+                    return implode('|', [
+                        trim(mb_strtolower($detail->item ?? '')),
+                        number_format((float) $detail->unit_price, 2, '.', ''),
+                    ]);
+                })
+                ->map(function ($details) {
+                    $firstDetail = $details->first();
+
+                    return [
+                        'item' => $firstDetail?->item ?? '',
+                        'item_description' => $details->pluck('item_description')->filter()->unique()->implode(' / '),
+                        'unit_price' => (float) ($firstDetail?->unit_price ?? 0),
+                        'quantity' => (int) $details->sum(fn ($detail) => (int) $detail->quantity),
+                        'sub_total' => (float) $details->sum(fn ($detail) => (float) $detail->sub_total),
+                        'fish_boxes' => $details
+                            ->flatMap(fn ($detail) => $detail->fishBoxes())
+                            ->filter()
+                            ->unique('id')
+                            ->values(),
+                    ];
+                })
+                ->values();
+        @endphp
         <x-app-modal
             title="Print Receipt"
             subtitle="Review the final sale summary and print a clean receipt."
@@ -19,123 +45,122 @@
                 class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
             >
                 <div class="mx-auto max-w-md bg-white">
-                            {{-- Company Header --}}
-                            <div class="text-center border-b border-gray-200 pb-4 mb-4">
-                                <h1 class="text-2xl font-bold text-gray-900">{{ $printingSales->broker->name }}</h1>
-                                <p class="text-sm text-gray-600">{{ $printingSales->broker->stall_name }}</p>
-                                <p class="text-xs text-gray-500">Receipt #{{ $printingSales->id }}</p>
-                            </div>
+                    {{-- Company Header --}}
+                    <div class="mb-4 border-b border-gray-200 pb-4 text-center">
+                        <h1 class="text-2xl font-bold text-gray-900">{{ $printingSales->broker->name }}</h1>
+                        <p class="text-sm text-gray-600">{{ $printingSales->broker->stall_name }}</p>
+                        <p class="text-xs text-gray-500">Receipt #{{ $printingSales->id }}</p>
+                    </div>
 
-                            {{-- Sale Information --}}
-                            <div class="mb-4">
-                                <div class="flex justify-between text-sm mb-2">
-                                    <span class="text-gray-600">Date:</span>
-                                    <span class="font-medium">{{ $printingSales->sales_date->format('M d, Y g:i A') }}</span>
-                                </div>
-                                <div class="flex justify-between text-sm mb-2">
-                                    <span class="text-gray-600">Buyer:</span>
-                                    <span class="font-medium">{{ $printingSales->buyer_name }}</span>
-                                </div>
-                                <div class="flex justify-between text-sm mb-2">
-                                    <span class="text-gray-600">Contact:</span>
-                                    <span class="font-medium">{{ $printingSales->buyer_contact }}</span>
-                                </div>
-                                <div class="flex justify-between text-sm mb-2">
-                                    <span class="text-gray-600">Status:</span>
-                                    <span class="font-medium {{ $salesStatusesWithColorClasses[$printingSales->status] }}">
-                                        {{ $salesStatusesWithDisplayNames[$printingSales->status] }}
-                                    </span>
-                                </div>
-                            </div>
+                    {{-- Sale Information --}}
+                    <div class="mb-4">
+                        <div class="mb-2 flex justify-between text-sm">
+                            <span class="text-gray-600">Date:</span>
+                            <span class="font-medium">{{ $printingSales->sales_date->format('M d, Y g:i A') }}</span>
+                        </div>
+                        <div class="mb-2 flex justify-between text-sm">
+                            <span class="text-gray-600">Buyer:</span>
+                            <span class="font-medium">{{ $printingSales->buyer_name }}</span>
+                        </div>
+                        <div class="mb-2 flex justify-between text-sm">
+                            <span class="text-gray-600">Contact:</span>
+                            <span class="font-medium">{{ $printingSales->buyer_contact }}</span>
+                        </div>
+                        <div class="mb-2 flex justify-between text-sm">
+                            <span class="text-gray-600">Status:</span>
+                            <span class="font-medium {{ $salesStatusesWithColorClasses[$printingSales->status] }}">
+                                {{ $salesStatusesWithDisplayNames[$printingSales->status] }}
+                            </span>
+                        </div>
+                    </div>
 
-                            {{-- Commodities --}}
-                            <div class="border-t border-gray-200 pt-4 mb-4">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-3">Commodities Sold</h3>
-                                <div class="space-y-3">
-                                    @foreach($printingSales->salesDetails as $detail)
-                                        <div class="bg-gray-50 rounded-lg p-3">
-                                            <div class="flex justify-between items-start mb-2">
-                                                <div class="flex-1">
-                                                    <div class="font-medium text-gray-900">{{ $detail->item }}</div>
-                                                    @if($detail->item_description)
-                                                        <div class="text-xs text-gray-500 mt-1">{{ $detail->item_description }}</div>
-                                                    @endif
-                                                </div>
-                                                <div class="text-right">
-                                                    <div class="text-sm font-semibold text-gray-900">₱{{ number_format($detail->sub_total, 2) }}</div>
-                                                    <div class="text-xs text-gray-500">{{ $detail->quantity }} × ₱{{ number_format($detail->unit_price, 2) }}</div>
-                                                </div>
-                                            </div>
-
-                                            {{-- Fish Boxes --}}
-                                            @if(is_array($detail->box_id) && count($detail->box_id) > 0)
-                                                <div class="mt-2">
-                                                    <div class="text-xs text-gray-600 mb-1">Fish Boxes:</div>
-                                                    <div class="flex flex-wrap gap-1">
-                                                        @foreach($detail->box_id as $boxId)
-                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                                {{ $detail->fishBox?->name ?? ('Fish Box #' . $boxId) }}
-                                                            </span>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
+                    {{-- Commodities --}}
+                    <div class="mb-4 border-t border-gray-200 pt-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-900">Commodities Sold</h3>
+                        <div class="space-y-3">
+                            @foreach($receiptLineItems as $lineItem)
+                                <div class="rounded-lg bg-gray-50 p-3">
+                                    <div class="mb-2 flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900">{{ $lineItem['item'] }}</div>
+                                            @if($lineItem['item_description'])
+                                                <div class="mt-1 text-xs text-gray-500">{{ $lineItem['item_description'] }}</div>
                                             @endif
                                         </div>
-                                    @endforeach
-                                </div>
-                            </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-semibold text-gray-900">PHP {{ number_format($lineItem['sub_total'], 2) }}</div>
+                                            <div class="text-xs text-gray-500">{{ $lineItem['quantity'] }} x PHP {{ number_format($lineItem['unit_price'], 2) }}</div>
+                                        </div>
+                                    </div>
 
-                            {{-- Payment History --}}
-                            @if($printingSales->salesPayments->count() > 0)
-                                <div class="border-t border-gray-200 pt-4 mb-4">
-                                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Payment History</h3>
-                                    <div class="space-y-2">
-                                        @foreach($printingSales->salesPayments as $payment)
-                                            <div class="flex justify-between items-center text-xs">
-                                                <div>
-                                                    <div class="font-medium">{{ $payment->payment_date->format('M d, Y') }}</div>
-                                                    <div class="text-gray-500">{{ $payment->payment_method }}</div>
-                                                </div>
-                                                <div class="font-semibold text-green-600">₱{{ number_format($payment->paid_amount, 2) }}</div>
+                                    @if($lineItem['fish_boxes']->isNotEmpty())
+                                        <div class="mt-2">
+                                            <div class="mb-1 text-xs text-gray-600">Fish Boxes:</div>
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($lineItem['fish_boxes'] as $fishBox)
+                                                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                                                        {{ $fishBox->name }}
+                                                    </span>
+                                                @endforeach
                                             </div>
-                                        @endforeach
-                                    </div>
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
+                            @endforeach
+                        </div>
+                    </div>
 
-                            {{-- Payment Summary --}}
-                            <div class="border-t border-gray-200 pt-4 mb-4">
-                                <div class="space-y-2">
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-gray-600">Total Amount:</span>
-                                        <span class="font-semibold">₱{{ number_format($printingSales->total_amount, 2) }}</span>
+                    {{-- Payment History --}}
+                    @if($printingSales->salesPayments->count() > 0)
+                        <div class="mb-4 border-t border-gray-200 pt-4">
+                            <h3 class="mb-3 text-sm font-semibold text-gray-900">Payment History</h3>
+                            <div class="space-y-2">
+                                @foreach($printingSales->salesPayments as $payment)
+                                    <div class="flex items-center justify-between text-xs">
+                                        <div>
+                                            <div class="font-medium">{{ $payment->payment_date->format('M d, Y') }}</div>
+                                            <div class="text-gray-500">{{ $payment->payment_method }}</div>
+                                        </div>
+                                        <div class="font-semibold text-green-600">PHP {{ number_format($payment->paid_amount, 2) }}</div>
                                     </div>
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-gray-600">Paid Amount:</span>
-                                        <span class="font-semibold text-green-600">₱{{ number_format($printingSales->paid_amount, 2) }}</span>
-                                    </div>
-                                    <div class="flex justify-between text-sm border-t pt-2">
-                                        <span class="text-gray-600 font-semibold">Remaining Balance:</span>
-                                        <span class="font-bold text-orange-600">₱{{ number_format($printingSales->remaining_amount, 2) }}</span>
-                                    </div>
-                                </div>
+                                @endforeach
                             </div>
+                        </div>
+                    @endif
 
-                            {{-- Remarks --}}
-                            @if($printingSales->remarks)
-                                <div class="border-t border-gray-200 pt-4 mb-4">
-                                    <h3 class="text-sm font-semibold text-gray-900 mb-2">Remarks</h3>
-                                    <p class="text-xs text-gray-600">{{ $printingSales->remarks }}</p>
-                                </div>
-                            @endif
-
-                            {{-- Footer --}}
-                            <div class="border-t border-gray-200 pt-4 text-center">
-                                <p class="text-xs text-gray-500">Thank you for purchasing!</p>
-                                <p class="text-xs text-gray-400 mt-1">Generated on {{ now()->format('M d, Y g:i A') }}</p>
+                    {{-- Payment Summary --}}
+                    <div class="mb-4 border-t border-gray-200 pt-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Total Amount:</span>
+                                <span class="font-semibold">PHP {{ number_format($printingSales->total_amount, 2) }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Paid Amount:</span>
+                                <span class="font-semibold text-green-600">PHP {{ number_format($printingSales->paid_amount, 2) }}</span>
+                            </div>
+                            <div class="flex justify-between border-t pt-2 text-sm">
+                                <span class="font-semibold text-gray-600">Remaining Balance:</span>
+                                <span class="font-bold text-orange-600">PHP {{ number_format($printingSales->remaining_amount, 2) }}</span>
                             </div>
                         </div>
                     </div>
+
+                    {{-- Remarks --}}
+                    @if($printingSales->remarks)
+                        <div class="mb-4 border-t border-gray-200 pt-4">
+                            <h3 class="mb-2 text-sm font-semibold text-gray-900">Remarks</h3>
+                            <p class="text-xs text-gray-600">{{ $printingSales->remarks }}</p>
+                        </div>
+                    @endif
+
+                    {{-- Footer --}}
+                    <div class="border-t border-gray-200 pt-4 text-center">
+                        <p class="text-xs text-gray-500">Thank you for purchasing!</p>
+                        <p class="mt-1 text-xs text-gray-400">Generated on {{ now()->format('M d, Y g:i A') }}</p>
+                    </div>
+                </div>
+            </div>
 
             <div class="mt-6 flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                 <button
@@ -179,4 +204,3 @@
         </x-app-modal>
     @endif
 @endif
-

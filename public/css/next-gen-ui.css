@@ -1337,6 +1337,12 @@ body {
     border: 1px solid rgba(16, 185, 129, 0.18);
 }
 
+.login-alert.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+}
+
 .login-shell--split {
     color: #112031;
     background:
@@ -1686,6 +1692,12 @@ body {
     background: rgba(15, 39, 66, 0.06);
     color: #0f2742;
     border: 1px solid rgba(15, 39, 66, 0.1);
+}
+
+.login-shell--split .login-alert.error {
+    background: rgba(239, 68, 68, 0.08);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.16);
 }
 
 .portal-page {
@@ -2313,6 +2325,19 @@ body {
     letter-spacing: -0.03em;
 }
 
+.portal-card--stall .portal-button {
+    min-height: auto;
+    padding: 0.72rem 1rem;
+}
+
+.portal-card--stall .portal-detail-list {
+    margin-top: 0.75rem;
+}
+
+.portal-card--stall .portal-detail-item {
+    padding: 0.58rem 0;
+}
+
 .portal-status-badge {
     display: inline-flex;
     align-items: center;
@@ -2421,6 +2446,12 @@ body {
     color: #065f46;
 }
 
+.portal-inline-alert--warning {
+    background: rgba(245, 158, 11, 0.13);
+    border: 1px solid rgba(245, 158, 11, 0.24);
+    color: #92400e;
+}
+
 .portal-card--application + .portal-card--application {
     margin-top: 1rem;
 }
@@ -2503,6 +2534,96 @@ body {
 
 .portal-empty__action {
     margin-top: 1.2rem;
+}
+
+.stall-gallery-modal-is-open {
+    overflow: hidden;
+}
+
+.stall-gallery-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 1.25rem;
+}
+
+.stall-gallery-modal[hidden] {
+    display: none;
+}
+
+.stall-gallery-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.stall-gallery-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(58rem, 100%);
+    max-height: min(84vh, 46rem);
+    overflow: auto;
+    border-radius: 1.6rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: #fff;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, 0.32);
+}
+
+.stall-gallery-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.4rem 1.5rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+}
+
+.stall-gallery-modal__title {
+    margin-top: 0.2rem;
+    font-family: var(--ui-font-display);
+    font-size: 1.45rem;
+    line-height: 1.1;
+    color: #102139;
+}
+
+.stall-gallery-modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(203, 213, 225, 0.95);
+    background: #fff;
+    color: #334155;
+    font-size: 1.55rem;
+    line-height: 1;
+}
+
+.stall-gallery-modal__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.stall-gallery-modal__image-link {
+    display: block;
+    overflow: hidden;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    background: #f8fafc;
+}
+
+.stall-gallery-modal__image {
+    display: block;
+    width: 100%;
+    height: 18rem;
+    object-fit: contain;
+    background: #f8fafc;
 }
 
 .portal-stage--form {

@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateApplicationOpeningRequest;
 use App\Mail\BrokerApplicationQualifiedForBidding;
 use App\Models\ApplicationOpening;
 use App\Models\ApplicationRequirement;
+use App\Models\Broker;
 use App\Models\BrokerApplication;
 use App\Models\RequirementType;
 use App\Models\Role;
@@ -17,11 +18,20 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class ApplicationQualificationEmailTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['app.url' => 'http://localhost']);
+        URL::forceRootUrl('http://localhost');
+    }
 
     public function test_qualified_application_email_is_sent_once_when_application_first_becomes_qualified(): void
     {
@@ -203,7 +213,7 @@ class ApplicationQualificationEmailTest extends TestCase
         );
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        $this->assertSame(route('admin.applications.index'), $response->getTargetUrl());
+        $this->assertSame(route('admin.stalls.index'), $response->getTargetUrl());
 
         Mail::assertSent(BrokerApplicationQualifiedForBidding::class, function (BrokerApplicationQualifiedForBidding $mail) use ($qualifiedApplicant) {
             return $mail->hasTo($qualifiedApplicant->email)
@@ -214,6 +224,97 @@ class ApplicationQualificationEmailTest extends TestCase
         Mail::assertNotSent(BrokerApplicationQualifiedForBidding::class, function (BrokerApplicationQualifiedForBidding $mail) use ($underReviewApplicant) {
             return $mail->hasTo($underReviewApplicant->email);
         });
+    }
+
+    public function test_winner_selection_assigns_the_awarded_stall_from_current_openings(): void
+    {
+        Mail::fake();
+
+        $admin = User::createUserWithRole(
+            [
+                'email' => 'leeo-winner-admin@example.com',
+                'password' => 'password',
+                'role' => RoleStatusConstant::ADMIN,
+            ],
+            [
+                'first_name' => 'Leeo',
+                'last_name' => 'Winner',
+            ]
+        );
+
+        $firstStall = Stall::create([
+            'stall_number' => '1',
+            'stall_status' => 'Open for Application',
+        ]);
+
+        $awardedStall = Stall::create([
+            'stall_number' => '2',
+            'stall_status' => 'Open for Application',
+        ]);
+
+        $firstOpening = ApplicationOpening::create([
+            'stall_id' => $firstStall->id,
+            'opened_by_employee_id' => $admin->employee->id,
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addDay()->toDateString(),
+            'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_location' => 'LEEO Office, Maramag Fish Landing',
+            'opening_status' => 'Open',
+        ]);
+
+        $awardedOpening = ApplicationOpening::create([
+            'stall_id' => $awardedStall->id,
+            'opened_by_employee_id' => $admin->employee->id,
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addDay()->toDateString(),
+            'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_location' => 'LEEO Office, Maramag Fish Landing',
+            'opening_status' => 'Open',
+        ]);
+
+        $applicant = $this->createApplicant('winner-selected@example.com');
+        $application = BrokerApplication::create([
+            'user_id' => $applicant->id,
+            'application_opening_id' => $firstOpening->id,
+            'first_name' => 'Winning',
+            'last_name' => 'Applicant',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09170000017',
+            'application_status' => 'Qualified',
+            'submitted_at' => now(),
+        ]);
+
+        $requirementType = RequirementType::create([
+            'requirement_name' => 'Letter of Intent',
+            'is_required' => true,
+        ]);
+
+        ApplicationRequirement::create([
+            'application_id' => $application->id,
+            'requirement_type_id' => $requirementType->id,
+            'file_path' => 'requirements/letter-of-intent.pdf',
+            'verification_status' => 'Verified',
+            'uploaded_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->post('/admin/applications/' . $application->getRouteKey() . '/winner', [
+            'selected_stall_id' => $awardedStall->id,
+        ]);
+
+        $response->assertRedirect(route('admin.applications.show', $application));
+
+        $application->refresh();
+        $this->assertSame('Winner', $application->application_status);
+        $this->assertSame($awardedStall->id, $application->selected_stall_id);
+
+        $broker = Broker::where('application_id', $application->id)->first();
+
+        $this->assertNotNull($broker);
+        $this->assertSame($awardedStall->id, $broker->stall_id);
+        $this->assertSame('Occupied', $awardedStall->fresh()->stall_status);
+        $this->assertSame('Completed', $awardedOpening->fresh()->opening_status);
+        $this->assertSame('Open', $firstOpening->fresh()->opening_status);
+        $this->assertSame('Open for Application', $firstStall->fresh()->stall_status);
     }
 
     private function createApplicant(string $email): User
@@ -258,7 +359,7 @@ class ApplicationQualificationEmailTest extends TestCase
     private function makeUpdateOpeningRequest(ApplicationOpening $opening, array $payload, User $admin): UpdateApplicationOpeningRequest
     {
         $request = UpdateApplicationOpeningRequest::create(
-            '/admin/applications/openings/' . $opening->getRouteKey(),
+            '/admin/stalls/openings/' . $opening->getRouteKey(),
             'PATCH',
             $payload
         );

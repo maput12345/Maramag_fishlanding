@@ -48,7 +48,7 @@
                 <span class="mt-1 text-xs font-medium">Tracking</span>
             </a>
             <div class="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                Fish Box Tracking
+                Fish Box Management
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>

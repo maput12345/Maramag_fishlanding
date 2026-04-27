@@ -15,6 +15,72 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class SalesRepository
 {
     /**
+     * Reusable eager loading for broker sales receipt/detail views.
+     */
+    private function brokerSalesDetailRelations(string $dateFrom, string $dateTo): array
+    {
+        return [
+            'user:id,email',
+            'sales' => function ($query) use ($dateFrom, $dateTo) {
+                $query->select(['id', 'broker_id', 'buyer_id', 'sales_date', 'status', 'created_at'])
+                    ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
+                    ->with([
+                        'buyer:id,first_name,middle_name,last_name,contact',
+                        'salesDetails:id,sale_id,fish_box_purchase_id,unit_price,sub_total,discount',
+                        'salesDetails.fishBoxPurchase:id,fish_box_id,fish_type_id',
+                        'salesDetails.fishBoxPurchase.fishType:id,name,description',
+                        'salesDetails.fishBoxPurchase.fishBox' => function ($fishBoxQuery) {
+                            $fishBoxQuery->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
+                                ->withBrokerBoxNumber();
+                        },
+                    ])
+                    ->orderBy('sales_date', 'desc');
+
+                Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
+            },
+        ];
+    }
+
+    /**
+     * Attach receipt missing-box snapshots to the given brokers.
+     */
+    private function attachMissingFishBoxesForReceipt(Collection $brokers, Carbon $receiptCutoff): Collection
+    {
+        $brokerIds = $brokers->pluck('id')->filter()->values()->all();
+        $missingFishBoxesByBroker = new Collection();
+
+        if ($brokerIds !== []) {
+            $missingFishBoxesByBroker = FishBox::query()
+                ->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
+                ->withBrokerBoxNumber()
+                ->with([
+                    'inventoryLogs' => function ($logQuery) use ($receiptCutoff) {
+                        $logQuery
+                            ->where('fish_inventory.created_at', '<=', $receiptCutoff)
+                            ->orderBy('fish_inventory.created_at', 'desc')
+                            ->orderBy('fish_inventory.id', 'desc');
+                    },
+                ])
+                ->whereIn('fish_boxes.broker_id', $brokerIds)
+                ->whereHas('inventoryLogs', function ($logQuery) use ($receiptCutoff) {
+                    $logQuery->where('fish_inventory.created_at', '<=', $receiptCutoff);
+                })
+                ->orderBy('fish_boxes.id')
+                ->get()
+                ->filter(function (FishBox $fishBox) {
+                    return $fishBox->inventoryLogs->first()?->status === FishBoxStatusConstant::MISSING;
+                })
+                ->groupBy('broker_id');
+        }
+
+        return $brokers->transform(function (Broker $broker) use ($missingFishBoxesByBroker) {
+            $broker->setRelation('missingFishBoxesForReceipt', $missingFishBoxesByBroker->get($broker->id, collect()));
+
+            return $broker;
+        });
+    }
+
+    /**
      * Build a driver-safe broker full-name SQL expression.
      */
     private function brokerNameExpression(string $table = 'brokers'): string
@@ -367,26 +433,7 @@ class SalesRepository
         // Build query with eager loading and constraints
         $brokersQuery = Broker::query()
         ->select(['id', 'user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'stall_name'])
-        ->with([
-            'user:id,email',
-            'sales' => function ($query) use ($dateFrom, $dateTo) {
-                $query->select(['id', 'broker_id', 'buyer_id', 'sales_date', 'status', 'created_at'])
-                    ->whereIn('status', SalesStatusConstant::getAllActiveStatuses())
-                    ->with([
-                        'buyer:id,first_name,middle_name,last_name,contact',
-                        'salesDetails:id,sale_id,fish_box_purchase_id,unit_price,sub_total,discount',
-                        'salesDetails.fishBoxPurchase:id,fish_box_id,fish_type_id',
-                        'salesDetails.fishBoxPurchase.fishType:id,name,description',
-                        'salesDetails.fishBoxPurchase.fishBox' => function ($fishBoxQuery) {
-                            $fishBoxQuery->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
-                                ->withBrokerBoxNumber();
-                        },
-                    ])
-                    ->orderBy('sales_date', 'desc');
-
-                Sales::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
-            }
-        ])
+        ->with($this->brokerSalesDetailRelations($dateFrom, $dateTo))
         // Only get brokers who have sales in the date range
         ->whereHas('sales', function ($query) use ($dateFrom, $dateTo) {
             $query->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
@@ -406,46 +453,80 @@ class SalesRepository
         $brokersQuery->orderBy('stall_name', 'asc');
 
         $brokers = $brokersQuery->paginate(10);
-        $brokerIds = $brokers->getCollection()->pluck('id')->all();
-        $missingFishBoxesByBroker = new Collection();
         $receiptCutoff = rescue(
             fn () => Carbon::parse($dateTo)->endOfDay(),
             Carbon::now()->endOfDay(),
             report: false
         );
 
-        if ($brokerIds !== []) {
-            $missingFishBoxesByBroker = FishBox::query()
-                ->select(['fish_boxes.id', 'fish_boxes.broker_id', 'fish_boxes.qr_code', 'fish_boxes.box_status'])
-                ->withBrokerBoxNumber()
-                ->with([
-                    'inventoryLogs' => function ($logQuery) use ($receiptCutoff) {
-                        $logQuery
-                            ->where('fish_inventory.created_at', '<=', $receiptCutoff)
-                            ->orderBy('fish_inventory.created_at', 'desc')
-                            ->orderBy('fish_inventory.id', 'desc');
-                    },
-                ])
-                ->whereIn('fish_boxes.broker_id', $brokerIds)
-                ->whereHas('inventoryLogs', function ($logQuery) use ($receiptCutoff) {
-                    $logQuery
-                        ->where('fish_inventory.created_at', '<=', $receiptCutoff);
-                })
-                ->orderBy('fish_boxes.id')
-                ->get()
-                ->filter(function (FishBox $fishBox) {
-                    return $fishBox->inventoryLogs->first()?->status === FishBoxStatusConstant::MISSING;
-                })
-                ->groupBy('broker_id');
-        }
-
-        $brokers->getCollection()->transform(function (Broker $broker) use ($missingFishBoxesByBroker) {
-            $broker->setRelation('missingFishBoxesForReceipt', $missingFishBoxesByBroker->get($broker->id, collect()));
-
-            return $broker;
-        });
+        $brokers->setCollection(
+            $this->attachMissingFishBoxesForReceipt($brokers->getCollection(), $receiptCutoff)
+        );
 
         return $brokers;
+    }
+
+    /**
+     * Get a fresh broker receipt snapshot for the admin print action.
+     */
+    public function getBrokerReceiptSnapshot(int $brokerId, string $dateFrom, string $dateTo): ?array
+    {
+        $broker = Broker::query()
+            ->select(['id', 'user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'stall_name'])
+            ->with($this->brokerSalesDetailRelations($dateFrom, $dateTo))
+            ->find($brokerId);
+
+        if (!$broker) {
+            return null;
+        }
+
+        $receiptCutoff = rescue(
+            fn () => Carbon::parse($dateTo)->endOfDay(),
+            Carbon::now()->endOfDay(),
+            report: false
+        );
+
+        $broker = $this->attachMissingFishBoxesForReceipt(collect([$broker]), $receiptCutoff)->first();
+
+        $salesRows = $broker->sales
+            ->flatMap(function ($sale) {
+                return $sale->salesDetails->map(function ($detail) use ($sale) {
+                    return [
+                        'date' => Carbon::parse($sale->sales_date)->format('M d, Y'),
+                        'buyer' => $sale->buyer_name,
+                        'fish_name' => $detail->item,
+                        'quantity' => $detail->quantity,
+                        'fish_boxes' => $detail->fishBoxes()->map(fn ($fishBox) => $fishBox->name)->values()->all(),
+                    ];
+                });
+            })
+            ->values()
+            ->all();
+
+        $missingBoxes = $broker->missingFishBoxesForReceipt
+            ->map(function (FishBox $fishBox) {
+                $latestReceiptLog = $fishBox->inventoryLogs->first();
+
+                return [
+                    'id' => $fishBox->id,
+                    'name' => $fishBox->name,
+                    'qr_code' => $fishBox->qr_code,
+                    'reported_at' => $latestReceiptLog?->created_at?->format('M d, Y h:i A'),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'broker_id' => $broker->id,
+            'sales_count' => $broker->sales->count(),
+            'fish_box_count' => $broker->sales->sum(fn ($sale) => $sale->salesDetails->sum('quantity')),
+            'receipt_date' => $dateTo,
+            'receipt_date_from' => $dateFrom,
+            'receipt_date_to' => $dateTo,
+            'sales' => $salesRows,
+            'missing_boxes' => $missingBoxes,
+        ];
     }
 
     /**

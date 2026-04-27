@@ -79,9 +79,10 @@ class SalesFormPriceAutofillTest extends TestCase
         ], false));
 
         $response->assertOk();
-        $response->assertSee('Create Sale');
+        $response->assertSee('Transaction');
         $response->assertSee('Price per box auto-fills from your current broker fish price list when available.');
         $response->assertSee('data-suggested-price="180.5"', false);
+        $response->assertSee('data-currency-input="true"', false);
 
         $config = $this->extractSalesFormConfig($response->getContent());
 

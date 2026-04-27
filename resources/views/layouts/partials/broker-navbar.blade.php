@@ -1,6 +1,6 @@
 @php
     $resolvedTopbarAction = $topbarAction ?? [
-        'label' => 'Create Sale',
+        'label' => 'Transaction',
         'url' => route('broker.sales.sales', ['modal' => 'create']),
         'modal' => false,
     ];

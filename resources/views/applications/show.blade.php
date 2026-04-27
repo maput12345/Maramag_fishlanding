@@ -41,11 +41,27 @@
             </form>
         </div>
 
+        @if(session('success') || session('error') || session('info'))
+            <div class="portal-alert-stack">
+                @if(session('success'))
+                    <div class="portal-alert portal-alert--success">{{ session('success') }}</div>
+                @endif
+
+                @if(session('error'))
+                    <div class="portal-alert portal-alert--error">{{ session('error') }}</div>
+                @endif
+
+                @if(session('info'))
+                    <div class="portal-alert portal-alert--info">{{ session('info') }}</div>
+                @endif
+            </div>
+        @endif
+
         <section class="portal-section-card">
             <div class="portal-section-card__header">
                 <div>
                     <p class="portal-section-card__eyebrow">Application Record</p>
-                    <h1 class="portal-section-card__title">{{ $application->applicationOpening?->stall?->display_name ?? 'Stall Opening' }}</h1>
+                    <h1 class="portal-section-card__title">{{ $application->selectedStall?->display_name ?? 'Open Stall Application' }}</h1>
                     <p class="portal-section-card__description">Review the submitted details, document records, and current LEEO status for this application.</p>
                 </div>
                 <span class="portal-status-badge {{ $applicationStatusTone }}">{{ $application->application_status }}</span>
@@ -65,6 +81,17 @@
                     {{ $application->requirements->count() }} requirement{{ $application->requirements->count() === 1 ? '' : 's' }} on record
                 </span>
             </div>
+
+            @if($application->application_status === 'Needs Revision')
+                <div class="portal-inline-alert portal-inline-alert--warning">
+                    LEEO requested corrections for this application. Review the remarks, update the needed details or documents, then resubmit it for another review.
+                </div>
+                <div class="portal-form-actions">
+                    <a href="{{ route('applications.edit', $application) }}" class="portal-button portal-button--primary portal-button--cta">
+                        <span>Edit Application</span>
+                    </a>
+                </div>
+            @endif
         </section>
 
         <div class="portal-record-layout">
@@ -174,7 +201,7 @@
                 <div>
                     <p class="portal-section-card__eyebrow">Submitted Documents</p>
                     <h2 class="portal-section-card__title">Requirement Records</h2>
-                    <p class="portal-section-card__description">Each uploaded requirement keeps the same document metadata and verification status used during review.</p>
+                    <p class="portal-section-card__description">Review each uploaded requirement together with its current verification status and remarks.</p>
                 </div>
                 <span class="portal-count-pill">{{ $application->requirements->count() }} {{ $application->requirements->count() === 1 ? 'record' : 'records' }}</span>
             </div>
@@ -209,26 +236,6 @@
                         </div>
 
                         <div class="portal-form-grid portal-form-grid--requirement">
-                            <div class="portal-field">
-                                <label class="portal-field__label">Document Number</label>
-                                <div class="portal-input portal-record-value">{{ $requirement->document_number ?: 'N/A' }}</div>
-                            </div>
-
-                            <div class="portal-field">
-                                <label class="portal-field__label">Issuing Office</label>
-                                <div class="portal-input portal-record-value">{{ $requirement->issuing_office ?: 'N/A' }}</div>
-                            </div>
-
-                            <div class="portal-field">
-                                <label class="portal-field__label">Issue Date</label>
-                                <div class="portal-input portal-record-value">{{ optional($requirement->issue_date)->format('M d, Y') ?? 'N/A' }}</div>
-                            </div>
-
-                            <div class="portal-field">
-                                <label class="portal-field__label">Expiry Date</label>
-                                <div class="portal-input portal-record-value">{{ optional($requirement->expiry_date)->format('M d, Y') ?? 'N/A' }}</div>
-                            </div>
-
                             <div class="portal-field portal-field--wide">
                                 <label class="portal-field__label">Requirement Remarks</label>
                                 <div class="portal-input portal-record-value portal-record-value--multiline">{{ $requirement->remarks ?: 'No remarks recorded.' }}</div>

@@ -7,6 +7,7 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Models\ApplicationOpening;
 use App\Models\User;
 use App\Constants\UserStatusConstant;
 
@@ -50,11 +51,15 @@ class LoginController extends Controller
     protected function attemptLogin(Request $request)
     {
         $user = User::where('email', $request->input('email'))
+            ->with('roles:id,role_name')
             ->first();
 
         if ($user && $user->status === UserStatusConstant::DEACTIVATED) {
-            // Flag deactivated state for a custom failed response
-            $request->session()->put('auth.deactivated', true);
+            $message = $user->isApplicant() && !$user->isBroker()
+                ? 'This applicant account has been archived after the application process. Please create a new account when a new stall application opens.'
+                : 'Your account is deactivated.';
+
+            $request->session()->put('auth.deactivated_message', $message);
             return false;
         }
 
@@ -69,9 +74,9 @@ class LoginController extends Controller
      */
     protected function sendFailedLoginResponse(Request $request)
     {
-        if ($request->session()->pull('auth.deactivated', false)) {
+        if ($deactivatedMessage = $request->session()->pull('auth.deactivated_message')) {
             throw ValidationException::withMessages([
-                $this->username() => ['Your account is deactivated.'],
+                $this->username() => [$deactivatedMessage],
             ]);
         }
 
@@ -103,7 +108,9 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
-        return view('auth.login-polished');
+        return view('auth.login-polished', [
+            'hasAvailableStall' => ApplicationOpening::availableForApplication()->exists(),
+        ]);
     }
 
     /**

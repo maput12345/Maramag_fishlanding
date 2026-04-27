@@ -61,7 +61,7 @@
                         {{ $isBrokerTrackingActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-archive-box class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
                             {{ $isBrokerTrackingActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                    <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Box Tracking</span>
+                    <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Box Management</span>
                 </a>
             </div>
             <!-- Analytics -->

@@ -16,6 +16,7 @@ class BrokerApplication extends Model
     protected $fillable = [
         'user_id',
         'application_opening_id',
+        'selected_stall_id',
         'reviewed_by_employee_id',
         'selected_by_employee_id',
         'first_name',
@@ -57,6 +58,14 @@ class BrokerApplication extends Model
     }
 
     /**
+     * Get the stall finally awarded to this applicant.
+     */
+    public function selectedStall(): BelongsTo
+    {
+        return $this->belongsTo(Stall::class, 'selected_stall_id');
+    }
+
+    /**
      * Get the reviewing employee.
      */
     public function reviewedBy(): BelongsTo
@@ -86,6 +95,14 @@ class BrokerApplication extends Model
     public function broker(): HasOne
     {
         return $this->hasOne(Broker::class, 'application_id');
+    }
+
+    /**
+     * Get autosaved LEEO review drafts for this application.
+     */
+    public function reviewDrafts(): HasMany
+    {
+        return $this->hasMany(BrokerApplicationReviewDraft::class, 'broker_application_id');
     }
 
     /**

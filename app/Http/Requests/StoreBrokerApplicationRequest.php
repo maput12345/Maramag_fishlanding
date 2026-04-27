@@ -30,7 +30,7 @@ class StoreBrokerApplicationRequest extends FormRequest
             ],
             'address' => ['required', 'string', 'max:1000'],
             'contact_number' => ['required', 'string', 'max:50'],
-            'requirements' => ['required', 'array'],
+            'requirements' => ['nullable', 'array'],
             'requirements.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'requirements.*.document_number' => ['nullable', 'string', 'max:255'],
             'requirements.*.issuing_office' => ['nullable', 'string', 'max:255'],
@@ -59,6 +59,10 @@ class StoreBrokerApplicationRequest extends FormRequest
                 $validator->errors()->add('opening', 'This application opening is no longer accepting submissions.');
             }
 
+            if (!$opening->hasAvailableStall()) {
+                $validator->errors()->add('opening', 'This stall is no longer available for applications.');
+            }
+
             if (
                 !$opening->start_date ||
                 !$opening->end_date ||
@@ -70,41 +74,17 @@ class StoreBrokerApplicationRequest extends FormRequest
 
             $alreadyApplied = $this->user()
                 ?->brokerApplications()
-                ->where('application_opening_id', $opening->id)
+                ->whereNotIn('application_status', ['Rejected', 'Not Selected'])
                 ->exists();
 
             if ($alreadyApplied) {
-                $validator->errors()->add('opening', 'You have already submitted an application for this stall opening.');
+                $validator->errors()->add('opening', 'You already have an active application for the current open stalls.');
             }
 
-            $requirements = $this->input('requirements', []);
-            $requiredRequirementNames = collect(RequirementType::officialChecklistDefinitionsFor($applicantType))
-                ->filter(fn (array $definition) => $definition['is_required'])
-                ->pluck('requirement_name')
-                ->all();
-
-            RequirementType::ensureOfficialChecklistTypesExist();
-
-            $requiredTypes = RequirementType::whereIn('requirement_name', $requiredRequirementNames)
-                ->pluck('id', 'requirement_name');
-
-            foreach ($requiredRequirementNames as $requirementName) {
-                $requirementTypeId = $requiredTypes[$requirementName] ?? null;
-
-                if (!$requirementTypeId) {
+            foreach ($opening->requiredRequirementTypesFor($applicantType) as $requirementType) {
+                if (!$this->hasFile('requirements.' . $requirementType->id . '.file')) {
                     $validator->errors()->add(
-                        'requirements',
-                        'The application checklist is not configured yet. Please contact the LEEO office.'
-                    );
-
-                    return;
-                }
-
-                $file = data_get($requirements, $requirementTypeId . '.file');
-
-                if (!$this->hasFile('requirements.' . $requirementTypeId . '.file') && empty($file)) {
-                    $validator->errors()->add(
-                        'requirements.' . $requirementTypeId . '.file',
+                        'requirements.' . $requirementType->id . '.file',
                         'Please upload all required documents before submitting your application.'
                     );
                 }

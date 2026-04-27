@@ -189,7 +189,7 @@
                                     <thead class="bg-gray-50">
                                         <tr>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Box</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Name</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Purchase Date</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Price per Box</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
@@ -215,7 +215,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                                    {{ $detail->fishBoxPurchase?->fishType?->name ?? 'Unknown fish name' }}
+                                                    {{ $detail->fishBoxPurchase?->fishType?->name ?? 'Unknown fish' }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                                     {{ $detail->fishBoxPurchase?->purchase_date?->format('M d, Y') ?? '-' }}

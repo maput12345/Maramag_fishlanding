@@ -7,13 +7,13 @@
     <!-- Fish Types Tab Content -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-xl font-semibold text-gray-900">Fish Names List</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Fish List</h2>
         </div>
         @unless($brokerViewReadOnly)
             <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes', 'modal' => 'create']) }}"
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center space-x-2">
                 <x-heroicon-o-plus class="w-4 h-4" />
-                <span>Add Fish Name</span>
+                <span>Add Fish</span>
             </a>
         @endunless
     </div>
@@ -21,7 +21,7 @@
     <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6 summary-strip-wrap">
         <div class="summary-strip summary-strip--three">
             <div class="summary-strip-item">
-                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">No. of Fish Names</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">No. of Fish</p>
                 <p class="summary-stat-value text-gray-900">{{ number_format($fishTypeSummary['assigned'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
@@ -50,7 +50,7 @@
 
             <div class="space-y-6 py-2">
                 <p class="text-sm text-gray-600">
-                    This broker workspace is currently in read-only mode. Enable support actions first if you need to add, edit, or remove fish names for this broker.
+                    This broker workspace is currently in read-only mode. Enable support actions first if you need to add, edit, or remove fish for this broker.
                 </p>
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
@@ -70,8 +70,8 @@
         </x-app-modal>
     @elseif(request('modal') === 'create' || request('modal') === 'edit')
         <x-app-modal
-            :title="request('modal') === 'edit' ? 'Edit Fish Name' : 'Add Fish Name'"
-            :subtitle="request('modal') === 'edit' ? 'Update the fish name details for cleaner inventory setup.' : 'Create a fish name with a clear label and optional description.'"
+            :title="request('modal') === 'edit' ? 'Edit Fish' : 'Add Fish'"
+            :subtitle="request('modal') === 'edit' ? 'Update the fish details for cleaner inventory setup.' : 'Create a fish with a clear label and optional description.'"
             :close-url="route('broker.inventory.index', ['tab' => 'fishTypes'])"
         >
             <x-slot:icon>
@@ -88,14 +88,14 @@
 
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                        Fish Name <span class="text-red-500">*</span>
+                        Fish <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
                         <input type="text"
                                id="name"
                                name="name"
                                value="{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->name : old('name') }}"
-                               placeholder="Enter fish name, like Tilapia or Catfish"
+                               placeholder="Enter fish, like Tilapia or Catfish"
                                class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors @error('name') border-red-500 @enderror"
                                required>
                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -114,7 +114,7 @@
                     <textarea id="description"
                               name="description"
                               rows="4"
-                              placeholder="Add a short description to make the fish name easier to recognize."
+                              placeholder="Add a short description to make the fish easier to recognize."
                               class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none @error('description') border-red-500 @enderror">{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->description : old('description') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -130,10 +130,10 @@
                             class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
                         @if(request('modal') === 'edit')
                             <x-heroicon-o-pencil-square class="w-4 h-4 mr-2" />
-                            Update Fish Name
+                            Update Fish
                         @else
                             <x-heroicon-o-plus class="w-4 h-4 mr-2" />
-                            Add Fish Name
+                            Add Fish
                         @endif
                     </button>
                 </div>
@@ -141,7 +141,7 @@
         </x-app-modal>
     @endif
 
-    <!-- Fish Names Search -->
+    <!-- Fish Search -->
     <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{ search: '{{ request('search') }}' }">
             <input type="hidden" name="tab" value="fishTypes">
@@ -151,7 +151,7 @@
                         <input type="text"
                             name="search"
                             x-model="search"
-                            placeholder="Search fish names..."
+                            placeholder="Search fish..."
                             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <x-heroicon-o-magnifying-glass class="h-4 w-4 text-gray-400" />
@@ -176,7 +176,7 @@
     @if($fishTypes->hasPages() || request()->has('search'))
         <div class="mb-4">
             <p class="text-sm text-gray-600">
-                Showing {{ $fishTypes->firstItem() ?? 0 }} to {{ $fishTypes->lastItem() ?? 0 }} of {{ $fishTypes->total() }} fish names
+                Showing {{ $fishTypes->firstItem() ?? 0 }} to {{ $fishTypes->lastItem() ?? 0 }} of {{ $fishTypes->total() }} fish
                 @if(request()->has('search'))
                     <span class="text-green-600">(filtered)</span>
                 @endif
@@ -184,13 +184,13 @@
         </div>
     @endif
 
-    <!-- Fish Names Table -->
+    <!-- Fish Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -219,7 +219,7 @@
                                             <x-heroicon-o-pencil-square class="w-6 h-6" />
                                         </a>
                                         @if($fishType->isUsed())
-                                            <button type="button" class="text-gray-400 cursor-not-allowed" title="Cannot delete: Fish name is in use">
+                                            <button type="button" class="text-gray-400 cursor-not-allowed" title="Cannot delete: Fish is in use">
                                                 <x-heroicon-o-trash class="w-6 h-6" />
                                             </button>
                                         @else
@@ -237,7 +237,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="px-6 py-4 text-center text-gray-500">No fish names found.</td>
+                            <td colspan="3" class="px-6 py-4 text-center text-gray-500">No fish found.</td>
                         </tr>
                     @endforelse
                 </tbody>

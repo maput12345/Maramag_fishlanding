@@ -157,7 +157,7 @@ class SalesController extends Controller
         $dateTo = $request->get('date_to', now()->format('Y-m-d'));
         $status = $request->get('status');
 
-        // Get analytics data
+        // Get analytics data using sales history for the selected period.
         $analyticsData = Sales::getAnalyticsData($brokerId, $dateFrom, $dateTo, $status);
 
         // Get paginated sales for the period
@@ -169,12 +169,8 @@ class SalesController extends Controller
             $dateTo
         );
 
-        // Get total fish boxes for the broker
-        $totalFishBoxes = FishBox::getTotalFishBoxes($brokerId);
-
         return array_merge($analyticsData, [
             'sales' => $sales,
-            'totalFishBoxes' => $totalFishBoxes,
             'status' => $request->get('status')
         ]);
     }
@@ -429,7 +425,11 @@ class SalesController extends Controller
             }
 
             // Check if fish box is available for sale
-            if ($fishBox->status !== FishBoxStatusConstant::IN_STOCK) {
+            if (
+                $fishBox->status !== FishBoxStatusConstant::IN_STOCK
+                || !$fishBox->currentPurchase
+                || !$fishBox->fish_type_id
+            ) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Fish box is not available for sale'

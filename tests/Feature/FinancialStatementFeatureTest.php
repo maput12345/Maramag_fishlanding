@@ -14,6 +14,7 @@ use App\Models\FishType;
 use App\Models\Role;
 use App\Models\Sales;
 use App\Models\SalesDetails;
+use App\Models\SalesPayment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -143,6 +144,32 @@ class FinancialStatementFeatureTest extends TestCase
         $response->assertSee('Selling, General and Administrative Expenses');
         $response->assertSee('Fuel');
         $response->assertSee('Sales Revenue');
+    }
+
+    public function test_daily_financial_statement_includes_outstanding_receivable_balance_as_of_statement_date(): void
+    {
+        [$user, $broker] = $this->createBrokerUser('finance-balance@example.com', 'Balance', 'Viewer', 'Balance Stall');
+        $dataset = $this->seedDailyStatementDataset($broker, $user);
+
+        SalesPayment::create([
+            'sale_id' => $dataset['sale_one']->id,
+            'paid_amount' => 80,
+            'payment_date' => '2026-04-25',
+            'payment_method' => 'Cash',
+        ]);
+
+        SalesPayment::create([
+            'sale_id' => $dataset['sale_two']->id,
+            'paid_amount' => 20,
+            'payment_date' => '2026-04-26',
+            'payment_method' => 'Cash',
+        ]);
+
+        $statementApr25 = FinancialStatementEntry::getDailyStatement($broker->id, '2026-04-25');
+        $statementApr26 = FinancialStatementEntry::getDailyStatement($broker->id, '2026-04-26');
+
+        $this->assertEqualsWithDelta(420.0, $statementApr25['outstanding_receivable_balance'], 0.01);
+        $this->assertEqualsWithDelta(400.0, $statementApr26['outstanding_receivable_balance'], 0.01);
     }
 
     /**

@@ -19,10 +19,13 @@ class RequirementType extends Model
         'requirement_name',
         'is_required',
         'description',
+        'audience',
+        'sort_order',
     ];
 
     protected $casts = [
         'is_required' => 'boolean',
+        'sort_order' => 'integer',
     ];
 
     /**
@@ -31,6 +34,14 @@ class RequirementType extends Model
     public function applicationRequirements(): HasMany
     {
         return $this->hasMany(ApplicationRequirement::class, 'requirement_type_id');
+    }
+
+    /**
+     * Get vacancy checklist snapshots using this requirement.
+     */
+    public function openingRequirements(): HasMany
+    {
+        return $this->hasMany(ApplicationOpeningRequirement::class, 'requirement_type_id');
     }
 
     /**
@@ -234,6 +245,8 @@ class RequirementType extends Model
                 [
                     'is_required' => $definition['is_required'],
                     'description' => $definition['description'],
+                    'audience' => $definition['audience'],
+                    'sort_order' => $definition['sort_order'],
                 ]
             );
         }
@@ -253,6 +266,20 @@ class RequirementType extends Model
             ->get()
             ->sortBy(fn (self $requirementType) => $definitions[$requirementType->requirement_name]['sort_order'] ?? PHP_INT_MAX)
             ->values();
+    }
+
+    /**
+     * Get all requirements LEEO can choose when declaring a vacancy.
+     */
+    public static function selectableChecklistTypes(): Collection
+    {
+        static::ensureOfficialChecklistTypesExist();
+
+        return static::query()
+            ->orderByRaw('CASE WHEN sort_order = 0 THEN 1 ELSE 0 END')
+            ->orderBy('sort_order')
+            ->orderBy('requirement_name')
+            ->get();
     }
 
     /**

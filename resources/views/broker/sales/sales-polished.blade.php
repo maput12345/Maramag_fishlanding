@@ -13,13 +13,13 @@
 
     $salesBaseUrl = route('broker.sales.sales', $salesBaseQuery);
     $topbarAction = [
-        'label' => $brokerViewReadOnly ? null : 'Create Sale',
+        'label' => $brokerViewReadOnly ? null : 'Transaction',
         'url' => $brokerViewReadOnly ? null : route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])),
         'modal' => true,
     ];
 
     $salesModalBreadcrumbs = [
-        'create' => 'Create Sale',
+        'create' => 'Transaction',
         'edit' => 'Edit Sale',
         'show' => 'View Sale',
         'payment' => 'Add Payment',
@@ -244,7 +244,7 @@
                                                data-sales-modal-link
                                                class="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition-colors hover:bg-green-700">
                                                 <x-heroicon-o-plus class="h-5 w-5" />
-                                                <span>Create Sale</span>
+                                                <span>Transaction</span>
                                             </a>
                                         @endunless
                                     </div>
@@ -272,11 +272,11 @@
         <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6">
             <div class="flex flex-wrap gap-4">
                 <div class="min-w-[200px] flex-1">
-                    <label class="mb-2 block text-sm font-medium text-gray-700">Fish Name</label>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                     <select name="sales_details[INDEX][fish_type_id]"
                             class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                             required>
-                        <option value="">Select Fish Name</option>
+                        <option value="">Select Fish</option>
                         @foreach($fishTypes ?? [] as $fishType)
                             @php
                                 $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
@@ -393,6 +393,11 @@
             }
 
             const modalRoot = getActiveSalesModalRoot();
+            const paymentAmountInput = modalRoot?.querySelector('#paid_amount');
+            if (paymentAmountInput && typeof window.protectSalesAmountInput === 'function') {
+                window.protectSalesAmountInput(paymentAmountInput);
+            }
+
             const scanBtn = modalRoot?.querySelector('#scan-qr-btn');
             if (scanBtn && !scanBtn.dataset.salesQrBound) {
                 scanBtn.dataset.salesQrBound = 'true';

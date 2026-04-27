@@ -403,10 +403,12 @@ class Broker extends Model
      */
     public static function createFromApplication(BrokerApplication $application): self
     {
+        $selectedStall = $application->selectedStall ?: $application->applicationOpening?->stall;
+
         return static::create([
             'user_id' => $application->user_id,
             'application_id' => $application->id,
-            'stall_id' => $application->applicationOpening?->stall_id,
+            'stall_id' => $selectedStall?->id,
             'first_name' => $application->first_name,
             'middle_name' => $application->middle_name,
             'last_name' => $application->last_name,
@@ -414,7 +416,7 @@ class Broker extends Model
             'business_name' => $application->business_name,
             'address' => $application->address,
             'contact_number' => $application->contact_number,
-            'stall_name' => $application->applicationOpening?->stall?->display_name,
+            'stall_name' => $selectedStall?->display_name,
             'broker_status' => 'Active',
             'approval_date' => now()->toDateString(),
         ]);

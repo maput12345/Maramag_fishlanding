@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use App\Models\ApplicationOpening;
 use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +47,11 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
+        if (!$this->hasAvailableApplicationOpening()) {
+            return redirect()->route('login')
+                ->with('error', 'No vacant stall is open for applications right now.');
+        }
+
         return view('auth.register-polished');
     }
 
@@ -57,11 +63,18 @@ class RegisterController extends Controller
      */
     protected function validator(array $data)
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
+        $validator = Validator::make($data, [
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
+
+        $validator->after(function ($validator) {
+            if (!$this->hasAvailableApplicationOpening()) {
+                $validator->errors()->add('availability', 'No vacant stall is open for applications right now.');
+            }
+        });
+
+        return $validator;
     }
 
     /**
@@ -73,10 +86,14 @@ class RegisterController extends Controller
     protected function create(array $data)
     {
         return User::createUserWithRole([
-            'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => 'applicant',
         ], []);
+    }
+
+    private function hasAvailableApplicationOpening(): bool
+    {
+        return ApplicationOpening::availableForApplication()->exists();
     }
 }

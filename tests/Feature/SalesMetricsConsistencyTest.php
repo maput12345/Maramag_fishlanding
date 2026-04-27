@@ -15,9 +15,11 @@ use App\Models\SalesDetails;
 use App\Models\SalesPayment;
 use App\Models\User;
 use App\Repositories\SalesRepository;
+use App\Http\Controllers\Broker\SalesController;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class SalesMetricsConsistencyTest extends TestCase
@@ -109,6 +111,36 @@ class SalesMetricsConsistencyTest extends TestCase
         $this->assertEqualsWithDelta(140.0, $mainBrokerRow['total_sales'], 0.01);
         $this->assertSame(4, $mainBrokerRow['fishbox_count']);
         $this->assertSame(4, $repository->getTotalFishBoxesSold('2026-04-21', '2026-04-22', 'Main Stall'));
+    }
+
+    public function test_analytics_controller_keeps_historical_sold_box_count_even_after_boxes_are_returned(): void
+    {
+        $dataset = $this->seedSalesDataset();
+        $broker = $dataset['brokers']['main'];
+        $user = $broker->user;
+        $returnedBoxIds = SalesDetails::query()
+            ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
+            ->join('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
+            ->where('sales.broker_id', $broker->id)
+            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses())
+            ->pluck('fish_box_purchases.fish_box_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        FishBox::query()
+            ->where('broker_id', $broker->id)
+            ->whereIn('id', $returnedBoxIds)
+            ->update(['box_status' => FishBoxStatusConstant::RETURNED]);
+
+        $this->actingAs($user);
+
+        $controller = new SalesController();
+        $analytics = $controller->getAnalyticsData(new Request([
+            'date_from' => '2026-04-21',
+            'date_to' => '2026-04-22',
+        ]));
+
+        $this->assertSame(4, $analytics['totalFishBoxes']);
     }
 
     public function test_admin_broker_sales_details_can_render_without_lazy_loading(): void
@@ -221,6 +253,61 @@ class SalesMetricsConsistencyTest extends TestCase
         } finally {
             Model::preventLazyLoading(false);
         }
+    }
+
+    public function test_admin_broker_receipt_snapshot_removes_boxes_once_they_are_returned(): void
+    {
+        $dataset = $this->seedSalesDataset();
+        $repository = new SalesRepository();
+        $mainBroker = $dataset['brokers']['main'];
+        $mainUserId = $mainBroker->user_id;
+        $fishTypeId = FishType::query()->where('name', 'bangus')->value('id');
+
+        $missingPurchase = $this->createFishBoxWithPurchase($mainBroker->id, $fishTypeId, 72.00, $mainUserId);
+        $missingBox = $missingPurchase->fishBox;
+        $missingBox->update(['box_status' => FishBoxStatusConstant::RETURNED]);
+
+        InventoryLog::query()
+            ->where('fish_box_purchase_id', $missingPurchase->id)
+            ->update([
+                'created_at' => '2026-04-24 08:00:00',
+                'updated_at' => '2026-04-24 08:00:00',
+            ]);
+
+        InventoryLog::query()->insert([
+            'fish_box_purchase_id' => $missingPurchase->id,
+            'created_by_user_id' => $mainUserId,
+            'status' => FishBoxStatusConstant::MISSING,
+            'created_at' => '2026-04-25 09:00:00',
+            'updated_at' => '2026-04-25 09:00:00',
+        ]);
+
+        $beforeReturnSnapshot = $repository->getBrokerReceiptSnapshot(
+            $mainBroker->id,
+            '2026-04-01',
+            '2026-04-25'
+        );
+
+        $this->assertNotNull($beforeReturnSnapshot);
+        $this->assertCount(1, $beforeReturnSnapshot['missing_boxes']);
+        $this->assertSame($missingBox->name, $beforeReturnSnapshot['missing_boxes'][0]['name']);
+
+        InventoryLog::query()->insert([
+            'fish_box_purchase_id' => $missingPurchase->id,
+            'created_by_user_id' => $mainUserId,
+            'status' => FishBoxStatusConstant::RETURNED,
+            'created_at' => '2026-04-25 10:00:00',
+            'updated_at' => '2026-04-25 10:00:00',
+        ]);
+
+        $afterReturnSnapshot = $repository->getBrokerReceiptSnapshot(
+            $mainBroker->id,
+            '2026-04-01',
+            '2026-04-25'
+        );
+
+        $this->assertNotNull($afterReturnSnapshot);
+        $this->assertCount(0, $afterReturnSnapshot['missing_boxes']);
     }
 
     /**

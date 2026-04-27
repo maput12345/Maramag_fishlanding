@@ -63,6 +63,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/openings/{opening}', 'create')->name('create');
         Route::post('/openings/{opening}', 'store')->name('store');
+        Route::get('/{application}/edit', 'edit')->name('edit');
+        Route::patch('/{application}', 'update')->name('update');
         Route::get('/{application}', 'show')->name('show');
     });
 });
@@ -96,18 +98,25 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Sales Management routes - grouped by controller
     Route::controller(SalesManagementController::class)->prefix('admin/sales')->name('admin.sales.')->group(function () {
         Route::get('/tracking', 'fishboxTracking')->name('tracking');
+        Route::get('/brokers/{broker}/receipt-data', 'brokerReceiptData')->name('receipt-data');
         Route::get('/', 'index')->name('index');
     });
 
     Route::controller(ApplicationManagementController::class)->prefix('admin/applications')->name('admin.applications.')->group(function () {
         Route::get('/', 'index')->name('index');
-        Route::post('/stalls', 'storeStall')->name('stalls.store');
+        Route::get('/{application}', 'show')->name('show');
+        Route::patch('/{application}/review-draft', 'saveReviewDraft')->name('review-draft');
+        Route::patch('/{application}/review', 'review')->name('review');
+        Route::post('/{application}/winner', 'selectWinner')->name('winner');
+    });
+
+    Route::controller(ApplicationManagementController::class)->prefix('admin/stalls')->name('admin.stalls.')->group(function () {
+        Route::get('/', 'stallsIndex')->name('index');
+        Route::post('/', 'storeStall')->name('store');
+        Route::post('/requirements', 'storeRequirementType')->name('requirements.store');
         Route::post('/openings', 'storeOpening')->name('openings.store');
         Route::patch('/openings/{opening}', 'updateOpening')->name('openings.update');
         Route::patch('/openings/{opening}/status', 'updateOpeningStatus')->name('openings.status');
-        Route::get('/{application}', 'show')->name('show');
-        Route::patch('/{application}/review', 'review')->name('review');
-        Route::post('/{application}/winner', 'selectWinner')->name('winner');
     });
 });
 

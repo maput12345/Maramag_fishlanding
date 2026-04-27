@@ -4,12 +4,12 @@
     ];
 
     $topbarAction = [
-        'label' => 'Create Sale',
+        'label' => 'Transaction',
         'url' => route('broker.sales.sales', ['modal' => 'create']),
     ];
 
     $salesModalBreadcrumbs = [
-        'create' => 'Create Sale',
+        'create' => 'Transaction',
         'edit' => 'Edit Sale',
         'show' => 'View Sale',
         'payment' => 'Add Payment',
@@ -220,7 +220,7 @@
                                                 <a href="{{ route('broker.sales.sales', ['modal' => 'create']) }}"
                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center space-x-2">
                                                     <x-heroicon-o-plus class="w-5 h-5" />
-                                                    <span>Create Sale</span>
+                                                    <span>Transaction</span>
                                                 </a>
                                             </div>
                                         </td>
@@ -250,11 +250,11 @@
         <div class="flex flex-wrap gap-4">
             <!-- Fish Type Selection -->
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Fish Name</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fish</label>
                 <select name="sales_details[INDEX][fish_type_id]"
                         class="fish-type-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required>
-                    <option value="">Select Fish Name</option>
+                    <option value="">Select Fish</option>
                     @foreach($fishTypes ?? [] as $fishType)
                         <option value="{{ $fishType->id }}">{{ $fishType->name }}</option>
                     @endforeach

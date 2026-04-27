@@ -170,6 +170,8 @@
                     data-receipt-date="{{ $receiptDate }}"
                     data-receipt-sales-count="{{ $receiptSalesCount }}"
                     data-receipt-fishbox-count="{{ $receiptFishBoxCount }}"
+                    data-receipt-leeo-commission-per-box="5"
+                    data-receipt-data-url="{{ route('admin.sales.receipt-data', ['broker' => $broker->id], false) }}"
                     data-receipt-watermark-logo-url="{{ asset('image/logo.png') }}"
                     data-receipt-sales='@json($receiptSalesForPrint, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
                     data-broker-missing-boxes-for-receipt='@json($missingBoxesForPrint, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'

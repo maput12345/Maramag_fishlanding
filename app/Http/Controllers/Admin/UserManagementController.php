@@ -7,6 +7,7 @@ use App\Constants\UserStatusConstant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
 use App\Models\Broker;
+use App\Models\BrokerApplication;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class UserManagementController extends Controller
         $status = $request->query('status', 'all');
         $role = $request->query('role', 'all');
 
-        if (!in_array($tab, ['admins', 'brokers'], true)) {
+        if (!in_array($tab, ['admins', 'brokers', 'applicants'], true)) {
             $tab = 'admins';
         }
 
@@ -77,6 +78,63 @@ class UserManagementController extends Controller
         }
 
         $admins = collect();
+        $applicantsQuery = User::query()
+            ->select(['id', 'email', 'status', 'created_at'])
+            ->with([
+                'roles:id,role_name',
+                'brokerApplications' => function ($applicationQuery) {
+                    $applicationQuery
+                        ->select([
+                            'id',
+                            'user_id',
+                            'application_opening_id',
+                            'selected_stall_id',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'suffix',
+                            'application_status',
+                            'submitted_at',
+                            'selected_at',
+                        ])
+                        ->with([
+                            'applicationOpening:id,stall_id',
+                            'applicationOpening.stall:id,stall_number',
+                            'selectedStall:id,stall_number',
+                        ])
+                        ->latest('submitted_at');
+                },
+            ])
+            ->whereHas('roles', function ($roleQuery) {
+                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
+            })
+            ->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->whereIn('role_name', [
+                    RoleStatusConstant::ADMIN,
+                    RoleStatusConstant::STAFF,
+                    RoleStatusConstant::BROKER,
+                ]);
+            });
+
+        if ($status === UserStatusConstant::ACTIVE) {
+            $applicantsQuery->active();
+        } elseif ($status === UserStatusConstant::DEACTIVATED) {
+            $applicantsQuery->deactivated();
+        }
+
+        if ($search !== '') {
+            $applicantsQuery->where(function ($query) use ($search) {
+                $query->where('email', 'like', '%' . $search . '%')
+                    ->orWhereHas('brokerApplications', function ($applicationQuery) use ($search) {
+                        $applicationQuery
+                            ->where('first_name', 'like', '%' . $search . '%')
+                            ->orWhere('middle_name', 'like', '%' . $search . '%')
+                            ->orWhere('last_name', 'like', '%' . $search . '%')
+                            ->orWhere('application_status', 'like', '%' . $search . '%')
+                            ->orWhere('contact_number', 'like', '%' . $search . '%');
+                    });
+            });
+        }
 
         $brokersQuery = Broker::query()
             ->select([
@@ -117,11 +175,14 @@ class UserManagementController extends Controller
         }
 
         $brokers = collect();
+        $applicants = collect();
 
         if ($tab === 'admins') {
             $admins = $adminsQuery->get();
-        } else {
+        } elseif ($tab === 'brokers') {
             $brokers = $brokersQuery->get();
+        } else {
+            $applicants = $applicantsQuery->get();
         }
 
         // Get broker statistics using grouped counts
@@ -147,6 +208,32 @@ class UserManagementController extends Controller
         $deactivatedAdmins = (int) ($adminStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
         $totalAdmins = $activeAdmins + $deactivatedAdmins;
 
+        $applicantAccountQuery = User::query()
+            ->whereHas('roles', function ($roleQuery) {
+                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
+            })
+            ->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->whereIn('role_name', [
+                    RoleStatusConstant::ADMIN,
+                    RoleStatusConstant::STAFF,
+                    RoleStatusConstant::BROKER,
+                ]);
+            });
+
+        $applicantStatusCounts = (clone $applicantAccountQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $activeApplicants = (int) ($applicantStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
+        $archivedApplicants = (int) ($applicantStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
+        $totalApplicants = $activeApplicants + $archivedApplicants;
+        $notSelectedApplications = BrokerApplication::query()
+            ->where('application_status', 'Not Selected')
+            ->whereHas('user.roles', function ($roleQuery) {
+                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
+            })
+            ->count();
+
         $count = [
             'deletedBrokers' => $deletedBrokers,
             'deactivatedBrokers' => $deactivatedBrokers,
@@ -154,10 +241,14 @@ class UserManagementController extends Controller
             'totalBrokers' => $totalBrokers,
             'deactivatedAdmins' => $deactivatedAdmins,
             'activeAdmins' => $activeAdmins,
-            'totalAdmins' => $totalAdmins
+            'totalAdmins' => $totalAdmins,
+            'activeApplicants' => $activeApplicants,
+            'archivedApplicants' => $archivedApplicants,
+            'totalApplicants' => $totalApplicants,
+            'notSelectedApplications' => $notSelectedApplications,
         ];
 
-        return view('admin.users.index', compact('admins', 'brokers', 'count', 'tab', 'search', 'status', 'role'));
+        return view('admin.users.index', compact('admins', 'brokers', 'applicants', 'count', 'tab', 'search', 'status', 'role'));
     }
 
     /**
@@ -466,6 +557,14 @@ class UserManagementController extends Controller
      */
     private function resolveUserManagementTab(User $user): string
     {
-        return $user->hasRole(RoleStatusConstant::BROKER) ? 'brokers' : 'admins';
+        if ($user->hasRole(RoleStatusConstant::BROKER)) {
+            return 'brokers';
+        }
+
+        if ($user->hasRole(RoleStatusConstant::APPLICANT)) {
+            return 'applicants';
+        }
+
+        return 'admins';
     }
 }

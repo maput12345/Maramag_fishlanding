@@ -165,6 +165,7 @@ class FinancialStatementEntry extends Model
         $costOfSales = (float) (clone $costBaseQuery)->sum('fish_box_purchases.cost_price');
         $soldBoxes = (int) (clone $costBaseQuery)->count('sales_details.id');
         $collections = (float) (clone $collectionsBaseQuery)->sum('payments.paid_amount');
+        $outstandingReceivableBalance = Sales::getTotalSalesBalance($brokerId, $date);
 
         $entryTotals = static::getDailyEntryTotals($brokerId, $date);
         $sellingGeneralAndAdministrativeExpenses = $entryTotals[self::TYPE_SGA];
@@ -186,6 +187,7 @@ class FinancialStatementEntry extends Model
             'loss_on_sale' => $lossOnSale,
             'net_income' => $netIncome,
             'collections' => $collections,
+            'outstanding_receivable_balance' => $outstandingReceivableBalance,
         ];
     }
 

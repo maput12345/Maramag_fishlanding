@@ -6,7 +6,7 @@
     ];
 
     $topbarAction = [
-        'label' => 'Create Sale',
+        'label' => 'Transaction',
         'url' => route('broker.sales.sales', ['modal' => 'create']),
         'modal' => false,
     ];
@@ -197,6 +197,18 @@
                             <p class="text-sm font-semibold">Net Income</p>
                         </div>
                         <p class="text-xl font-semibold">PHP {{ number_format($statement['net_income'], 2) }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 border-t border-gray-200 pt-5">
+                    <div class="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-sm font-semibold text-orange-900">Outstanding Receivable Balance</p>
+                                <p class="mt-1 text-xs text-orange-700/80">As of {{ $statementDateCarbon->format('M d, Y') }}</p>
+                            </div>
+                            <p class="text-lg font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -487,6 +499,16 @@
                     <div class="flex justify-between border-t pt-2 text-sm">
                         <span class="font-semibold text-gray-600">Net Income:</span>
                         <span class="font-bold text-green-600">PHP {{ number_format($statement['net_income'], 2) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 border-t border-gray-200 pt-4">
+                <h3 class="mb-3 text-sm font-semibold text-gray-900">Outstanding Receivable Balance</h3>
+                <div class="rounded-lg bg-orange-50 p-3">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-medium text-orange-900">As of {{ $statementDateCarbon->format('M d, Y') }}</span>
+                        <span class="font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</span>
                     </div>
                 </div>
             </div>

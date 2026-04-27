@@ -23,16 +23,8 @@ All applications are subject to review and approval by the LEEO administrator.</
                 @csrf
 
                 <div>
-                    <label for="name" class="login-label">Name</label>
-                    <input id="name" type="text" class="login-input @error('name') border-red-300 @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
-                    @error('name')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
                     <label for="email" class="login-label">Email Address</label>
-                    <input id="email" type="email" class="login-input @error('email') border-red-300 @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
+                    <input id="email" type="email" class="login-input @error('email') border-red-300 @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
                     @error('email')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror

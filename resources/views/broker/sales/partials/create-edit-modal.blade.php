@@ -69,7 +69,7 @@
     @else
         {{-- Unified Sale Modal --}}
         <x-app-modal
-            :title="request('modal') === 'create' ? 'Create Sale' : 'Edit Sale'"
+            :title="request('modal') === 'create' ? 'Transaction' : 'Edit Sale'"
             :subtitle="request('modal') === 'create' ? 'Build a sale clearly, assign boxes automatically, and keep buyer details in one place.' : 'Review and update this sale without losing the itemized details.'"
             :close-url="$salesBaseUrl"
             max-width="7xl"
@@ -131,11 +131,11 @@
                             <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6" data-index="{{ $index }}">
                                 <div class="flex flex-wrap gap-4">
                                     <div class="min-w-[200px] flex-1">
-                                        <label class="mb-2 block text-sm font-medium text-gray-700">Fish Name</label>
+                                        <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                                         <select name="sales_details[{{ $index }}][fish_type_id]"
                                                 class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                                 required>
-                                            <option value="">Select Fish Name</option>
+                                            <option value="">Select Fish</option>
                                             @foreach($fishTypes as $fishType)
                                                 @php
                                                     $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
@@ -287,6 +287,7 @@
                             <input type="number" id="initial_paid_amount" name="initial_paid_amount"
                                    value="{{ old('initial_paid_amount', '') }}"
                                    step="0.01" min="0.01"
+                                   data-currency-input="true"
                                    class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                    placeholder="0.00">
                             <div class="mt-2 text-xs text-gray-500">
@@ -343,7 +344,7 @@
                     <button type="submit"
                             class="inline-flex h-12 items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-sm transition-colors {{ request('modal') === 'create' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700' }}"
                             style="min-width: 9.5rem;">
-                        {{ request('modal') === 'create' ? 'Create Sale' : 'Update Sale' }}
+                        {{ request('modal') === 'create' ? 'Transaction' : 'Update Sale' }}
                     </button>
                 </div>
             </form>

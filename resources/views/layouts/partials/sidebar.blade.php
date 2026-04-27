@@ -2,6 +2,9 @@
 @php
     $isAdminSalesMenuActive = request()->routeIs('admin.sales.index');
     $isAdminFishBoxTrackingActive = request()->routeIs('admin.sales.tracking');
+    $isAdminApplicantMenuActive = request()->routeIs('admin.applications.*');
+    $isAdminStallMenuActive = request()->routeIs('admin.stalls.*');
+    $canAccessAdminFishBoxTracking = auth()->check() && auth()->user()->isAdmin();
 @endphp
 
 <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="app-sidebar admin-sidebar fixed left-0 top-0 z-40 hidden min-h-screen overflow-hidden transition-all duration-300 ease-in-out md:block">
@@ -59,24 +62,36 @@
              </a>
          </div>
 
-         <!-- Fish Box Tracking -->
-         <div>
-            <a href="{{ route('admin.sales.tracking') }}"
-               class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
-                      {{ $isAdminFishBoxTrackingActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
-                <x-heroicon-o-archive-box class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                           {{ $isAdminFishBoxTrackingActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Box Tracking</span>
-             </a>
-         </div>
+         @if($canAccessAdminFishBoxTracking)
+             <!-- Fish Box Tracking -->
+             <div>
+                <a href="{{ route('admin.sales.tracking') }}"
+                   class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                          {{ $isAdminFishBoxTrackingActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                    <x-heroicon-o-archive-box class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
+                               {{ $isAdminFishBoxTrackingActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                      <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Fish Box Tracking</span>
+                 </a>
+             </div>
+         @endif
 
          <div>
             <a href="{{ route('admin.applications.index') }}"
                class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
-                      {{ request()->routeIs('admin.applications.*') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                      {{ $isAdminApplicantMenuActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <x-heroicon-o-clipboard-document-check class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                           {{ request()->routeIs('admin.applications.*') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                           {{ $isAdminApplicantMenuActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
                   <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Applicant</span>
+             </a>
+         </div>
+
+         <div>
+            <a href="{{ route('admin.stalls.index') }}"
+               class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                      {{ $isAdminStallMenuActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-building-storefront class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
+                           {{ $isAdminStallMenuActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                  <span class="transition-all duration-200" x-show="sidebarOpen" x-transition>Stall</span>
              </a>
          </div>
      </div>

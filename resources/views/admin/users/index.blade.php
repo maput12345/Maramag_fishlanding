@@ -7,7 +7,12 @@
 
     $adminTabQuery = array_merge(request()->except(['tab', 'page']), ['tab' => 'admins']);
     $brokerTabQuery = array_merge(request()->except(['tab', 'page', 'role']), ['tab' => 'brokers']);
-    $currentResults = $tab === 'admins' ? $admins->count() : $brokers->count();
+    $applicantTabQuery = array_merge(request()->except(['tab', 'page', 'role']), ['tab' => 'applicants']);
+    $currentResults = match ($tab) {
+        'brokers' => $brokers->count(),
+        'applicants' => $applicants->count(),
+        default => $admins->count(),
+    };
 @endphp
 
 @section('content')
@@ -45,6 +50,13 @@
                                     <span>Brokers ({{ $count['totalBrokers'] }})</span>
                                 </div>
                             </a>
+                            <a href="{{ route('admin.users.index', $applicantTabQuery) }}"
+                               class="whitespace-nowrap py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ $tab === 'applicants' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <div class="flex items-center space-x-2">
+                                    <x-heroicon-o-archive-box class="w-5 h-5" />
+                                    <span>Applicant Archive ({{ $count['totalApplicants'] }})</span>
+                                </div>
+                            </a>
                         </nav>
                     </div>
                 </div>
@@ -61,7 +73,7 @@
                                        name="search"
                                        id="search"
                                        value="{{ $search }}"
-                                       placeholder="{{ $tab === 'admins' ? 'Search by name, email, position, or contact number' : 'Search by name, email, stall, address, or contact number' }}"
+                                       placeholder="{{ $tab === 'admins' ? 'Search by name, email, position, or contact number' : ($tab === 'applicants' ? 'Search by applicant name, email, or status' : 'Search by name, email, stall, address, or contact number') }}"
                                        class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                             </div>
 
@@ -108,8 +120,10 @@
                 <div class="tab-content">
                     @if($tab === 'admins')
                         @include('admin.users.admin-list', ['admins' => $admins, 'count' => $count])
-                    @else
+                    @elseif($tab === 'brokers')
                         @include('admin.users.broker-list', ['brokers' => $brokers, 'count' => $count])
+                    @else
+                        @include('admin.users.applicant-list', ['applicants' => $applicants, 'count' => $count])
                     @endif
                 </div>
             </div>

@@ -89,6 +89,7 @@
                                 </label>
                                 <input type="number" id="paid_amount" name="paid_amount" required
                                        step="0.01" min="0.01" :max="maxPaymentAmount"
+                                       data-currency-input="true"
                                        x-model.number="paidAmount"
                                        @input="validatePaymentAmount()"
                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"

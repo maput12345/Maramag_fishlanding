@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @php
-    $appliedOpeningIds = $applications->pluck('application_opening_id')->all();
     $openingsCount = $openings->count();
     $applicationsCount = $applications->count();
 @endphp
@@ -52,13 +51,44 @@
                 <div>
                     <p class="portal-section-card__eyebrow">Available Openings</p>
                     <h2 class="portal-section-card__title">Open Stall Applications</h2>
+                    <p class="portal-section-card__description">Submit one application for the current vacant stalls. LEEO will assign the final stall after review and bidding.</p>
                 </div>
                 <span class="portal-count-pill">{{ $openingsCount }} {{ $openingsCount === 1 ? 'opening' : 'openings' }}</span>
             </div>
 
+            @if($openingsCount > 0)
+                <div class="mb-6">
+                    @if($currentApplication)
+                        <div class="portal-inline-alert portal-inline-alert--success">
+                            You already submitted an application for the current open stalls.
+                        </div>
+                    @elseif($primaryOpening)
+                        <a href="{{ route('applications.create', $primaryOpening) }}" class="portal-button portal-button--primary portal-button--cta">
+                            <span>Apply Now</span>
+                        </a>
+                    @endif
+                </div>
+            @endif
+
             <div class="portal-stall-grid">
                 @forelse($openings as $opening)
+                    @php
+                        $stallGallery = $opening->stall?->gallery_image_urls ?? [];
+                    @endphp
                     <article class="portal-card portal-card--stall">
+                        @if(count($stallGallery) > 0)
+                            <div class="mb-5">
+                                <button
+                                    type="button"
+                                    class="portal-button portal-button--secondary"
+                                    data-stall-gallery-open="{{ $opening->id }}"
+                                >
+                                    <x-heroicon-o-photo class="portal-button__icon" />
+                                    <span>View Photos</span>
+                                </button>
+                            </div>
+                        @endif
+
                         <div class="portal-card__split">
                             <div>
                                 <p class="portal-card__eyebrow">Vacant Stall</p>
@@ -85,22 +115,63 @@
                                     <x-heroicon-o-document-text class="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <p class="portal-detail-item__label">Submitted Applications</p>
-                                    <p class="portal-detail-item__value">{{ $opening->broker_applications_count }}</p>
+                                    <p class="portal-detail-item__label">Application Pool</p>
+                                    <p class="portal-detail-item__value">One shared form</p>
+                                </div>
+                            </div>
+
+                            @if($opening->stall?->remarks)
+                                <div class="portal-detail-item">
+                                    <div class="portal-detail-item__icon">
+                                        <x-heroicon-o-document-text class="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <p class="portal-detail-item__label">Description</p>
+                                        <p class="portal-detail-item__value">{{ $opening->stall->remarks }}</p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
+                    </article>
+
+                    @if(count($stallGallery) > 0)
+                        <div
+                            class="stall-gallery-modal"
+                            data-stall-gallery-modal="{{ $opening->id }}"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="stall-gallery-title-{{ $opening->id }}"
+                            hidden
+                        >
+                            <div class="stall-gallery-modal__backdrop" data-stall-gallery-close></div>
+                            <div class="stall-gallery-modal__panel">
+                                <div class="stall-gallery-modal__header">
+                                    <div>
+                                        <p class="portal-section-card__eyebrow">Stall Photos</p>
+                                        <h3 id="stall-gallery-title-{{ $opening->id }}" class="stall-gallery-modal__title">
+                                            {{ $opening->stall?->display_name ?? 'Stall Gallery' }}
+                                        </h3>
+                                    </div>
+                                    <button type="button" class="stall-gallery-modal__close" data-stall-gallery-close aria-label="Close stall photos">
+                                        &times;
+                                    </button>
+                                </div>
+
+                                <div class="stall-gallery-modal__grid">
+                                    @foreach($stallGallery as $galleryImage)
+                                        <a href="{{ $galleryImage }}" target="_blank" rel="noopener" class="stall-gallery-modal__image-link">
+                                            <img
+                                                src="{{ $galleryImage }}"
+                                                alt="{{ $opening->stall?->display_name ?? 'Stall' }} photo {{ $loop->iteration }}"
+                                                class="stall-gallery-modal__image"
+                                            >
+                                        </a>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
-
-                        @if(in_array($opening->id, $appliedOpeningIds, true))
-                            <div class="portal-inline-alert portal-inline-alert--success">
-                                You already submitted an application for this stall.
-                            </div>
-                        @else
-                            <a href="{{ route('applications.create', $opening) }}" class="portal-button portal-button--primary portal-button--cta">
-                                <span>Apply Now</span>
-                            </a>
-                        @endif
-                    </article>
+                    @endif
                 @empty
                     <div class="portal-empty portal-empty--wide">
                         <div class="portal-empty__icon">
@@ -129,12 +200,16 @@
                         'Rejected', 'Not Selected' => 'portal-status-badge--danger',
                         default => 'portal-status-badge--neutral',
                     };
+                    $applicationStallLabel = $application->selectedStall?->display_name
+                        ?? ($application->application_status === 'Winner'
+                            ? ($application->applicationOpening?->stall?->display_name ?? 'Awarded stall')
+                            : 'Open stall application');
                 @endphp
 
                 <article class="portal-card portal-card--application">
                     <div class="portal-card__split portal-card__split--stack-on-mobile">
                         <div class="portal-application-card__body">
-                            <p class="portal-card__eyebrow">{{ $application->applicationOpening?->stall?->display_name ?? 'Stall Opening' }}</p>
+                            <p class="portal-card__eyebrow">{{ $applicationStallLabel }}</p>
                             <h3 class="portal-card__title">{{ $application->name }}</h3>
                             <div class="portal-application-card__meta">
                                 <span>
@@ -150,6 +225,11 @@
 
                         <div class="portal-application-card__actions">
                             <span class="portal-status-badge {{ $statusTone }}">{{ $application->application_status }}</span>
+                            @if($application->application_status === 'Needs Revision')
+                                <a href="{{ route('applications.edit', $application) }}" class="portal-button portal-button--primary">
+                                    <span>Edit Application</span>
+                                </a>
+                            @endif
                             <a href="{{ route('applications.show', $application) }}" class="portal-button portal-button--secondary">
                                 <span>View Details</span>
                             </a>
@@ -172,4 +252,42 @@
         </section>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const openButtons = document.querySelectorAll('[data-stall-gallery-open]');
+    const closeButtons = document.querySelectorAll('[data-stall-gallery-close]');
+
+    const closeOpenGallery = () => {
+        document.querySelectorAll('[data-stall-gallery-modal]').forEach((modal) => {
+            modal.hidden = true;
+        });
+
+        document.body.classList.remove('stall-gallery-modal-is-open');
+    };
+
+    openButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const modal = document.querySelector(`[data-stall-gallery-modal="${button.dataset.stallGalleryOpen}"]`);
+
+            if (!modal) {
+                return;
+            }
+
+            modal.hidden = false;
+            document.body.classList.add('stall-gallery-modal-is-open');
+        });
+    });
+
+    closeButtons.forEach((button) => {
+        button.addEventListener('click', closeOpenGallery);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeOpenGallery();
+        }
+    });
+});
+</script>
 @endsection

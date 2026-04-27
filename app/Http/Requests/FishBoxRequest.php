@@ -29,33 +29,34 @@ class FishBoxRequest extends FormRequest
     {
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
-        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
-
-        $rules = [
-            'fish_type_id' => [
-                'required',
-                'exists:fish_types,id',
-                function ($attribute, $value, $fail) use ($brokerId) {
-                    $isAssigned = FishType::whereKey($value)
-                        ->whereHas('brokers', function ($query) use ($brokerId) {
-                            $query->where('brokers.id', $brokerId);
-                        })
-                        ->exists();
-
-                    if (!$isAssigned) {
-                        $fail('The selected fish type is not assigned to your account.');
-                    }
-                },
-            ],
-            'cost_price' => 'nullable|numeric|min:0',
-        ];
-
         if ($isUpdate) {
+            $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+
+            $rules = [
+                'fish_type_id' => [
+                    'required',
+                    'exists:fish_types,id',
+                    function ($attribute, $value, $fail) use ($brokerId) {
+                        $isAssigned = FishType::whereKey($value)
+                            ->whereHas('brokers', function ($query) use ($brokerId) {
+                                $query->where('brokers.id', $brokerId);
+                            })
+                            ->exists();
+
+                        if (!$isAssigned) {
+                            $fail('The selected fish type is not assigned to your account.');
+                        }
+                    },
+                ],
+                'cost_price' => 'nullable|numeric|min:0',
+            ];
+
             // For updates, include status validation but no quantity
-            $rules['status'] = 'required|in:' . implode(',', FishBoxStatusConstant::getAllStatuses());
+            $rules['status'] = 'required|in:' . implode(',', FishBoxStatusConstant::getEditableStatuses());
         } else {
-            // For creation, include quantity validation but no status
-            $rules['quantity'] = 'required|integer|min:1|max:999999';
+            $rules = [
+                'quantity' => 'required|integer|min:1|max:999999',
+            ];
         }
 
         return $rules;

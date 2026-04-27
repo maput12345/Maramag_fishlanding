@@ -47,6 +47,7 @@ class FishBoxController extends Controller
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
         $fishBoxStatuses = FishBoxStatusConstant::getAllStatuses();
+        $fishBoxEditableStatuses = FishBoxStatusConstant::getEditableStatuses();
         $fishTypes = FishType::getFishTypeByBrokerId($brokerId);
 
         $search = $request->get('search');
@@ -74,6 +75,7 @@ class FishBoxController extends Controller
 
         return compact(
             'fishBoxStatuses',
+            'fishBoxEditableStatuses',
             'fishTypes',
             'fishBoxes',
             'editingFishBox',
@@ -94,29 +96,16 @@ class FishBoxController extends Controller
     public function store(FishBoxRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $userId = Auth::id();
-        $brokerId = Broker::getBrokerIdByUserId($userId);
-        $costPrice = $this->resolveCostPriceForBroker(
-            $brokerId,
-            (int) $validated['fish_type_id'],
-            $validated['cost_price'] ?? null
-        );
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
 
-        if ($costPrice === null) {
-            return $this->redirectMissingCostPrice();
-        }
-
-        $createdBoxes = FishBox::createFishBoxes(
-            $validated['fish_type_id'],
+        $createdBoxes = FishBox::createEmptyBoxes(
             $validated['quantity'],
-            $brokerId,
-            $costPrice,
-            $userId
+            $brokerId
         );
 
         $message = count($createdBoxes) === 1
-            ? 'Fish box created successfully!'
-            : count($createdBoxes) . ' fish boxes created successfully!';
+            ? 'Box created successfully!'
+            : count($createdBoxes) . ' boxes created successfully!';
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
             ->with('success', $message);

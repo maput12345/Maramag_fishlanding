@@ -85,7 +85,7 @@ function initializeSalesForm(config, scope = document) {
 
     const getFishTypeName = (fishTypeId) => {
         const fishType = SALES_CONFIG.fishTypes.find(ft => String(ft.id) === String(fishTypeId));
-        return fishType?.name || 'this fish name';
+        return fishType?.name || 'this fish';
     };
 
     const getSuggestedPrice = (row, fishTypeId) => {
@@ -154,6 +154,30 @@ function initializeSalesForm(config, scope = document) {
                 updateTotalAmount();
             });
         }
+    };
+
+    const protectAmountInput = (input) => {
+        if (!input || input.dataset.amountInputProtected === 'true') {
+            return;
+        }
+
+        input.dataset.amountInputProtected = 'true';
+
+        // Prevent accidental 0.01 step changes while scrolling the modal.
+        input.addEventListener('wheel', (event) => {
+            if (document.activeElement !== input) {
+                return;
+            }
+
+            event.preventDefault();
+            input.blur();
+        }, { passive: false });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+            }
+        });
     };
 
     const applySuggestedPriceToRow = (row, options = {}) => {
@@ -250,6 +274,8 @@ function initializeSalesForm(config, scope = document) {
     });
 
     if (initialPaidAmountInput) {
+        protectAmountInput(initialPaidAmountInput);
+
         initialPaidAmountInput.addEventListener('input', () => {
             validateInitialPayment();
         });
@@ -266,7 +292,7 @@ function initializeSalesForm(config, scope = document) {
             if (quantity > availableBoxes.length) {
                 quantityInput.value = availableBoxes.length;
                 quantity = availableBoxes.length; // Update the quantity variable
-                toastr.warning(`Maximum quantity for this fish name is ${availableBoxes.length} (available fish boxes)`);
+                toastr.warning(`Maximum quantity for this fish is ${availableBoxes.length} (available fish boxes)`);
             }
         }
 
@@ -340,7 +366,7 @@ function initializeSalesForm(config, scope = document) {
                 fishBoxesContainer.querySelectorAll('.fish-box-select').forEach(select => {
                     select.innerHTML = '<option value="">No boxes available</option>';
                 });
-                toastr.error('No fish boxes available for the selected fish name.');
+                toastr.error('No fish boxes available for the selected fish.');
                 fishTypeSelect.value = '';
                 if (itemInput) itemInput.value = '';
                 row.dataset.activeFishTypeId = '';
@@ -436,6 +462,8 @@ function initializeSalesForm(config, scope = document) {
         hydrateSuggestedPriceOptions(row);
         applySuggestedPriceToRow(row, options);
     };
+
+    window.protectSalesAmountInput = protectAmountInput;
 
     updateTotalAmount();
 }

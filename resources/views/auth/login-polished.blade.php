@@ -19,6 +19,12 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="login-alert error">
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
             <form class="login-form-body" method="POST" action="{{ route('login') }}">
                 @csrf
 
@@ -78,12 +84,20 @@
 
             <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                 <p class="font-semibold text-slate-900">Looking for a vacant stall?</p>
-                <a href="{{ route('register') }}" class="mt-3 inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-slate-800">
-                    Apply here!
-                </a>
+                @if($hasAvailableStall ?? false)
+                    <a href="{{ route('register') }}" class="mt-3 inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-slate-800">
+                        Apply here!
+                    </a>
+                @else
+                    <span role="button"
+                          aria-disabled="true"
+                          class="mt-3 inline-flex cursor-not-allowed items-center rounded-full bg-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        No vacant stall available
+                    </span>
+                @endif
             </div>
 
-            <p class="login-support-note">Need access? Please contact LEEO administrator LEEO@domain.com*.</p>
+            <p class="login-support-note">Need access? Please contact LEEO administrator LocalEconomicEnterpriseOffice@gmail.com.</p>
         </section>
 
         <aside class="login-welcome-panel">

@@ -12,14 +12,14 @@
             <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'create']) }}"
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center justify-center gap-2">
                 <x-heroicon-o-plus class="w-4 h-4" />
-                Set Fish Price
+                Set Price
             </a>
         @endunless
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-lg p-5">
-            <p class="text-sm font-medium text-gray-500">No. of Fish Names</p>
+            <p class="text-sm font-medium text-gray-500">No. of Fish</p>
             <p class="summary-stat-value text-gray-900">{{ number_format($priceSummary['assigned']) }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-lg p-5">
@@ -72,8 +72,8 @@
         </x-app-modal>
     @elseif(request('modal') === 'create' || request('modal') === 'edit')
         <x-app-modal
-            :title="request('modal') === 'edit' ? 'Update Fish Price' : 'Set Fish Price'"
-            :subtitle="request('modal') === 'edit' ? 'Adjust the selling price and default daily cost for this broker fish name.' : 'Set a selling price and default daily cost for an assigned fish name.'"
+            :title="request('modal') === 'edit' ? 'Update Fish Price' : 'Set Price'"
+            :subtitle="request('modal') === 'edit' ? 'Adjust the selling price and default daily cost for this broker fish.' : 'Set a selling price and default daily cost for an assigned fish.'"
             :close-url="route('broker.inventory.index', ['tab' => 'fishPrices'])"
         >
             <x-slot:icon>
@@ -93,16 +93,16 @@
                 @if(request('modal') === 'create')
                     <div>
                         <label for="broker_fish_type_id" class="block text-sm font-medium text-gray-700 mb-2">
-                            Fish Name <span class="text-red-500">*</span>
+                            Fish <span class="text-red-500">*</span>
                         </label>
                         <select id="broker_fish_type_id" name="broker_fish_type_id"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                                 required>
-                            <option value="">Select Fish Name</option>
+                            <option value="">Select Fish</option>
                             @foreach($pricingAssignments as $assignment)
                                 <option value="{{ $assignment->id }}"
                                     {{ (string) old('broker_fish_type_id') === (string) $assignment->id ? 'selected' : '' }}>
-                                    {{ $assignment->fishType?->name ?? 'Unknown Fish Name' }}
+                                    {{ $assignment->fishType?->name ?? 'Unknown Fish' }}
                                     @if($assignment->latestPrice)
                                         - Current: PHP {{ number_format((float) $assignment->latestPrice->price, 2) }}
                                     @endif
@@ -115,8 +115,8 @@
                     </div>
                 @elseif($editingBrokerFishType)
                     <div class="rounded-xl border border-green-100 bg-green-50 px-4 py-3">
-                        <p class="text-xs uppercase tracking-wide text-green-700">Fish Name</p>
-                        <p class="mt-1 text-base font-semibold text-gray-900">{{ $editingBrokerFishType->fishType?->name ?? 'Unknown Fish Name' }}</p>
+                        <p class="text-xs uppercase tracking-wide text-green-700">Fish</p>
+                        <p class="mt-1 text-base font-semibold text-gray-900">{{ $editingBrokerFishType->fishType?->name ?? 'Unknown Fish' }}</p>
                     </div>
                 @endif
 
@@ -143,7 +143,7 @@
                     </div>
                     <div>
                         <label for="default_cost_price" class="block text-sm font-medium text-gray-700 mb-2">
-                            Default Cost Price
+                            Cost per box
                         </label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-sm text-gray-500">PHP</span>
@@ -165,7 +165,7 @@
                     </div>
                     <div>
                         <label for="price_date" class="block text-sm font-medium text-gray-700 mb-2">
-                            Effective Date <span class="text-red-500">*</span>
+                            Date <span class="text-red-500">*</span>
                         </label>
                         <input type="date"
                                id="price_date"
@@ -202,7 +202,7 @@
                         <input type="text"
                                name="search"
                                x-model="search"
-                               placeholder="Search fish name..."
+                               placeholder="Search fish..."
                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <x-heroicon-o-magnifying-glass class="h-4 w-4 text-gray-400" />
@@ -225,7 +225,7 @@
 
     <div class="mb-4">
         <p class="text-sm text-gray-600">
-            Showing {{ $brokerFishTypes->firstItem() ?? 0 }} to {{ $brokerFishTypes->lastItem() ?? 0 }} of {{ $brokerFishTypes->total() }} assigned fish names
+            Showing {{ $brokerFishTypes->firstItem() ?? 0 }} to {{ $brokerFishTypes->lastItem() ?? 0 }} of {{ $brokerFishTypes->total() }} assigned fish
             @if(request()->has('search'))
                 <span class="text-green-600">(filtered)</span>
             @endif
@@ -237,10 +237,10 @@
             <table class="w-full">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default Cost</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -254,8 +254,7 @@
                                         <x-heroicon-o-tag class="w-5 h-5 text-white" />
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $assignment->fishType?->name ?? 'Unknown Fish Name' }}</div>
-                                        <div class="text-sm text-gray-500">Broker fish name assignment #{{ $assignment->id }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $assignment->fishType?->name ?? 'Unknown Fish' }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -315,7 +314,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                No fish name assignments found. Add fish names first before setting prices.
+                                No fish assignments found. Add fish first before setting prices.
                             </td>
                         </tr>
                     @endforelse

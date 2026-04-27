@@ -131,7 +131,7 @@ class SalesDetails extends Model
     /**
      * Create normalized sales detail rows for a sale.
      */
-    public static function createSalesDetails(int $saleId, int $brokerId, array $details): void
+    public static function createSalesDetails(int $saleId, int $brokerId, array $details, array $purchaseIdsByBoxId = []): void
     {
         foreach ($details as $detail) {
             $boxIds = is_array($detail['box_id'] ?? null) ? $detail['box_id'] : [$detail['box_id'] ?? null];
@@ -147,7 +147,10 @@ class SalesDetails extends Model
             $perBoxDiscount = max(0, round($unitPrice - $perBoxSubTotal, 2));
 
             foreach ($boxIds as $boxId) {
-                $purchase = FishBoxPurchase::getCurrentForBox((int) $boxId, $brokerId);
+                $purchaseId = $purchaseIdsByBoxId[(int) $boxId] ?? null;
+                $purchase = $purchaseId
+                    ? FishBoxPurchase::query()->whereKey($purchaseId)->first()
+                    : FishBoxPurchase::getCurrentForBox((int) $boxId, $brokerId);
 
                 if (!$purchase) {
                     continue;

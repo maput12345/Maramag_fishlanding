@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('broker_id')->constrained('brokers')->cascadeOnDelete();
             $table->uuid('qr_code')->unique();
-            $table->enum('box_status', ['In Stock', 'Sold', 'Returned', 'Missing'])->default('In Stock');
+            $table->enum('box_status', ['Unassigned', 'In Stock', 'Sold', 'Returned', 'Missing'])->default('In Stock');
             $table->timestamps();
             $table->softDeletes();
         });

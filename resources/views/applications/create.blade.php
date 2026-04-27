@@ -47,6 +47,87 @@
               class="portal-form-shell">
             @csrf
 
+            @php
+                $stallGallery = $opening->stall?->gallery_image_urls ?? [];
+                $primaryStallImage = $stallGallery[0] ?? null;
+            @endphp
+
+            <section class="portal-section-card">
+                <div class="portal-section-card__header">
+                    <div>
+                        <p class="portal-section-card__eyebrow">Selected Stall</p>
+                        <h1 class="portal-section-card__title">{{ $opening->stall?->display_name ?? 'Open Stall Application' }}</h1>
+                        <p class="portal-section-card__description">Review the stall exterior, surrounding location, and schedule details before submitting your application.</p>
+                    </div>
+                    <span class="portal-status-badge portal-status-badge--open">{{ $opening->opening_status }}</span>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                        @if($primaryStallImage)
+                            <img src="{{ $primaryStallImage }}"
+                                 alt="{{ $opening->stall->display_name }} exterior"
+                                 class="h-full w-full object-cover"
+                                 style="height: 18rem;">
+                        @else
+                            <div class="flex items-center justify-center text-slate-500" style="height: 18rem;">
+                                <div class="text-center">
+                                    <x-heroicon-o-photo class="mx-auto h-8 w-8 text-slate-400" />
+                                    <p class="mt-3 text-sm">No stall image uploaded yet</p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="portal-detail-list">
+                        <div class="portal-detail-item">
+                            <div class="portal-detail-item__icon">
+                                <x-heroicon-o-calendar-days class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="portal-detail-item__label">Application Window</p>
+                                <p class="portal-detail-item__value">{{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="portal-detail-item">
+                            <div class="portal-detail-item__icon portal-detail-item__icon--gold">
+                                <x-heroicon-o-clock class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="portal-detail-item__label">Bidding Schedule</p>
+                                <p class="portal-detail-item__value">{{ optional($opening->bidding_date)->format('M d, Y') ?? 'Not set' }}</p>
+                            </div>
+                        </div>
+
+                        @if($opening->stall?->remarks)
+                            <div class="portal-detail-item">
+                                <div class="portal-detail-item__icon">
+                                    <x-heroicon-o-map-pin class="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p class="portal-detail-item__label">Location Details</p>
+                                    <p class="portal-detail-item__value">{{ $opening->stall->remarks }}</p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                @if(count($stallGallery) > 1)
+                    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        @foreach(array_slice($stallGallery, 1) as $galleryImage)
+                            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                                <img src="{{ $galleryImage }}"
+                                     alt="{{ $opening->stall->display_name }} gallery view"
+                                     class="h-full w-full object-cover"
+                                     style="height: 7rem;">
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
+
             @if($errors->any())
                 <div class="portal-alert-stack">
                     <div class="portal-alert portal-alert--error">
@@ -72,7 +153,7 @@
                         <p class="portal-section-card__eyebrow">Application Form</p>
                         <h2 class="portal-section-card__title">Applicant Details</h2>
                         <p class="portal-section-card__description">
-                            Complete the broker application for {{ $opening->stall?->display_name ?? 'this stall opening' }}. Provide the personal or representative information that will appear on your submission.
+                            Complete one broker application for the current available stall openings. Provide the personal or representative information that will appear on your submission.
                         </p>
                     </div>
                     <span class="portal-count-pill">Step 1 of 2</span>

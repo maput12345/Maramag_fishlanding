@@ -215,20 +215,19 @@ class FishBox extends Model
     }
 
     /**
-     * Create multiple reusable fish boxes and their first purchase cycle.
+     * Register multiple reusable fish boxes without assigning stock yet.
      */
-    public static function createFishBoxes($fishTypeId, $quantity, $brokerId, ?float $costPrice = null, ?int $userId = null): array
+    public static function createEmptyBoxes(int $quantity, int $brokerId): array
     {
         $createdBoxes = [];
 
         for ($i = 0; $i < $quantity; $i++) {
             $fishBox = static::create([
                 'qr_code' => static::generateUniqueQrCode(),
-                'box_status' => FishBoxStatusConstant::IN_STOCK,
+                'box_status' => FishBoxStatusConstant::UNASSIGNED,
                 'broker_id' => $brokerId,
             ]);
 
-            FishBoxPurchase::createForBox($fishBox->id, (int) $fishTypeId, $costPrice, $userId);
             $createdBoxes[] = $fishBox->fresh('currentPurchase.fishType');
         }
 
@@ -384,6 +383,7 @@ class FishBox extends Model
         return static::query()
             ->where('broker_id', $brokerId)
             ->whereIn('box_status', [
+                FishBoxStatusConstant::UNASSIGNED,
                 FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
@@ -401,6 +401,7 @@ class FishBox extends Model
             ->with(['currentPurchase.fishType'])
             ->where('broker_id', $brokerId)
             ->whereIn('box_status', [
+                FishBoxStatusConstant::UNASSIGNED,
                 FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
@@ -422,6 +423,7 @@ class FishBox extends Model
             ->where('broker_id', $brokerId)
             ->whereIn('id', $fishBoxIds)
             ->whereIn('box_status', [
+                FishBoxStatusConstant::UNASSIGNED,
                 FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
@@ -460,6 +462,7 @@ class FishBox extends Model
         return static::with('currentPurchase.fishType')
             ->withBrokerBoxNumber()
             ->where('box_status', FishBoxStatusConstant::IN_STOCK)
+            ->whereHas('currentPurchase')
             ->where('broker_id', $brokerId)
             ->get();
     }
@@ -478,6 +481,7 @@ class FishBox extends Model
             ->pluck('total', 'box_status');
 
         $summary = [
+            'unassigned' => (int) ($counts[FishBoxStatusConstant::UNASSIGNED] ?? 0),
             'in_stock' => (int) ($counts[FishBoxStatusConstant::IN_STOCK] ?? 0),
             'sold' => (int) ($counts[FishBoxStatusConstant::SOLD] ?? 0),
             'returned' => (int) ($counts[FishBoxStatusConstant::RETURNED] ?? 0),
@@ -865,7 +869,7 @@ class FishBox extends Model
      */
     public function canBeMarkedAsMissing(): bool
     {
-        return !in_array($this->status, [
+        return $this->currentPurchase !== null && !in_array($this->status, [
             FishBoxStatusConstant::IN_STOCK,
             FishBoxStatusConstant::MISSING,
             FishBoxStatusConstant::RETURNED,
@@ -888,7 +892,7 @@ class FishBox extends Model
      */
     public function canBeEdited(): bool
     {
-        return $this->status !== FishBoxStatusConstant::SOLD;
+        return $this->status !== FishBoxStatusConstant::SOLD && $this->currentPurchase !== null;
     }
 
     /**
