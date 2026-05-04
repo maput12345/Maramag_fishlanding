@@ -106,7 +106,7 @@ class ApplicationReviewAutosaveDraftTest extends TestCase
 
         $response->assertRedirect(route('admin.applications.show', $application));
 
-        $this->assertDatabaseMissing('broker_application_review_drafts', [
+        $this->assertDatabaseMissing('ApplicationReviewDraft', [
             'broker_application_id' => $application->id,
         ]);
         $this->assertSame('Needs Revision', $application->fresh()->application_status);

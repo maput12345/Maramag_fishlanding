@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Broker;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FishPriceRequest;
 use App\Models\Broker;
-use App\Models\BrokerFishType;
-use App\Models\FishPrice;
+use App\Models\BrokerFishTypeAssignment;
+use App\Models\FishPriceRecord;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +22,7 @@ class FishPricesController extends Controller
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $search = trim((string) $request->get('search'));
 
-        $brokerFishTypes = BrokerFishType::with([
+        $brokerFishTypes = BrokerFishTypeAssignment::with([
                 'fishType:id,name',
                 'latestPrice' => $this->latestPriceSelect(),
             ])
@@ -41,7 +41,7 @@ class FishPricesController extends Controller
         $editingBrokerFishType = null;
 
         if ($request->get('modal') === 'create') {
-            $pricingAssignments = BrokerFishType::with([
+            $pricingAssignments = BrokerFishTypeAssignment::with([
                     'fishType:id,name',
                     'latestPrice' => $this->latestPriceSelect(false),
                 ])
@@ -52,7 +52,7 @@ class FishPricesController extends Controller
         }
 
         if ($request->get('modal') === 'edit' && $request->filled('edit')) {
-            $editingBrokerFishType = BrokerFishType::with([
+            $editingBrokerFishType = BrokerFishTypeAssignment::with([
                     'fishType:id,name',
                     'latestPrice' => $this->latestPriceSelect(),
                 ])
@@ -61,15 +61,15 @@ class FishPricesController extends Controller
                 ->find($request->get('edit'));
         }
 
-        $priceMetrics = FishPrice::query()
+        $priceMetrics = FishPriceRecord::query()
             ->selectRaw('broker_fish_type_id, MAX(price_date) as latest_price_date')
             ->groupBy('broker_fish_type_id');
 
-        $summaryRow = BrokerFishType::query()
+        $summaryRow = BrokerFishTypeAssignment::query()
             ->leftJoinSub($priceMetrics, 'price_metrics', function ($join) {
-                $join->on('broker_fish_type.id', '=', 'price_metrics.broker_fish_type_id');
+                $join->on('BrokerFishTypeAssignment.id', '=', 'price_metrics.broker_fish_type_id');
             })
-            ->where('broker_fish_type.broker_id', $brokerId)
+            ->where('BrokerFishTypeAssignment.broker_id', $brokerId)
             ->selectRaw('
                 COUNT(*) as assigned,
                 COUNT(price_metrics.broker_fish_type_id) as priced,
@@ -118,7 +118,7 @@ class FishPricesController extends Controller
 
             $message = 'Fish price updated successfully.';
         } else {
-            FishPrice::create([
+            FishPriceRecord::create([
                 'broker_fish_type_id' => $assignment->id,
                 'price' => $validated['price'],
                 'default_cost_price' => $validated['default_cost_price'] ?? null,
@@ -149,7 +149,7 @@ class FishPricesController extends Controller
                 'price_date' => $validated['price_date'],
             ]);
         } else {
-            FishPrice::create([
+            FishPriceRecord::create([
                 'broker_fish_type_id' => $assignment->id,
                 'price' => $validated['price'],
                 'default_cost_price' => $validated['default_cost_price'] ?? null,
@@ -184,9 +184,9 @@ class FishPricesController extends Controller
     /**
      * Load the broker assignment needed by price mutations.
      */
-    private function findMutableAssignment(int $brokerId, int $assignmentId): BrokerFishType
+    private function findMutableAssignment(int $brokerId, int $assignmentId): BrokerFishTypeAssignment
     {
-        return BrokerFishType::query()
+        return BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
             ->with([
                 'latestPrice' => $this->latestPriceSelect(),
@@ -202,14 +202,14 @@ class FishPricesController extends Controller
     {
         return function ($query) use ($includePriceDate) {
             $columns = [
-                'fish_prices.id',
-                'fish_prices.broker_fish_type_id',
-                'fish_prices.price',
-                'fish_prices.default_cost_price',
+                'FishPriceRecord.id',
+                'FishPriceRecord.broker_fish_type_id',
+                'FishPriceRecord.price',
+                'FishPriceRecord.default_cost_price',
             ];
 
             if ($includePriceDate) {
-                $columns[] = 'fish_prices.price_date';
+                $columns[] = 'FishPriceRecord.price_date';
             }
 
             $query->select($columns);

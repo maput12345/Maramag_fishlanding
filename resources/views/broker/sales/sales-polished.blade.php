@@ -368,6 +368,39 @@
             }
         }
 
+        function applySalesPriceFallback(modalRoot = getActiveSalesModalRoot()) {
+            const config = getCurrentSalesFormConfig(modalRoot);
+            const fishPrices = config?.fishPrices || {};
+
+            if (!modalRoot || !fishPrices || typeof fishPrices !== 'object') {
+                return;
+            }
+
+            modalRoot.querySelectorAll('.sales-detail-row').forEach((row) => {
+                const fishTypeSelect = row.querySelector('.fish-type-select');
+                const unitPriceInput = row.querySelector('.unit-price-input');
+
+                if (!fishTypeSelect || !unitPriceInput || !fishTypeSelect.value) {
+                    return;
+                }
+
+                const selectedOption = fishTypeSelect.selectedOptions?.[0];
+                const suggestedPrice = fishPrices[String(fishTypeSelect.value)]
+                    ?? selectedOption?.dataset?.suggestedPrice;
+                const parsedPrice = Number(suggestedPrice);
+                const currentPrice = Number(unitPriceInput.value);
+                const canFillPrice = Number.isFinite(parsedPrice)
+                    && (unitPriceInput.value === '' || currentPrice === 0);
+
+                if (!canFillPrice) {
+                    return;
+                }
+
+                unitPriceInput.value = parsedPrice.toFixed(2);
+                unitPriceInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        }
+
         function initializeSalesFormWhenReady(attempt = 0) {
             const maxAttempts = 30;
             const hasInitializer = typeof initializeSalesForm === 'function';
@@ -379,12 +412,37 @@
 
             if (hasInitializer && config && container && addBtn && totalAmountDisplay && modalRoot) {
                 initializeSalesForm(config, modalRoot);
+                applySalesPriceFallback(modalRoot);
                 return;
             }
 
             if (attempt < maxAttempts) {
                 window.requestAnimationFrame(() => initializeSalesFormWhenReady(attempt + 1));
             }
+        }
+
+        let salesModalObserverStarted = false;
+
+        function observeSalesModalInitialization() {
+            if (salesModalObserverStarted || !document.body) {
+                return;
+            }
+
+            salesModalObserverStarted = true;
+
+            const observer = new MutationObserver(() => {
+                const modalRoot = getActiveSalesModalRoot();
+
+                if (modalRoot?.querySelector('[data-sales-form-config]')) {
+                    initializeSalesFormWhenReady();
+                    applySalesPriceFallback(modalRoot);
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
         }
 
         window.initializeBrokerSalesPage = function(scope = document) {
@@ -411,7 +469,17 @@
             }
 
             initializeSalesFormWhenReady();
+            applySalesPriceFallback(modalRoot);
+            observeSalesModalInitialization();
         };
+
+        document.addEventListener('change', function(event) {
+            if (!event.target.closest('.fish-type-select')) {
+                return;
+            }
+
+            applySalesPriceFallback(getActiveSalesModalRoot());
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             window.initializeBrokerSalesPage(document);

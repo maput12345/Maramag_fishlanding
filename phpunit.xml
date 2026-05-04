@@ -19,6 +19,8 @@
     </coverage>
     <php>
         <server name="APP_ENV" value="testing"/>
+        <server name="APP_CONFIG_CACHE" value="bootstrap/cache/testing-config.php"/>
+        <server name="APP_ROUTES_CACHE" value="bootstrap/cache/testing-routes.php"/>
         <server name="BCRYPT_ROUNDS" value="4"/>
         <server name="CACHE_DRIVER" value="array"/>
         <server name="DB_CONNECTION" value="sqlite"/>

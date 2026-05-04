@@ -64,7 +64,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
 
         $response->assertSessionHasErrors('availability');
         $this->assertGuest();
-        $this->assertDatabaseMissing('users', [
+        $this->assertDatabaseMissing('User', [
             'email' => 'blocked-applicant@example.com',
         ]);
     }
@@ -81,7 +81,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
 
         $response->assertRedirect('/applications');
         $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('User', [
             'email' => 'new-applicant@example.com',
         ]);
     }

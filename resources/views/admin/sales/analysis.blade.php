@@ -170,7 +170,7 @@
                     data-receipt-date="{{ $receiptDate }}"
                     data-receipt-sales-count="{{ $receiptSalesCount }}"
                     data-receipt-fishbox-count="{{ $receiptFishBoxCount }}"
-                    data-receipt-leeo-commission-per-box="5"
+                    data-receipt-leeo-commission-per-box="15"
                     data-receipt-data-url="{{ route('admin.sales.receipt-data', ['broker' => $broker->id], false) }}"
                     data-receipt-watermark-logo-url="{{ asset('image/logo.png') }}"
                     data-receipt-sales='@json($receiptSalesForPrint, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
@@ -228,7 +228,7 @@
 
                                 <!-- Actions -->
                                 <div class="flex items-center justify-center sm:justify-start space-x-2 sm:ml-2 lg:ml-1 xl:ml-4 flex-shrink-0">
-                                    <button @click.stop="printBrokerSales({{ $broker->id }}, '{{ $broker->name }}', '{{ $broker->stall_name ?? '' }}')"
+                                    <button @click.stop="printBrokerSales({{ $broker->id }}, @js($broker->name), @js($broker->stall_name ?? ''))"
                                             class="text-green-600 hover:text-green-800 transition-colors p-1.5 sm:p-2 hover:bg-green-50 rounded-lg"
                                             title="Print Daily Receipt">
                                         <x-heroicon-o-printer class="w-6 h-6 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
@@ -346,4 +346,4 @@
     @endif
 </div>
 
-<script src="{{ asset('js/broker-sales-print.js') }}"></script>
+<script src="{{ asset('js/broker-sales-print.js') }}?v={{ filemtime(public_path('js/broker-sales-print.js')) }}"></script>

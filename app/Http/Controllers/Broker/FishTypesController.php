@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Broker;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FishTypeRequest;
-use App\Models\BrokerFishType;
+use App\Models\BrokerFishTypeAssignment;
 use App\Models\FishType;
 use App\Models\Broker;
 use Illuminate\Http\Request;
@@ -27,9 +27,9 @@ class FishTypesController extends Controller
 
         $fishTypes = FishType::getPaginatedWithSearch($request->get('search'), $brokerId);
         $fishTypeSummary = [
-            'assigned' => BrokerFishType::where('broker_id', $brokerId)->count(),
-            'with_prices' => BrokerFishType::where('broker_id', $brokerId)->whereHas('latestPrice')->count(),
-            'used' => BrokerFishType::where('broker_id', $brokerId)
+            'assigned' => BrokerFishTypeAssignment::where('broker_id', $brokerId)->count(),
+            'with_prices' => BrokerFishTypeAssignment::where('broker_id', $brokerId)->whereHas('latestPrice')->count(),
+            'used' => BrokerFishTypeAssignment::where('broker_id', $brokerId)
                 ->whereHas('fishType.fishBoxes', function ($purchaseQuery) use ($brokerId) {
                     $purchaseQuery->whereHas('fishBox', function ($fishBoxQuery) use ($brokerId) {
                         $fishBoxQuery->where('broker_id', $brokerId);
@@ -42,7 +42,7 @@ class FishTypesController extends Controller
         // Only fetch editing fish type if we're in edit mode
         if ($request->get('modal') === 'edit' && $request->has('edit')) {
             $editingFishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
-                $query->where('brokers.id', $brokerId);
+                $query->where('Broker.id', $brokerId);
             })->find($request->get('edit'));
         }
 
@@ -64,7 +64,7 @@ class FishTypesController extends Controller
         $data = $request->validated();
         $fishType = FishType::whereRaw('LOWER(name) = ?', [mb_strtolower(trim($data['name']))])->first();
 
-        if ($fishType && $fishType->brokers()->where('brokers.id', $brokerId)->exists()) {
+        if ($fishType && $fishType->brokers()->where('Broker.id', $brokerId)->exists()) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
                 ->withInput()
                 ->with('error', 'This fish type is already assigned to your account.');
@@ -94,7 +94,7 @@ class FishTypesController extends Controller
     {
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
-            $query->where('brokers.id', $brokerId);
+            $query->where('Broker.id', $brokerId);
         })->findOrFail($id);
 
         $fishType->update($request->validated());
@@ -114,7 +114,7 @@ class FishTypesController extends Controller
     {
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishType = FishType::whereHas('brokers', function ($query) use ($brokerId) {
-            $query->where('brokers.id', $brokerId);
+            $query->where('Broker.id', $brokerId);
         })->findOrFail($id);
 
         // Check if fish type has associated fish boxes

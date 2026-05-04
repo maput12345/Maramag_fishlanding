@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
         closeButton: true,
         progressBar: true,
         positionClass: 'toast-top-right',
-        timeOut: 3500
+        timeOut: 3500,
+        escapeHtml: true
     };
 
     // Show flash messages from meta tags

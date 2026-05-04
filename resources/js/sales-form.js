@@ -131,6 +131,12 @@ function initializeSalesForm(config, scope = document) {
         if (fishTypeSelect) {
             fishTypeSelect.addEventListener('change', () => {
                 handleFishTypeChange(fishTypeSelect);
+                applySuggestedPriceToRow(row, {
+                    force: true,
+                    overwriteZero: true,
+                    clearOnMissing: true,
+                    showMissingPriceWarning: true,
+                });
             });
         }
 
@@ -369,6 +375,10 @@ function initializeSalesForm(config, scope = document) {
                 toastr.error('No fish boxes available for the selected fish.');
                 fishTypeSelect.value = '';
                 if (itemInput) itemInput.value = '';
+                applySuggestedPriceToRow(row, {
+                    force: true,
+                    clearOnMissing: true,
+                });
                 row.dataset.activeFishTypeId = '';
             }
         } else {

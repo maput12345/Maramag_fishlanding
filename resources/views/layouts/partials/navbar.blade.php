@@ -9,7 +9,7 @@
             <!-- Mobile Brand -->
             <div class="md:hidden">
                 <a href="{{ route('broker.dashboard') }}" class="flex items-center">
-                    <img src="{{ asset('image/logo.png') }}"
+                    <img src="{{ asset('image/logo-small.png') }}"
                          alt="Maramag Fish Landing logo"
                          class="h-10 w-10 object-contain">
                 </a>

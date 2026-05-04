@@ -16,7 +16,7 @@ class StoreRequirementTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'requirement_name' => ['required', 'string', 'max:255', 'unique:requirement_types,requirement_name'],
+            'requirement_name' => ['required', 'string', 'max:255', 'unique:RequirementType,requirement_name'],
             'description' => ['nullable', 'string', 'max:1000'],
             'audience' => [
                 'required',

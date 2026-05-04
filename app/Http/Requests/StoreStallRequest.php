@@ -15,7 +15,7 @@ class StoreStallRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'stall_number' => ['required', 'string', 'max:50', Rule::unique('stalls', 'stall_number')],
+            'stall_number' => ['required', 'string', 'max:50', Rule::unique('Stall', 'stall_number')],
             'remarks' => ['nullable', 'string', 'max:1000'],
             'stall_images' => ['nullable', 'array', 'max:6'],
             'stall_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],

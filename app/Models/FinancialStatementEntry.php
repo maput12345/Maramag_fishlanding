@@ -14,6 +14,8 @@ class FinancialStatementEntry extends Model
 {
     use HasFactory;
 
+    protected $table = 'FinancialStatementEntry';
+
     public const TYPE_SGA = 'selling_general_and_administrative';
     public const TYPE_LOSS_ON_SALE = 'loss_on_sale';
 
@@ -66,7 +68,7 @@ class FinancialStatementEntry extends Model
             ? $statementDate->toDateString()
             : $statementDate;
 
-        return Sales::applyDateConstraint($query, 'statement_date', '=', $date);
+        return SalesTransaction::applyDateConstraint($query, 'statement_date', '=', $date);
     }
 
     /**
@@ -139,33 +141,33 @@ class FinancialStatementEntry extends Model
 
         $activeStatuses = SalesStatusConstant::getAllActiveStatuses();
 
-        $salesBaseQuery = Sales::query()
+        $salesBaseQuery = SalesTransaction::query()
             ->where('broker_id', $brokerId)
             ->whereIn('status', $activeStatuses);
 
-        Sales::applyDateConstraint($salesBaseQuery, 'sales_date', '=', $date);
+        SalesTransaction::applyDateConstraint($salesBaseQuery, 'sales_date', '=', $date);
 
-        $costBaseQuery = SalesDetails::query()
-            ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
-            ->join('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
-            ->where('sales.broker_id', $brokerId)
-            ->whereIn('sales.status', $activeStatuses);
+        $costBaseQuery = TransactionLineItem::query()
+            ->join('SalesTransaction', 'SalesTransaction.id', '=', 'TransactionLineItem.sale_id')
+            ->join('FishBoxStockCycle', 'FishBoxStockCycle.id', '=', 'TransactionLineItem.fish_box_purchase_id')
+            ->where('SalesTransaction.broker_id', $brokerId)
+            ->whereIn('SalesTransaction.status', $activeStatuses);
 
-        Sales::applyDateConstraint($costBaseQuery, 'sales.sales_date', '=', $date);
+        SalesTransaction::applyDateConstraint($costBaseQuery, 'SalesTransaction.sales_date', '=', $date);
 
-        $collectionsBaseQuery = SalesPayment::query()
-            ->join('sales', 'sales.id', '=', 'payments.sale_id')
-            ->where('sales.broker_id', $brokerId)
-            ->whereIn('sales.status', $activeStatuses);
+        $collectionsBaseQuery = PaymentRecord::query()
+            ->join('SalesTransaction', 'SalesTransaction.id', '=', 'PaymentRecord.sale_id')
+            ->where('SalesTransaction.broker_id', $brokerId)
+            ->whereIn('SalesTransaction.status', $activeStatuses);
 
-        Sales::applyDateConstraint($collectionsBaseQuery, 'payments.payment_date', '=', $date);
+        SalesTransaction::applyDateConstraint($collectionsBaseQuery, 'PaymentRecord.payment_date', '=', $date);
 
         $sales = (float) (clone $salesBaseQuery)->sum('total_amount');
         $salesCount = (int) (clone $salesBaseQuery)->count();
-        $costOfSales = (float) (clone $costBaseQuery)->sum('fish_box_purchases.cost_price');
-        $soldBoxes = (int) (clone $costBaseQuery)->count('sales_details.id');
-        $collections = (float) (clone $collectionsBaseQuery)->sum('payments.paid_amount');
-        $outstandingReceivableBalance = Sales::getTotalSalesBalance($brokerId, $date);
+        $costOfSales = (float) (clone $costBaseQuery)->sum('FishBoxStockCycle.cost_price');
+        $soldBoxes = (int) (clone $costBaseQuery)->count('TransactionLineItem.id');
+        $collections = (float) (clone $collectionsBaseQuery)->sum('PaymentRecord.paid_amount');
+        $outstandingReceivableBalance = SalesTransaction::getTotalSalesBalance($brokerId, $date);
 
         $entryTotals = static::getDailyEntryTotals($brokerId, $date);
         $sellingGeneralAndAdministrativeExpenses = $entryTotals[self::TYPE_SGA];
@@ -202,7 +204,7 @@ class FinancialStatementEntry extends Model
             ? $statementDate->toDateString()
             : $statementDate;
 
-        $salesQuery = Sales::query()
+        $salesQuery = SalesTransaction::query()
             ->withPaidAmount()
             ->with([
                 'buyer:id,first_name,middle_name,last_name,contact',
@@ -213,14 +215,14 @@ class FinancialStatementEntry extends Model
             ->where('broker_id', $brokerId)
             ->whereIn('status', SalesStatusConstant::getAllActiveStatuses());
 
-        Sales::applyDateConstraint($salesQuery, 'sales_date', '=', $date);
+        SalesTransaction::applyDateConstraint($salesQuery, 'sales_date', '=', $date);
 
         return $salesQuery
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function (Sales $sale): array {
+            ->map(function (SalesTransaction $sale): array {
                 $costOfSales = round(
-                    $sale->salesDetails->sum(fn (SalesDetails $detail): float => (float) ($detail->fishBoxPurchase?->cost_price ?? 0)),
+                    $sale->salesDetails->sum(fn (TransactionLineItem $detail): float => (float) ($detail->fishBoxPurchase?->cost_price ?? 0)),
                     2
                 );
 

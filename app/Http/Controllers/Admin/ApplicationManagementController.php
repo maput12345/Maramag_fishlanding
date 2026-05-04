@@ -13,10 +13,10 @@ use App\Http\Requests\StoreStallRequest;
 use App\Http\Requests\UpdateApplicationOpeningRequest;
 use App\Mail\BrokerWinnerSelected;
 use App\Models\ApplicationOpening;
-use App\Models\ApplicationRequirement;
+use App\Models\SubmittedRequirement;
 use App\Models\Broker;
 use App\Models\BrokerApplication;
-use App\Models\BrokerApplicationReviewDraft;
+use App\Models\ApplicationReviewDraft;
 use App\Models\Employee;
 use App\Models\RequirementType;
 use App\Models\Role;
@@ -122,7 +122,7 @@ class ApplicationManagementController extends Controller
         $availableWinnerStalls = $this->availableWinnerStalls();
         $employee = $this->resolveCurrentEmployee();
         $reviewDraft = $employee
-            ? BrokerApplicationReviewDraft::query()
+            ? ApplicationReviewDraft::query()
                 ->where('broker_application_id', $application->id)
                 ->where('employee_id', $employee->id)
                 ->first()
@@ -347,7 +347,7 @@ class ApplicationManagementController extends Controller
             ], 422);
         }
 
-        $draft = BrokerApplicationReviewDraft::updateOrCreate(
+        $draft = ApplicationReviewDraft::updateOrCreate(
             [
                 'broker_application_id' => $application->id,
                 'employee_id' => $employee->id,
@@ -387,7 +387,7 @@ class ApplicationManagementController extends Controller
                 ->keyBy('id');
 
             foreach ($request->input('requirements', []) as $requirementPayload) {
-                /** @var ApplicationRequirement $requirement */
+                /** @var SubmittedRequirement $requirement */
                 $requirement = $requirements->get((int) $requirementPayload['id']);
 
                 if (!$requirement) {
@@ -410,7 +410,7 @@ class ApplicationManagementController extends Controller
                 'remarks' => $request->input('remarks'),
             ]);
 
-            BrokerApplicationReviewDraft::query()
+            ApplicationReviewDraft::query()
                 ->where('broker_application_id', $application->id)
                 ->delete();
         });
@@ -554,7 +554,7 @@ class ApplicationManagementController extends Controller
                             'selected_at' => $winnerSelectedAt,
                         ]);
 
-                    BrokerApplicationReviewDraft::query()
+                    ApplicationReviewDraft::query()
                         ->whereIn('broker_application_id', $notSelectedApplications->pluck('id'))
                         ->delete();
 

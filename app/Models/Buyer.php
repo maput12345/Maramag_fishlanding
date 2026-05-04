@@ -10,6 +10,8 @@ class Buyer extends Model
 {
     use HasFactory;
 
+    protected $table = 'Buyer';
+
     protected $fillable = [
         'first_name',
         'middle_name',
@@ -26,7 +28,7 @@ class Buyer extends Model
      */
     public function sales(): HasMany
     {
-        return $this->hasMany(Sales::class, 'buyer_id');
+        return $this->hasMany(SalesTransaction::class, 'buyer_id');
     }
 
     /**

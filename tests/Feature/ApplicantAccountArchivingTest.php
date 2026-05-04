@@ -57,6 +57,11 @@ class ApplicantAccountArchivingTest extends TestCase
         $this->assertTrue($winnerUser->fresh()->isBroker());
         $this->assertSame('Not Selected', $nonWinnerApplication->fresh()->application_status);
         $this->assertSame(UserStatusConstant::DEACTIVATED, $nonWinnerUser->fresh()->status);
+
+        $this->actingAs($winnerUser->fresh())
+            ->get(route('applications.index'))
+            ->assertRedirect(route('broker.dashboard'))
+            ->assertSessionHas('info', 'Your application account has been converted to a broker account.');
     }
 
     public function test_applicant_accounts_are_not_archived_while_another_stall_is_still_available(): void

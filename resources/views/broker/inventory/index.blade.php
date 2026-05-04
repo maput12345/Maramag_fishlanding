@@ -361,6 +361,86 @@
                 this.lastSuccessfulAt = Date.now();
             },
 
+            summaryKeyForStatus(status) {
+                return {
+                    'Unassigned': 'unassigned',
+                    'In Stock': 'in_stock',
+                    'Sold': 'sold',
+                    'Returned': 'returned',
+                }[status] || null;
+            },
+
+            updateSummaryCount(status, delta) {
+                const summaryKey = this.summaryKeyForStatus(status);
+
+                if (!summaryKey) {
+                    return;
+                }
+
+                const summaryElement = document.querySelector(`[data-fish-box-summary="${summaryKey}"]`);
+
+                if (!summaryElement) {
+                    return;
+                }
+
+                const currentValue = Number.parseInt((summaryElement.textContent || '0').replace(/[^0-9-]/g, ''), 10) || 0;
+                const nextValue = Math.max(0, currentValue + delta);
+
+                summaryElement.textContent = new Intl.NumberFormat('en-US').format(nextValue);
+            },
+
+            updateReturnedFishBoxCard(result) {
+                const data = result && result.data ? result.data : {};
+                const fishBoxId = data.fish_box_id ? String(data.fish_box_id) : '';
+                const newStatus = data.new_status || 'Returned';
+
+                if (!fishBoxId) {
+                    return;
+                }
+
+                const card = Array.from(document.querySelectorAll('[data-fish-box-card]'))
+                    .find((element) => element.dataset.fishBoxId === fishBoxId);
+
+                if (!card) {
+                    return;
+                }
+
+                const oldStatus = data.old_status || card.dataset.fishBoxStatus || '';
+
+                if (oldStatus && oldStatus !== newStatus) {
+                    this.updateSummaryCount(oldStatus, -1);
+                    this.updateSummaryCount(newStatus, 1);
+                }
+
+                card.dataset.fishBoxStatus = newStatus;
+
+                const badge = card.querySelector('[data-fish-box-status-badge]');
+                const statusClasses = {
+                    'Unassigned': ['bg-slate-100', 'text-slate-700'],
+                    'In Stock': ['bg-green-100', 'text-green-800'],
+                    'Sold': ['bg-blue-100', 'text-blue-800'],
+                    'Returned': ['bg-yellow-100', 'text-yellow-800'],
+                    'Missing': ['bg-red-100', 'text-red-800'],
+                };
+
+                if (badge) {
+                    badge.className = [
+                        'inline-flex',
+                        'items-center',
+                        'px-2.5',
+                        'py-0.5',
+                        'rounded-full',
+                        'text-xs',
+                        'font-medium',
+                        ...(statusClasses[newStatus] || ['bg-gray-100', 'text-gray-700']),
+                    ].join(' ');
+                    badge.textContent = newStatus;
+                }
+                card.querySelectorAll('form[data-inventory-async="return-fish-box"], form[data-inventory-async="mark-missing"]')
+                    .forEach((form) => form.remove());
+
+            },
+
             async closeModal() {
                 this.keepScanning = false;
                 this.isProcessing = false;
@@ -405,6 +485,7 @@
                     (result) => {
                         this.isProcessing = false;
                         this.markSuccessfulScan(qrCode);
+                        this.updateReturnedFishBoxCard(result);
                         this.restartScannerAfterSuccess(result.message || 'Fish box returned successfully.');
                     },
                     () => {

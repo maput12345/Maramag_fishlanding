@@ -21,6 +21,8 @@ class FishBox extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'FishBox';
+
     protected ?int $resolvedBrokerBoxNumber = null;
 
     protected $fillable = [
@@ -57,7 +59,7 @@ class FishBox extends Model
      */
     public function purchases(): HasMany
     {
-        return $this->hasMany(FishBoxPurchase::class, 'fish_box_id');
+        return $this->hasMany(FishBoxStockCycle::class, 'fish_box_id');
     }
 
     /**
@@ -65,7 +67,7 @@ class FishBox extends Model
      */
     public function currentPurchase()
     {
-        return $this->hasOne(FishBoxPurchase::class, 'fish_box_id')->latestOfMany();
+        return $this->hasOne(FishBoxStockCycle::class, 'fish_box_id')->latestOfMany();
     }
 
     /**
@@ -74,8 +76,8 @@ class FishBox extends Model
     public function inventoryLogs(): HasManyThrough
     {
         return $this->hasManyThrough(
-            InventoryLog::class,
-            FishBoxPurchase::class,
+            InventoryMovement::class,
+            FishBoxStockCycle::class,
             'fish_box_id',
             'fish_box_purchase_id',
             'id',
@@ -89,8 +91,8 @@ class FishBox extends Model
     public function salesDetails(): HasManyThrough
     {
         return $this->hasManyThrough(
-            SalesDetails::class,
-            FishBoxPurchase::class,
+            TransactionLineItem::class,
+            FishBoxStockCycle::class,
             'fish_box_id',
             'fish_box_purchase_id',
             'id',
@@ -207,10 +209,10 @@ class FishBox extends Model
         }
 
         return $query->selectSub(function ($subQuery) {
-            $subQuery->from('fish_boxes as broker_boxes')
+            $subQuery->from('FishBox as broker_boxes')
                 ->selectRaw('COUNT(*)')
-                ->whereColumn('broker_boxes.broker_id', 'fish_boxes.broker_id')
-                ->whereColumn('broker_boxes.id', '<=', 'fish_boxes.id');
+                ->whereColumn('broker_boxes.broker_id', 'FishBox.broker_id')
+                ->whereColumn('broker_boxes.id', '<=', 'FishBox.id');
         }, 'broker_box_number');
     }
 
@@ -244,7 +246,7 @@ class FishBox extends Model
         ?int $brokerId = null
     ): Builder {
         $query = static::with(['currentPurchase.fishType', 'broker.user'])
-            ->select('fish_boxes.*')
+            ->select('FishBox.*')
             ->withBrokerBoxNumber();
 
         if ($search) {
@@ -257,7 +259,7 @@ class FishBox extends Model
 
                 if ($normalizedSearch !== '') {
                     $q->orWhereRaw(
-                        '(SELECT COUNT(*) FROM fish_boxes AS broker_boxes WHERE broker_boxes.broker_id = fish_boxes.broker_id AND broker_boxes.id <= fish_boxes.id) = ?',
+                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id) = ?',
                         [(int) $normalizedSearch]
                     );
                 }
@@ -287,8 +289,8 @@ class FishBox extends Model
     public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $fishTypeId = null, int $perPage = 12, ?int $brokerId = null): LengthAwarePaginator
     {
         return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
-            ->orderBy('fish_boxes.created_at', 'desc')
-            ->orderBy('fish_boxes.id', 'desc')
+            ->orderBy('FishBox.created_at', 'desc')
+            ->orderBy('FishBox.id', 'desc')
             ->paginate($perPage);
     }
 
@@ -304,8 +306,8 @@ class FishBox extends Model
         ?int $brokerId = null
     ): Collection {
         return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
-            ->orderBy('fish_boxes.created_at', 'desc')
-            ->orderBy('fish_boxes.id', 'desc')
+            ->orderBy('FishBox.created_at', 'desc')
+            ->orderBy('FishBox.id', 'desc')
             ->get()
             ->map(static function (self $fishBox): array {
                 return [
@@ -324,14 +326,14 @@ class FishBox extends Model
      */
     public static function getDefaultCostPriceForBrokerFishType(int $brokerId, int $fishTypeId): ?float
     {
-        $assignment = BrokerFishType::query()
+        $assignment = BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
             ->with([
                 'latestPrice' => function ($query) {
                     $query->select([
-                        'fish_prices.id',
-                        'fish_prices.broker_fish_type_id',
-                        'fish_prices.default_cost_price',
+                        'FishPriceRecord.id',
+                        'FishPriceRecord.broker_fish_type_id',
+                        'FishPriceRecord.default_cost_price',
                     ]);
                 },
             ])
@@ -353,21 +355,21 @@ class FishBox extends Model
      */
     public static function getDefaultCostMapForBroker(int $brokerId): array
     {
-        return BrokerFishType::query()
+        return BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
             ->with([
                 'latestPrice' => function ($query) {
                     $query->select([
-                        'fish_prices.id',
-                        'fish_prices.broker_fish_type_id',
-                        'fish_prices.default_cost_price',
+                        'FishPriceRecord.id',
+                        'FishPriceRecord.broker_fish_type_id',
+                        'FishPriceRecord.default_cost_price',
                     ]);
                 },
             ])
             ->where('broker_id', $brokerId)
             ->get()
-            ->filter(fn (BrokerFishType $assignment): bool => $assignment->latestPrice?->default_cost_price !== null)
-            ->mapWithKeys(function (BrokerFishType $assignment): array {
+            ->filter(fn (BrokerFishTypeAssignment $assignment): bool => $assignment->latestPrice?->default_cost_price !== null)
+            ->mapWithKeys(function (BrokerFishTypeAssignment $assignment): array {
                 return [
                     (string) $assignment->fish_type_id => (string) $assignment->latestPrice->default_cost_price,
                 ];
@@ -396,7 +398,7 @@ class FishBox extends Model
     public static function getEligibleForBulkRestock(int $brokerId): Collection
     {
         return static::query()
-            ->select('fish_boxes.*')
+            ->select('FishBox.*')
             ->withBrokerBoxNumber()
             ->with(['currentPurchase.fishType'])
             ->where('broker_id', $brokerId)
@@ -405,7 +407,7 @@ class FishBox extends Model
                 FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
-            ->orderBy('fish_boxes.id')
+            ->orderBy('FishBox.id')
             ->get();
     }
 
@@ -436,7 +438,7 @@ class FishBox extends Model
 
         DB::transaction(function () use ($eligibleBoxes, $fishTypeId, $costPrice, $userId) {
             foreach ($eligibleBoxes as $fishBox) {
-                FishBoxPurchase::createForBox(
+                FishBoxStockCycle::createForBox(
                     $fishBox->id,
                     $fishTypeId,
                     $costPrice,
@@ -504,14 +506,14 @@ class FishBox extends Model
         string $pageName = 'tracking_page'
     ): LengthAwarePaginator {
         $query = static::query()
-            ->select('fish_boxes.*')
+            ->select('FishBox.*')
             ->withBrokerBoxNumber()
             ->with([
                 'currentPurchase' => function ($purchaseQuery) {
                     $purchaseQuery->select([
-                        'fish_box_purchases.id',
-                        'fish_box_purchases.fish_box_id',
-                        'fish_box_purchases.fish_type_id',
+                        'FishBoxStockCycle.id',
+                        'FishBoxStockCycle.fish_box_id',
+                        'FishBoxStockCycle.fish_type_id',
                     ]);
                 },
                 'currentPurchase.fishType:id,name',
@@ -525,7 +527,7 @@ class FishBox extends Model
 
         if ($dateFrom) {
             try {
-                $query->where('fish_boxes.updated_at', '>=', Carbon::parse($dateFrom)->startOfDay());
+                $query->where('FishBox.updated_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             } catch (\Throwable $exception) {
                 // Ignore malformed dates so filtering stays non-breaking.
             }
@@ -533,15 +535,15 @@ class FishBox extends Model
 
         if ($dateTo) {
             try {
-                $query->where('fish_boxes.updated_at', '<=', Carbon::parse($dateTo)->endOfDay());
+                $query->where('FishBox.updated_at', '<=', Carbon::parse($dateTo)->endOfDay());
             } catch (\Throwable $exception) {
                 // Ignore malformed dates so filtering stays non-breaking.
             }
         }
 
         return $query
-            ->orderBy('fish_boxes.updated_at', 'desc')
-            ->orderBy('fish_boxes.id', 'desc')
+            ->orderBy('FishBox.updated_at', 'desc')
+            ->orderBy('FishBox.id', 'desc')
             ->paginate($perPage, ['*'], $pageName);
     }
 
@@ -551,22 +553,22 @@ class FishBox extends Model
     public static function getCurrentMissingBoxes(int $limit = 6)
     {
         return static::query()
-            ->select('fish_boxes.*')
+            ->select('FishBox.*')
             ->withBrokerBoxNumber()
             ->with([
                 'currentPurchase' => function ($purchaseQuery) {
                     $purchaseQuery->select([
-                        'fish_box_purchases.id',
-                        'fish_box_purchases.fish_box_id',
-                        'fish_box_purchases.fish_type_id',
+                        'FishBoxStockCycle.id',
+                        'FishBoxStockCycle.fish_box_id',
+                        'FishBoxStockCycle.fish_type_id',
                     ]);
                 },
                 'currentPurchase.fishType:id,name',
                 'broker:id,first_name,middle_name,last_name,suffix,stall_name',
             ])
             ->missing()
-            ->orderBy('fish_boxes.updated_at', 'desc')
-            ->orderBy('fish_boxes.id', 'desc')
+            ->orderBy('FishBox.updated_at', 'desc')
+            ->orderBy('FishBox.id', 'desc')
             ->limit($limit)
             ->get();
     }
@@ -574,7 +576,7 @@ class FishBox extends Model
     /**
      * Build a driver-safe buyer full-name SQL expression.
      */
-    private static function buyerNameExpression(string $table = 'buyers'): string
+    private static function buyerNameExpression(string $table = 'Buyer'): string
     {
         if (static::query()->getConnection()->getDriverName() === 'sqlite') {
             return "TRIM(COALESCE({$table}.first_name, '')"
@@ -597,37 +599,37 @@ class FishBox extends Model
         $buyerNameExpression = static::buyerNameExpression();
 
         $query = static::query()
-            ->select('fish_boxes.*')
+            ->select('FishBox.*')
             ->withBrokerBoxNumber()
             ->selectSub(function ($subQuery) use ($buyerNameExpression) {
-                $subQuery->from('sales_details')
-                    ->join('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
-                    ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
-                    ->leftJoin('buyers', 'buyers.id', '=', 'sales.buyer_id')
+                $subQuery->from('TransactionLineItem')
+                    ->join('FishBoxStockCycle', 'FishBoxStockCycle.id', '=', 'TransactionLineItem.fish_box_purchase_id')
+                    ->join('SalesTransaction', 'SalesTransaction.id', '=', 'TransactionLineItem.sale_id')
+                    ->leftJoin('Buyer', 'Buyer.id', '=', 'SalesTransaction.buyer_id')
                     ->selectRaw($buyerNameExpression)
-                    ->whereColumn('fish_box_purchases.fish_box_id', 'fish_boxes.id')
-                    ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses())
-                    ->orderByDesc('sales_details.id')
+                    ->whereColumn('FishBoxStockCycle.fish_box_id', 'FishBox.id')
+                    ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses())
+                    ->orderByDesc('TransactionLineItem.id')
                     ->limit(1);
             }, 'last_buyer_name')
             ->with([
                 'currentPurchase' => function ($purchaseQuery) {
                     $purchaseQuery->select([
-                        'fish_box_purchases.id',
-                        'fish_box_purchases.fish_box_id',
-                        'fish_box_purchases.fish_type_id',
+                        'FishBoxStockCycle.id',
+                        'FishBoxStockCycle.fish_box_id',
+                        'FishBoxStockCycle.fish_type_id',
                     ]);
                 },
                 'currentPurchase.fishType:id,name',
             ])
-            ->where('fish_boxes.broker_id', $brokerId)
+            ->where('FishBox.broker_id', $brokerId)
             ->missing();
 
         if ($search) {
             $normalizedSearch = preg_replace('/[^0-9]/', '', $search);
 
             $query->where(function (Builder $trackingQuery) use ($search, $normalizedSearch, $buyerNameExpression) {
-                $trackingQuery->where('fish_boxes.qr_code', 'like', '%' . $search . '%')
+                $trackingQuery->where('FishBox.qr_code', 'like', '%' . $search . '%')
                     ->orWhereHas('currentPurchase.fishType', function ($fishTypeQuery) use ($search) {
                         $fishTypeQuery->where('name', 'like', '%' . $search . '%');
                     })
@@ -637,7 +639,7 @@ class FishBox extends Model
 
                 if ($normalizedSearch !== '') {
                     $trackingQuery->orWhereRaw(
-                        '(SELECT COUNT(*) FROM fish_boxes AS broker_boxes WHERE broker_boxes.broker_id = fish_boxes.broker_id AND broker_boxes.id <= fish_boxes.id) = ?',
+                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id) = ?',
                         [(int) $normalizedSearch]
                     );
                 }
@@ -645,8 +647,8 @@ class FishBox extends Model
         }
 
         return $query
-            ->orderBy('fish_boxes.updated_at', 'desc')
-            ->orderBy('fish_boxes.id', 'desc')
+            ->orderBy('FishBox.updated_at', 'desc')
+            ->orderBy('FishBox.id', 'desc')
             ->paginate($perPage, ['*'], $pageName);
     }
 
@@ -664,7 +666,7 @@ class FishBox extends Model
 
             foreach ($fishBoxes as $fishBox) {
                 $fishBox->update(['box_status' => $status]);
-                InventoryLog::createLogForFishBox($fishBox->id, $status, $userId);
+                InventoryMovement::createLogForFishBox($fishBox->id, $status, $userId);
             }
 
             return true;
@@ -677,7 +679,7 @@ class FishBox extends Model
         }
 
         $fishBox->update(['box_status' => $status]);
-        InventoryLog::createLogForFishBox($fishBox->id, $status, $userId);
+        InventoryMovement::createLogForFishBox($fishBox->id, $status, $userId);
 
         return true;
     }
@@ -696,7 +698,7 @@ class FishBox extends Model
                 'cost_price' => $data['cost_price'] ?? $purchase->cost_price,
             ]);
         } elseif (isset($data['fish_type_id'])) {
-            $purchase = FishBoxPurchase::createForBox(
+            $purchase = FishBoxStockCycle::createForBox(
                 $this->id,
                 (int) $data['fish_type_id'],
                 isset($data['cost_price']) ? (float) $data['cost_price'] : null,
@@ -706,14 +708,14 @@ class FishBox extends Model
 
         if (isset($data['status']) && $data['status'] !== $originalStatus) {
             $this->update(['box_status' => $data['status']]);
-            InventoryLog::createLogForFishBox($this->id, $data['status'], $userId);
+            InventoryMovement::createLogForFishBox($this->id, $data['status'], $userId);
         }
 
         return true;
     }
 
     /**
-     * Determine whether the active purchase cycle already has recorded sales.
+     * Determine whether the active purchase cycle already has recorded SalesTransaction.
      */
     public function currentPurchaseHasSalesHistory(): bool
     {
@@ -835,7 +837,7 @@ class FishBox extends Model
      */
     public function getBuyerContactsAttribute()
     {
-        $latestDetail = $this->salesDetails()->with('sale.buyer')->latest('sales_details.id')->first();
+        $latestDetail = $this->salesDetails()->with('sale.buyer')->latest('TransactionLineItem.id')->first();
         $latestSale = $latestDetail?->sale;
 
         return $latestSale ? $latestSale->buyer_contact : null;
@@ -846,7 +848,7 @@ class FishBox extends Model
      */
     public function getBuyerNamesAttribute()
     {
-        $latestDetail = $this->salesDetails()->with('sale.buyer')->latest('sales_details.id')->first();
+        $latestDetail = $this->salesDetails()->with('sale.buyer')->latest('TransactionLineItem.id')->first();
         $latestSale = $latestDetail?->sale;
 
         return $latestSale ? $latestSale->buyer_name : null;

@@ -19,6 +19,18 @@ use Illuminate\View\View;
 class UserManagementController extends Controller
 {
     /**
+     * Limit account management and broker support controls to full admins.
+     */
+    public function __construct()
+    {
+        $this->middleware(function (Request $request, $next) {
+            abort_unless($request->user()?->isAdmin(), 403, 'Only administrators can manage users.');
+
+            return $next($request);
+        });
+    }
+
+    /**
      * @return View
      */
     public function index(Request $request): View
@@ -187,10 +199,10 @@ class UserManagementController extends Controller
 
         // Get broker statistics using grouped counts
         $brokerStatusCounts = Broker::query()
-            ->join('users', 'users.id', '=', 'brokers.user_id')
-            ->selectRaw('users.status, COUNT(*) as total')
-            ->groupBy('users.status')
-            ->pluck('total', 'users.status');
+            ->join('User', 'User.id', '=', 'Broker.user_id')
+            ->selectRaw('User.status, COUNT(*) as total')
+            ->groupBy('User.status')
+            ->pluck('total', 'User.status');
         $deletedBrokers = Broker::onlyTrashed()->count();
         $activeBrokers = (int) ($brokerStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
         $deactivatedBrokers = (int) ($brokerStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);

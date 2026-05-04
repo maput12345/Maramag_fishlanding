@@ -18,6 +18,8 @@ class Broker extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'Broker';
+
     public const ADMIN_IMPERSONATION_SESSION_KEY = 'admin_impersonated_broker_id';
     public const ADMIN_IMPERSONATION_RETURN_URL_SESSION_KEY = 'admin_impersonation_return_url';
     public const ADMIN_SUPPORT_ACTIONS_SESSION_KEY = 'admin_broker_support_actions_enabled';
@@ -73,7 +75,7 @@ class Broker extends Model
      */
     public function sales(): HasMany
     {
-        return $this->hasMany(Sales::class, 'broker_id');
+        return $this->hasMany(SalesTransaction::class, 'broker_id');
     }
 
     /**
@@ -98,7 +100,7 @@ class Broker extends Model
      */
     public function brokerFishTypes(): HasMany
     {
-        return $this->hasMany(BrokerFishType::class, 'broker_id');
+        return $this->hasMany(BrokerFishTypeAssignment::class, 'broker_id');
     }
 
     /**
@@ -106,7 +108,7 @@ class Broker extends Model
      */
     public function fishTypes(): BelongsToMany
     {
-        return $this->belongsToMany(FishType::class, 'broker_fish_type')->withTimestamps();
+        return $this->belongsToMany(FishType::class, 'BrokerFishTypeAssignment')->withTimestamps();
     }
 
     /**
@@ -115,8 +117,8 @@ class Broker extends Model
     public function fishPrices(): HasManyThrough
     {
         return $this->hasManyThrough(
-            FishPrice::class,
-            BrokerFishType::class,
+            FishPriceRecord::class,
+            BrokerFishTypeAssignment::class,
             'broker_id',
             'broker_fish_type_id',
             'id',
@@ -158,7 +160,7 @@ class Broker extends Model
     }
 
     /**
-     * Scope active brokers.
+     * Scope active Broker.
      */
     public function scopeActive($query): Builder
     {
@@ -168,7 +170,7 @@ class Broker extends Model
     }
 
     /**
-     * Scope deactivated brokers.
+     * Scope deactivated Broker.
      */
     public function scopeDeactivated($query): Builder
     {

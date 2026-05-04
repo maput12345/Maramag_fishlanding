@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AdminFishBoxTrackingAccessTest extends TestCase
@@ -48,6 +49,17 @@ class AdminFishBoxTrackingAccessTest extends TestCase
         $this->assertInstanceOf(View::class, $response);
         $this->assertSame('admin.sales.tracking', $response->getName());
         $this->assertStringContainsString('Fish Box Tracking', $response->render());
+    }
+
+    public function test_staff_cannot_access_user_management_routes(): void
+    {
+        $staff = $this->createLeeoUser('staff-users@example.com', RoleStatusConstant::STAFF);
+        config(['app.url' => 'http://localhost']);
+        URL::forceRootUrl('http://localhost');
+
+        $response = $this->actingAs($staff)->get('/admin/users');
+
+        $response->assertForbidden();
     }
 
     public function test_staff_dashboard_hides_admin_only_tracking_cards_and_links(): void

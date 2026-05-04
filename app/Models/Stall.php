@@ -11,6 +11,8 @@ class Stall extends Model
 {
     use HasFactory;
 
+    protected $table = 'Stall';
+
     protected $fillable = [
         'stall_number',
         'stall_status',

@@ -18,7 +18,7 @@ class ReviewBrokerApplicationRequest extends FormRequest
             'application_status' => ['required', Rule::in(['Under Review', 'Needs Revision', 'Rejected', 'Qualified'])],
             'remarks' => ['nullable', 'string', 'max:2000'],
             'requirements' => ['required', 'array', 'min:1'],
-            'requirements.*.id' => ['required', 'exists:application_requirements,id'],
+            'requirements.*.id' => ['required', 'exists:SubmittedRequirement,id'],
             'requirements.*.verification_status' => ['required', Rule::in(['Pending', 'Verified', 'Rejected'])],
             'requirements.*.remarks' => ['nullable', 'string', 'max:1000'],
         ];

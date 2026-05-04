@@ -23,8 +23,8 @@ class FishPriceRequest extends FormRequest
     {
         return [
             'broker_fish_type_id' => $this->isMethod('post')
-                ? ['required', 'exists:broker_fish_type,id']
-                : ['nullable', 'exists:broker_fish_type,id'],
+                ? ['required', 'exists:BrokerFishTypeAssignment,id']
+                : ['nullable', 'exists:BrokerFishTypeAssignment,id'],
             'price' => ['required', 'numeric', 'min:0'],
             'default_cost_price' => ['nullable', 'numeric', 'min:0'],
             'price_date' => ['required', 'date'],

@@ -7,7 +7,7 @@
     <div class="app-sidebar-brand border-b p-4">
         <div class="flex items-center space-x-2">
             <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-clear-600">
-                <img src="{{ asset('image/logo.png') }}" alt="" class="h-12 w-12 object-contain">
+                <img src="{{ asset('image/logo-small.png') }}" alt="" class="h-12 w-12 object-contain">
             </div>
             <div x-show="sidebarOpen" x-transition class="min-w-0 whitespace-nowrap">
                 <span class="app-sidebar-title block text-xl font-bold text-gray-800">Broker</span>

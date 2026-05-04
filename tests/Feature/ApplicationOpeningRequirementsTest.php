@@ -62,7 +62,7 @@ class ApplicationOpeningRequirementsTest extends TestCase
         $opening = ApplicationOpening::first();
 
         $this->assertNotNull($opening);
-        $this->assertDatabaseHas('application_opening_requirements', [
+        $this->assertDatabaseHas('OpeningRequirement', [
             'application_opening_id' => $opening->id,
             'requirement_type_id' => $requirement->id,
             'is_required' => true,
@@ -149,11 +149,11 @@ class ApplicationOpeningRequirementsTest extends TestCase
 
         $this->assertNotNull($application);
         $this->assertSame(1, $application->requirements()->count());
-        $this->assertDatabaseHas('application_requirements', [
+        $this->assertDatabaseHas('SubmittedRequirement', [
             'application_id' => $application->id,
             'requirement_type_id' => $selectedRequirement->id,
         ]);
-        $this->assertDatabaseMissing('application_requirements', [
+        $this->assertDatabaseMissing('SubmittedRequirement', [
             'application_id' => $application->id,
             'requirement_type_id' => $unselectedRequirement->id,
         ]);

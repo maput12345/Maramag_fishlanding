@@ -104,7 +104,7 @@
             <div class="login-welcome-accent"></div>
             <div class="login-welcome-content login-welcome-content--brand">
                 <div class="login-welcome-brand-mark">
-                    <img src="{{ asset('image/logo.png') }}" alt="Maanyag Maramag logo" class="login-welcome-logo object-contain">
+                    <img src="{{ asset('image/logo-small.png') }}" alt="Maanyag Maramag logo" class="login-welcome-logo object-contain">
                 </div>
                 <h2>MAANYAG MARAMAG!</h2>
             </div>

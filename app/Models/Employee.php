@@ -11,6 +11,8 @@ class Employee extends Model
 {
     use HasFactory;
 
+    protected $table = 'Employee';
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -60,7 +62,7 @@ class Employee extends Model
      */
     public function verifiedApplicationRequirements(): HasMany
     {
-        return $this->hasMany(ApplicationRequirement::class, 'verified_by_employee_id');
+        return $this->hasMany(SubmittedRequirement::class, 'verified_by_employee_id');
     }
 
     /**

@@ -84,23 +84,23 @@
         <div class="summary-strip summary-strip--five">
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Boxes</p>
-                <p class="summary-stat-value text-gray-900">{{ number_format($fishBoxSummary['total'] ?? 0) }}</p>
+                <p class="summary-stat-value text-gray-900" data-fish-box-summary="total">{{ number_format($fishBoxSummary['total'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Unassigned</p>
-                <p class="summary-stat-value text-slate-600">{{ number_format($fishBoxSummary['unassigned'] ?? 0) }}</p>
+                <p class="summary-stat-value text-slate-600" data-fish-box-summary="unassigned">{{ number_format($fishBoxSummary['unassigned'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">In Stock</p>
-                <p class="summary-stat-value text-green-600">{{ number_format($fishBoxSummary['in_stock'] ?? 0) }}</p>
+                <p class="summary-stat-value text-green-600" data-fish-box-summary="in_stock">{{ number_format($fishBoxSummary['in_stock'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Sold</p>
-                <p class="summary-stat-value text-blue-600">{{ number_format($fishBoxSummary['sold'] ?? 0) }}</p>
+                <p class="summary-stat-value text-blue-600" data-fish-box-summary="sold">{{ number_format($fishBoxSummary['sold'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Returned</p>
-                <p class="summary-stat-value text-yellow-600">{{ number_format($fishBoxSummary['returned'] ?? 0) }}</p>
+                <p class="summary-stat-value text-yellow-600" data-fish-box-summary="returned">{{ number_format($fishBoxSummary['returned'] ?? 0) }}</p>
             </div>
         </div>
     </div>
@@ -143,7 +143,7 @@
         @endphp
 
         <x-app-modal
-            title="Bulk Assign / Daily Restock"
+            title="Assign / Daily Restock"
             subtitle="Select reusable boxes, choose today's fish, and auto-fill the daily cost from Fish Prices when available."
             :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
         >
@@ -440,9 +440,9 @@
     <!-- Fish Boxes Filters -->
     <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{
-            search: '{{ request('search') }}',
-            status: '{{ request('status') }}',
-            fishType: '{{ request('fish_type') }}'
+            search: @js((string) request('search', '')),
+            status: @js((string) request('status', '')),
+            fishType: @js((string) request('fish_type', ''))
         }">
             <input type="hidden" name="tab" value="fishBoxes">
             <div class="filter-layout">
@@ -517,7 +517,10 @@
     <!-- Fish Boxes Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
         @forelse($fishBoxes as $fishBox)
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow"
+                 data-fish-box-card
+                 data-fish-box-id="{{ $fishBox->id }}"
+                 data-fish-box-status="{{ $fishBox->status }}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
                         <x-heroicon-o-archive-box class="w-6 h-6 text-white" />
@@ -588,7 +591,8 @@
                     </p>
                 </div>
                 <div class="mb-3">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <span data-fish-box-status-badge
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                         {{ $fishBox->status === 'Unassigned' ? 'bg-slate-100 text-slate-700' : '' }}
                         {{ $fishBox->status === 'In Stock' ? 'bg-green-100 text-green-800' : '' }}
                         {{ $fishBox->status === 'Sold' ? 'bg-blue-100 text-blue-800' : '' }}

@@ -11,6 +11,8 @@ class RequirementType extends Model
 {
     use HasFactory;
 
+    protected $table = 'RequirementType';
+
     public const APPLICANT_TYPE_NATURAL = 'natural_person';
     public const APPLICANT_TYPE_JURIDICAL = 'juridical_person';
     public const APPLICANT_TYPE_BOTH = 'both';
@@ -33,7 +35,7 @@ class RequirementType extends Model
      */
     public function applicationRequirements(): HasMany
     {
-        return $this->hasMany(ApplicationRequirement::class, 'requirement_type_id');
+        return $this->hasMany(SubmittedRequirement::class, 'requirement_type_id');
     }
 
     /**
@@ -41,7 +43,7 @@ class RequirementType extends Model
      */
     public function openingRequirements(): HasMany
     {
-        return $this->hasMany(ApplicationOpeningRequirement::class, 'requirement_type_id');
+        return $this->hasMany(OpeningRequirement::class, 'requirement_type_id');
     }
 
     /**

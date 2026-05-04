@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Keep Laravel internals and local artifacts unreachable if the project
+    # root is served directly from Apache. The application entry remains
+    # public/index.php.
+    RewriteRule ^\.git(/|$) - [R=404,L,NC]
+    RewriteRule ^(\.env|\.gitattributes|\.gitignore|\.editorconfig|\.styleci\.yml|\.phpunit\.result\.cache)$ - [R=404,L,NC]
+    RewriteRule ^(artisan|server\.php|phpunit\.xml|composer\.(json|lock)|package(-lock)?\.json|webpack\.mix\.js|tailwind\.config\.js|postcss\.config\.js|README\.md)$ - [R=404,L,NC]
+    RewriteRule ^(app|bootstrap|config|database|node_modules|resources|routes|storage|tests|tools|vendor)(/|$) - [R=404,L,NC]
+    RewriteRule ^(tmp_.*|.*\.(zip|sql|sqlite|bak|backup|old|orig|class|java))$ - [R=404,L,NC]
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>

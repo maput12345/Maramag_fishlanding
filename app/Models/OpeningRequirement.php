@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ApplicationOpeningRequirement extends Model
+class OpeningRequirement extends Model
 {
     use HasFactory;
+
+    protected $table = 'OpeningRequirement';
 
     protected $fillable = [
         'application_opening_id',

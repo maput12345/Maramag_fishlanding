@@ -19,6 +19,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $table = 'User';
+
     protected $fillable = [
         'email',
         'password',
@@ -63,7 +65,7 @@ class User extends Authenticatable
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'user_roles')->withTimestamps();
+        return $this->belongsToMany(Role::class, 'UserRoleAssignment')->withTimestamps();
     }
 
     /**

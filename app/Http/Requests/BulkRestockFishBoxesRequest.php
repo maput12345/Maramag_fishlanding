@@ -51,11 +51,11 @@ class BulkRestockFishBoxesRequest extends FormRequest
             ],
             'fish_type_id' => [
                 'required',
-                'exists:fish_types,id',
+                'exists:FishType,id',
                 function ($attribute, $value, $fail) use ($brokerId) {
                     $isAssigned = FishType::whereKey($value)
                         ->whereHas('brokers', function ($query) use ($brokerId) {
-                            $query->where('brokers.id', $brokerId);
+                            $query->where('Broker.id', $brokerId);
                         })
                         ->exists();
 

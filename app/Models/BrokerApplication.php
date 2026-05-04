@@ -13,6 +13,8 @@ class BrokerApplication extends Model
 {
     use HasFactory;
 
+    protected $table = 'BrokerApplication';
+
     protected $fillable = [
         'user_id',
         'application_opening_id',
@@ -86,7 +88,7 @@ class BrokerApplication extends Model
      */
     public function requirements(): HasMany
     {
-        return $this->hasMany(ApplicationRequirement::class, 'application_id');
+        return $this->hasMany(SubmittedRequirement::class, 'application_id');
     }
 
     /**
@@ -102,7 +104,7 @@ class BrokerApplication extends Model
      */
     public function reviewDrafts(): HasMany
     {
-        return $this->hasMany(BrokerApplicationReviewDraft::class, 'broker_application_id');
+        return $this->hasMany(ApplicationReviewDraft::class, 'broker_application_id');
     }
 
     /**
@@ -135,7 +137,7 @@ class BrokerApplication extends Model
         }
 
         if ($reviewRequirementPayloads === null) {
-            return $requirements->every(function (ApplicationRequirement $requirement) {
+            return $requirements->every(function (SubmittedRequirement $requirement) {
                 return $requirement->verification_status === 'Verified';
             });
         }
@@ -162,7 +164,7 @@ class BrokerApplication extends Model
             return false;
         }
 
-        return $requirements->every(function (ApplicationRequirement $requirement) use ($submittedStatusesById) {
+        return $requirements->every(function (SubmittedRequirement $requirement) use ($submittedStatusesById) {
             return $submittedStatusesById->get($requirement->id) === 'Verified';
         });
     }

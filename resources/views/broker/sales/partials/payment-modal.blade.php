@@ -43,7 +43,6 @@
     @elseif($saleForPayment)
         <x-app-modal
             title="Add Payment"
-            subtitle="Record a payment and update the sale balance in one clean step."
             :close-url="$salesBaseUrl"
         >
             <x-slot:icon>

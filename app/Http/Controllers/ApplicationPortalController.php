@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreBrokerApplicationRequest;
 use App\Http\Requests\UpdateBrokerApplicationRevisionRequest;
 use App\Models\ApplicationOpening;
-use App\Models\ApplicationRequirement;
+use App\Models\SubmittedRequirement;
 use App\Models\BrokerApplication;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +17,12 @@ class ApplicationPortalController extends Controller
     /**
      * Show the applicant landing page with open stall applications.
      */
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
         $user = Auth::user();
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         $openings = ApplicationOpening::with(['stall.stallImages'])
             ->availableForApplication()
@@ -53,7 +55,9 @@ class ApplicationPortalController extends Controller
      */
     public function create(ApplicationOpening $opening): View|RedirectResponse
     {
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         if ($opening->opening_status !== 'Open' || !$opening->start_date || !$opening->end_date || !$opening->hasAvailableStall()) {
             return redirect()->route('applications.index')
@@ -88,7 +92,9 @@ class ApplicationPortalController extends Controller
      */
     public function store(StoreBrokerApplicationRequest $request, ApplicationOpening $opening): RedirectResponse
     {
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         $validated = $request->validated();
         $requirementTypes = $opening->resolvedRequirementTypes();
@@ -127,7 +133,7 @@ class ApplicationPortalController extends Controller
                         ->store('broker-applications/' . $application->id, 'public')
                     : null;
 
-                ApplicationRequirement::create([
+                SubmittedRequirement::create([
                     'application_id' => $application->id,
                     'requirement_type_id' => $requirementType->id,
                     'file_path' => $filePath ?? '',
@@ -148,9 +154,11 @@ class ApplicationPortalController extends Controller
     /**
      * Show a single submitted application.
      */
-    public function show(BrokerApplication $application): View
+    public function show(BrokerApplication $application): View|RedirectResponse
     {
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         abort_unless($application->user_id === Auth::id(), 403);
 
@@ -171,7 +179,9 @@ class ApplicationPortalController extends Controller
      */
     public function edit(BrokerApplication $application): View|RedirectResponse
     {
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         abort_unless($application->user_id === Auth::id(), 403);
 
@@ -193,7 +203,9 @@ class ApplicationPortalController extends Controller
      */
     public function update(UpdateBrokerApplicationRevisionRequest $request, BrokerApplication $application): RedirectResponse
     {
-        $this->ensureApplicantAccess();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
 
         abort_unless($application->user_id === Auth::id(), 403);
 
@@ -219,7 +231,7 @@ class ApplicationPortalController extends Controller
                 ->keyBy('id');
 
             foreach ($validated['requirements'] as $requirementPayload) {
-                /** @var ApplicationRequirement|null $requirement */
+                /** @var SubmittedRequirement|null $requirement */
                 $requirement = $requirements->get((int) $requirementPayload['id']);
 
                 if (!$requirement) {
@@ -259,11 +271,24 @@ class ApplicationPortalController extends Controller
     /**
      * Keep the portal limited to applicants waiting for a broker decision.
      */
-    private function ensureApplicantAccess(): void
+    private function redirectNonApplicants(): ?RedirectResponse
     {
         $user = Auth::user();
 
         abort_if(!$user, 403);
-        abort_if($user->isAdmin() || $user->isStaff() || $user->isBroker(), 403);
+
+        if ($user->isAdmin() || $user->isStaff()) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('info', 'Applicant pages are only available to applicant accounts.');
+        }
+
+        if ($user->isBroker()) {
+            return redirect()
+                ->route('broker.dashboard')
+                ->with('info', 'Your application account has been converted to a broker account.');
+        }
+
+        return null;
     }
 }

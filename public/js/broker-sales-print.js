@@ -2,6 +2,13 @@
  * Print broker sales report using the currently filtered range.
  */
 window.printBrokerSales = async function(brokerId, brokerName, stallName) {
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
     // Get date range from URL or form inputs
     const urlParams = new URLSearchParams(window.location.search);
     let dateFrom = urlParams.get('date_from');
@@ -76,7 +83,7 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
         ? `${formattedDateFrom} to ${formattedDateTo}`
         : formattedDateTo || formattedDateFrom || formattedReceiptDate;
     let soldFishBoxesCount = Number(brokerCard.dataset.receiptFishboxCount || 0);
-    const leeoCommissionPerBox = Number(brokerCard.dataset.receiptLeeoCommissionPerBox || 5);
+    const leeoCommissionPerBox = Number(brokerCard.dataset.receiptLeeoCommissionPerBox || 15);
     const dailyBrokerFee = 100;
     const watermarkLogoUrl = brokerCard.dataset.receiptWatermarkLogoUrl || '';
 
@@ -118,50 +125,37 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
     const totalPayableAmount = commissionPayableAmount + dailyFeeAmount;
 
     const summaryHTML = `
-        <div style="margin: 24px 0 0;">
-            <div style="border: 1px solid #dbe4f0; border-radius: 16px; overflow: hidden; background: #ffffff;">
-                <div style="padding: 18px 22px; border-bottom: 1px solid #e5e7eb; background: #f8fafc;">
-                    <h2 style="margin: 0; font-size: 20px; color: #0f172a;">Broker Payable Summary</h2>
+        <div class="receipt-section">
+            <h2 class="section-title">Broker Payable Summary</h2>
+            <div class="summary-list">
+                <div class="summary-row">
+                    <span>Sold Fish Boxes:</span>
+                    <span>${soldFishBoxesCount}</span>
                 </div>
-                <div style="padding: 22px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
-                        <div>
-                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Sold Fish Boxes</div>
-                            <div style="font-size: 12px; color: #64748b;">Total boxes sold in the selected period</div>
-                        </div>
-                        <div style="font-size: 24px; font-weight: 700; color: #111827;">${soldFishBoxesCount}</div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
-                        <div>
-                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">LEEO Commission</div>
-                            <div style="font-size: 12px; color: #64748b;">${soldFishBoxesCount} box(es) x ${formatCurrency(leeoCommissionPerBox)}</div>
-                        </div>
-                        <div style="font-size: 18px; font-weight: 700; color: #111827;">${formatCurrency(commissionPayableAmount)}</div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e7eb; gap: 16px;">
-                        <div>
-                            <div style="font-size: 14px; font-weight: 700; color: #0f172a;">Daily Fee</div>
-                            <div style="font-size: 12px; color: #64748b;">${billingDays} day(s) x ${formatCurrency(dailyBrokerFee)}</div>
-                        </div>
-                        <div style="font-size: 18px; font-weight: 700; color: #111827;">${formatCurrency(dailyFeeAmount)}</div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; gap: 16px;">
-                        <div>
-                            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Total Payable to LEEO</div>
-                        </div>
-                        <div style="font-size: 26px; font-weight: 800; color: #047857;">${formatCurrency(totalPayableAmount)}</div>
-                    </div>
+                <div class="summary-row">
+                    <span>LEEO Commission:</span>
+                    <span>${formatCurrency(commissionPayableAmount)}</span>
+                </div>
+                <div class="summary-note">${soldFishBoxesCount} box(es) x ${formatCurrency(leeoCommissionPerBox)}</div>
+                <div class="summary-row">
+                    <span>Daily Fee:</span>
+                    <span>${formatCurrency(dailyFeeAmount)}</span>
+                </div>
+                <div class="summary-note">${billingDays} day(s) x ${formatCurrency(dailyBrokerFee)}</div>
+                <div class="summary-row summary-total">
+                    <span>Total Payable to LEEO:</span>
+                    <span>${formatCurrency(totalPayableAmount)}</span>
                 </div>
             </div>
         </div>
     `;
 
     // Build stall info
-    const stallInfo = stallName ? `<p><strong>Stall:</strong> ${stallName}</p>` : '';
+    const stallInfo = stallName ? `<p>${escapeHtml(stallName)}</p>` : '';
     const watermarkHTML = watermarkLogoUrl
         ? `
-            <div class="print-watermark" aria-hidden="true">
-                <img src="${watermarkLogoUrl}" alt="">
+            <div class="receipt-watermark" aria-hidden="true">
+                <img src="${escapeHtml(watermarkLogoUrl)}" alt="">
             </div>
         `
         : '';
@@ -170,83 +164,137 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
     const printContent = `
         <html>
             <head>
-                <title>Sales Report - ${brokerName}</title>
+                <title>Broker Receipt - ${escapeHtml(brokerName)}</title>
                 <style>
-                    @media print {
-                        body { margin: 0; }
-                        @page { margin: 1cm; }
+                    * {
+                        box-sizing: border-box;
                     }
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        margin: 0;
                         padding: 20px;
+                        background: #ffffff;
+                        color: #111827;
                         position: relative;
                     }
                     .print-sheet {
                         position: relative;
                         min-height: calc(100vh - 40px);
+                        max-width: 720px;
+                        margin: 0 auto;
                     }
                     .print-shell {
                         position: relative;
                         z-index: 1;
                     }
-                    .print-watermark {
+                    .receipt-watermark {
                         position: fixed;
                         top: 50%;
                         left: 50%;
                         transform: translate(-50%, -50%);
-                        width: min(700px, 84vw);
+                        width: min(540px, 78vw);
                         display: block;
                         pointer-events: none;
                         z-index: 0;
                         text-align: center;
                     }
-                    .print-watermark img {
+                    .receipt-watermark img {
                         display: block;
                         width: 100%;
                         max-width: 100%;
                         margin: 0 auto;
-                        opacity: 0.06;
+                        opacity: 0.08;
                         filter: grayscale(100%);
                     }
                     .header {
                         text-align: center;
-                        margin-bottom: 30px;
-                        border-bottom: 2px solid #333;
+                        margin-bottom: 18px;
+                        border-bottom: 1px solid #e5e7eb;
                         padding-bottom: 20px;
                     }
                     .header h1 {
-                        margin: 0;
+                        margin: 0 0 8px;
                         font-size: 24px;
+                        line-height: 1.2;
+                        color: #111827;
                     }
                     .header p {
-                        margin: 5px 0;
-                        color: #666;
+                        margin: 4px 0;
+                        font-size: 12px;
+                        color: #6b7280;
                     }
-                    table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-top: 20px;
+                    .receipt-info,
+                    .receipt-section {
+                        margin-bottom: 18px;
+                        border-top: 1px solid #e5e7eb;
+                        padding-top: 16px;
                     }
-                    th, td {
-                        border: 1px solid #ddd;
-                        padding: 12px;
-                        text-align: left;
+                    .receipt-info {
+                        border-top: 0;
+                        padding-top: 0;
                     }
-                    th {
-                        background-color: #f3f4f6;
+                    .section-title {
+                        margin: 0 0 12px;
+                        font-size: 14px;
+                        font-weight: 700;
+                        color: #111827;
+                    }
+                    .info-row,
+                    .summary-row {
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 24px;
+                        margin-bottom: 8px;
+                        font-size: 13px;
+                    }
+                    .info-row span:first-child,
+                    .summary-row span:first-child {
+                        color: #6b7280;
+                    }
+                    .info-row span:last-child,
+                    .summary-row span:last-child {
+                        color: #111827;
+                        font-weight: 600;
+                        text-align: right;
+                    }
+                    .summary-note {
+                        margin: -4px 0 10px;
+                        color: #6b7280;
+                        font-size: 12px;
+                        text-align: right;
+                    }
+                    .summary-total {
+                        border-top: 1px solid #e5e7eb;
+                        margin-top: 10px;
+                        padding-top: 10px;
+                    }
+                    .summary-total span {
+                        font-weight: 700;
+                    }
+                    .summary-total span:last-child {
+                        color: #059669;
                     }
                     .footer {
-                        margin-top: 30px;
+                        margin-top: 20px;
                         text-align: center;
                         font-size: 12px;
-                        color: #666;
-                        border-top: 1px solid #ddd;
+                        color: #6b7280;
+                        border-top: 1px solid #e5e7eb;
                         padding-top: 20px;
+                    }
+                    .footer p {
+                        margin: 4px 0;
                     }
                     @media print {
                         body {
+                            margin: 0;
+                            padding: 0;
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
+                        }
+                        @page {
+                            margin: 0.5in;
+                            size: A4;
                         }
                     }
                 </style>
@@ -256,21 +304,30 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
                     ${watermarkHTML}
                     <div class="print-shell">
                         <div class="header">
-                            <h1>Broker Receipt</h1>
-                            <p><strong>Broker:</strong> ${brokerName}</p>
+                            <h1>${escapeHtml(brokerName)}</h1>
                             ${stallInfo}
-                            ${selectedPeriodLabel ? `<p><strong>Period:</strong> ${selectedPeriodLabel}</p>` : ''}
+                            <p>Broker Receipt</p>
+                        </div>
+                        <div class="receipt-info">
+                            <div class="info-row">
+                                <span>Period:</span>
+                                <span>${escapeHtml(selectedPeriodLabel)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span>Generated:</span>
+                                <span>${escapeHtml(new Date().toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }))}</span>
+                            </div>
                         </div>
                         ${summaryHTML}
                         <div class="footer">
                             <p>POS System - Broker Receipt</p>
-                            <p><strong>Generated:</strong> ${new Date().toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}</p>
+                            <p>Thank you for your service.</p>
                         </div>
                     </div>
                 </div>
@@ -305,7 +362,7 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
             }, 1000);
         };
 
-        const watermarkImage = iframe.contentWindow.document.querySelector('.print-watermark img');
+        const watermarkImage = iframe.contentWindow.document.querySelector('.receipt-watermark img');
         if (watermarkImage && !watermarkImage.complete) {
             const completeAndPrint = () => setTimeout(triggerPrint, 250);
             watermarkImage.addEventListener('load', completeAndPrint, { once: true });
@@ -316,4 +373,3 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
         setTimeout(triggerPrint, 250);
     };
 };
-

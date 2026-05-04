@@ -115,7 +115,7 @@ class FinancialStatementFeatureTest extends TestCase
             'statement_date' => '2026-04-25',
         ]));
 
-        $this->assertDatabaseCount('financial_statement_entries', 0);
+        $this->assertDatabaseCount('FinancialStatementEntry', 0);
     }
 
     public function test_financial_statement_page_renders_for_broker_with_daily_context(): void

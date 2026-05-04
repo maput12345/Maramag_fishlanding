@@ -14,6 +14,8 @@ class ApplicationOpening extends Model
 {
     use HasFactory;
 
+    protected $table = 'ApplicationOpening';
+
     public const AVAILABLE_STALL_STATUSES = [
         'Vacant',
         'Open for Application',
@@ -64,7 +66,7 @@ class ApplicationOpening extends Model
      */
     public function openingRequirements(): HasMany
     {
-        return $this->hasMany(ApplicationOpeningRequirement::class);
+        return $this->hasMany(OpeningRequirement::class);
     }
 
     /**
@@ -72,11 +74,11 @@ class ApplicationOpening extends Model
      */
     public function requirementTypes(): BelongsToMany
     {
-        return $this->belongsToMany(RequirementType::class, 'application_opening_requirements')
+        return $this->belongsToMany(RequirementType::class, 'OpeningRequirement')
             ->withPivot(['is_required', 'audience', 'sort_order'])
             ->withTimestamps()
-            ->orderBy('application_opening_requirements.sort_order')
-            ->orderBy('requirement_types.requirement_name');
+            ->orderBy('OpeningRequirement.sort_order')
+            ->orderBy('RequirementType.requirement_name');
     }
 
     /**

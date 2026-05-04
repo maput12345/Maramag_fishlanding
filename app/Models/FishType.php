@@ -15,6 +15,8 @@ class FishType extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'FishType';
+
     protected $fillable = [
         'name',
         'description',
@@ -25,7 +27,7 @@ class FishType extends Model
      */
     public function brokers(): BelongsToMany
     {
-        return $this->belongsToMany(Broker::class, 'broker_fish_type')->withTimestamps();
+        return $this->belongsToMany(Broker::class, 'BrokerFishTypeAssignment')->withTimestamps();
     }
 
     /**
@@ -33,7 +35,7 @@ class FishType extends Model
      */
     public function fishBoxes(): HasMany
     {
-        return $this->hasMany(FishBoxPurchase::class, 'fish_type_id');
+        return $this->hasMany(FishBoxStockCycle::class, 'fish_type_id');
     }
 
     /**
@@ -42,8 +44,8 @@ class FishType extends Model
     public function prices(): HasManyThrough
     {
         return $this->hasManyThrough(
-            FishPrice::class,
-            BrokerFishType::class,
+            FishPriceRecord::class,
+            BrokerFishTypeAssignment::class,
             'fish_type_id',
             'broker_fish_type_id',
             'id',
@@ -56,7 +58,7 @@ class FishType extends Model
      */
     public function brokerFishTypes(): HasMany
     {
-        return $this->hasMany(BrokerFishType::class, 'fish_type_id');
+        return $this->hasMany(BrokerFishTypeAssignment::class, 'fish_type_id');
     }
 
     /**
@@ -98,7 +100,7 @@ class FishType extends Model
 
         if ($brokerId) {
             $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
-                $brokerQuery->where('brokers.id', $brokerId);
+                $brokerQuery->where('Broker.id', $brokerId);
             });
         }
 
@@ -122,7 +124,7 @@ class FishType extends Model
 
         if ($brokerId) {
             $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
-                $brokerQuery->where('brokers.id', $brokerId);
+                $brokerQuery->where('Broker.id', $brokerId);
             });
         }
 

@@ -33,9 +33,9 @@ class UserRequest extends FormRequest
         // Only add unique rule if we have a user ID (update mode)
         if ($userId) {
             // Try different approaches for the unique rule
-            $emailRules[] = Rule::unique('users', 'email')->ignore($userId, 'id');
+            $emailRules[] = Rule::unique('User', 'email')->ignore($userId, 'id');
         } else {
-            $emailRules[] = 'unique:users,email';
+            $emailRules[] = 'unique:User,email';
         }
 
         // Password validation rules

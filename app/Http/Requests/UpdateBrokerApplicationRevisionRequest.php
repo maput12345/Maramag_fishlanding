@@ -27,7 +27,7 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
             'address' => ['required', 'string', 'max:1000'],
             'contact_number' => ['required', 'string', 'max:50'],
             'requirements' => ['required', 'array'],
-            'requirements.*.id' => ['required', 'integer', 'exists:application_requirements,id'],
+            'requirements.*.id' => ['required', 'integer', 'exists:SubmittedRequirement,id'],
             'requirements.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'requirements.*.document_number' => ['nullable', 'string', 'max:255'],
             'requirements.*.issuing_office' => ['nullable', 'string', 'max:255'],

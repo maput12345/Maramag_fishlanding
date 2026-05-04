@@ -119,11 +119,11 @@ class SalesMetricsConsistencyTest extends TestCase
         $broker = $dataset['brokers']['main'];
         $user = $broker->user;
         $returnedBoxIds = SalesDetails::query()
-            ->join('sales', 'sales.id', '=', 'sales_details.sale_id')
-            ->join('fish_box_purchases', 'fish_box_purchases.id', '=', 'sales_details.fish_box_purchase_id')
-            ->where('sales.broker_id', $broker->id)
-            ->whereIn('sales.status', SalesStatusConstant::getAllActiveStatuses())
-            ->pluck('fish_box_purchases.fish_box_id')
+            ->join('SalesTransaction', 'SalesTransaction.id', '=', 'TransactionLineItem.sale_id')
+            ->join('FishBoxStockCycle', 'FishBoxStockCycle.id', '=', 'TransactionLineItem.fish_box_purchase_id')
+            ->where('SalesTransaction.broker_id', $broker->id)
+            ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses())
+            ->pluck('FishBoxStockCycle.fish_box_id')
             ->map(fn ($id): int => (int) $id)
             ->all();
 

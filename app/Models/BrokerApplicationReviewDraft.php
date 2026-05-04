@@ -2,33 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class BrokerApplicationReviewDraft extends Model
+/**
+ * Backward-compatible name for application review drafts.
+ */
+class BrokerApplicationReviewDraft extends ApplicationReviewDraft
 {
-    use HasFactory;
-
-    protected $fillable = [
-        'broker_application_id',
-        'employee_id',
-        'draft_payload',
-        'last_saved_at',
-    ];
-
-    protected $casts = [
-        'draft_payload' => 'array',
-        'last_saved_at' => 'datetime',
-    ];
-
-    public function application(): BelongsTo
-    {
-        return $this->belongsTo(BrokerApplication::class, 'broker_application_id');
-    }
-
-    public function employee(): BelongsTo
-    {
-        return $this->belongsTo(Employee::class);
-    }
 }

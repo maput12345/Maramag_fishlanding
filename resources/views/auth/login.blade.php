@@ -7,7 +7,7 @@
     <div class="max-w-md w-full bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-xl p-8 space-y-8">
         <div>
             <div class="mx-auto h-32 w-32 rounded-lg flex items-center justify-center">
-                <img src="{{ asset('image/logo.png') }}" alt="" class="h-32 w-32 object-contain">
+                <img src="{{ asset('image/logo-small.png') }}" alt="" class="h-32 w-32 object-contain">
             </div>
             <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
                 MAANYAG MARAMAG

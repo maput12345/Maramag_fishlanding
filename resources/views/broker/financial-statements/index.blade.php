@@ -218,7 +218,7 @@
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Add Daily Adjustment</h3>
+                        <h3 class="panel-card__title">Add Daily Expenses</h3>
                     </div>
                 </div>
 
@@ -297,7 +297,7 @@
 
                     <button type="submit"
                             class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                        Save Daily Adjustment
+                        Save Daily Expense
                     </button>
                 </form>
             </div>
@@ -362,7 +362,7 @@
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Manual Adjustments</h3>
+                        <h3 class="panel-card__title">Expenses</h3>
                     </div>
                     <span class="panel-card__hint">{{ number_format(collect($entryGroups)->sum('entries_count')) }} entries</span>
                 </div>

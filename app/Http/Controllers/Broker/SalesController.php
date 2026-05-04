@@ -6,15 +6,15 @@ use App\Constants\FishBoxStatusConstant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SalesRequest;
 use App\Http\Requests\SalesPaymentRequest;
-use App\Models\Sales;
-use App\Models\SalesDetails;
-use App\Models\SalesPayment;
+use App\Models\SalesTransaction;
+use App\Models\TransactionLineItem;
+use App\Models\PaymentRecord;
 use App\Models\FishBox;
-use App\Models\BrokerFishType;
+use App\Models\BrokerFishTypeAssignment;
 use App\Models\FishType;
 use App\Constants\SalesStatusConstant;
 use App\Models\Broker;
-use App\Models\InventoryLog;
+use App\Models\InventoryMovement;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,11 +32,11 @@ class SalesController extends Controller
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        $salesToday = SalesPayment::getTotalSalesToday($brokerId);
-        $salesBalance = Sales::getTotalSalesBalance($brokerId);
-        $ordersToday = Sales::getTotalOrdersToday($brokerId);
-        $paidAmountToday = Sales::getTotalPaidAmountToday($brokerId);
-        $paidAmountYesterday = Sales::getTotalPaidAmountYesterday($brokerId);
+        $salesToday = PaymentRecord::getTotalSalesToday($brokerId);
+        $salesBalance = SalesTransaction::getTotalSalesBalance($brokerId);
+        $ordersToday = SalesTransaction::getTotalOrdersToday($brokerId);
+        $paidAmountToday = SalesTransaction::getTotalPaidAmountToday($brokerId);
+        $paidAmountYesterday = SalesTransaction::getTotalPaidAmountYesterday($brokerId);
 
         $totalFishBoxes = FishBox::getTotalFishBoxes($brokerId);
 
@@ -48,18 +48,18 @@ class SalesController extends Controller
 
         $paidAmountGrowthPercent = round($growthPercent, 2);
 
-        $recentSales = Sales::getRecentSales(4, $brokerId);
-        $dailySalesData = Sales::getDailySalesLast7Days($brokerId);
+        $recentSales = SalesTransaction::getRecentSales(4, $brokerId);
+        $dailySalesData = SalesTransaction::getDailySalesLast7Days($brokerId);
 
         // Get top selling items without date filter (use a very wide date range)
         $allTimeStart = '2020-01-01'; // Use a very early date
         $allTimeEnd = Carbon::now()->format('Y-m-d');
-        $topItems = Sales::getTopSellingItems($brokerId, $allTimeStart, $allTimeEnd, 5, null);
+        $topItems = SalesTransaction::getTopSellingItems($brokerId, $allTimeStart, $allTimeEnd, 5, null);
 
         // Get weekly sales data for this month only
         $thisMonthStart = Carbon::now()->startOfMonth()->format('Y-m-d');
         $thisMonthEnd = Carbon::now()->format('Y-m-d');
-        $weeklySalesData = Sales::getDailySalesForPeriod($brokerId, $thisMonthStart, $thisMonthEnd, null);
+        $weeklySalesData = SalesTransaction::getDailySalesForPeriod($brokerId, $thisMonthStart, $thisMonthEnd, null);
 
         return compact('ordersToday', 'salesToday', 'salesBalance',
             'recentSales', 'paidAmountGrowthPercent', 'totalFishBoxes',
@@ -81,34 +81,34 @@ class SalesController extends Controller
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        $sales = Sales::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+        $sales = SalesTransaction::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
         $fishBoxes = FishBox::getAvailableForSale($brokerId);
         $allFishTypes = FishType::getFishTypeByBrokerId($brokerId);
 
         // Filter fish types to only show those with available fish boxes in both create and edit modes
         $availableFishTypeIds = $fishBoxes->pluck('fish_type_id')->unique()->filter()->toArray();
         $fishTypes = $allFishTypes->whereIn('id', $availableFishTypeIds);
-        $fishPriceMap = BrokerFishType::query()
+        $fishPriceMap = BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
             ->with([
                 'latestPrice' => function ($query) {
                     $query->select([
-                        'fish_prices.id',
-                        'fish_prices.broker_fish_type_id',
-                        'fish_prices.price',
+                        'FishPriceRecord.id',
+                        'FishPriceRecord.broker_fish_type_id',
+                        'FishPriceRecord.price',
                     ]);
                 },
             ])
             ->where('broker_id', $brokerId)
             ->get()
-            ->filter(fn (BrokerFishType $assignment): bool => $assignment->latestPrice !== null)
-            ->mapWithKeys(function (BrokerFishType $assignment): array {
+            ->filter(fn (BrokerFishTypeAssignment $assignment): bool => $assignment->latestPrice !== null)
+            ->mapWithKeys(function (BrokerFishTypeAssignment $assignment): array {
                 return [
                     (string) $assignment->fish_type_id => (float) $assignment->latestPrice->price,
                 ];
             })
             ->all();
-        $salesSummary = Sales::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+        $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
 
         $salesStatuses = SalesStatusConstant::getAllStatuses();
         $salesStatusesWithDisplayNames = collect($salesStatuses)->mapWithKeys(function ($status) {
@@ -158,10 +158,10 @@ class SalesController extends Controller
         $status = $request->get('status');
 
         // Get analytics data using sales history for the selected period.
-        $analyticsData = Sales::getAnalyticsData($brokerId, $dateFrom, $dateTo, $status);
+        $analyticsData = SalesTransaction::getAnalyticsData($brokerId, $dateFrom, $dateTo, $status);
 
         // Get paginated sales for the period
-        $sales = Sales::getPaginatedWithFilters(
+        $sales = SalesTransaction::getPaginatedWithFilters(
             null,
             $request->get('status'),
             $brokerId,
@@ -200,7 +200,7 @@ class SalesController extends Controller
         $initialPayment = $this->extractInitialPaymentData($validated);
 
         // Create sales with details using the model method
-        Sales::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
+        SalesTransaction::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale created successfully!');
@@ -219,7 +219,7 @@ class SalesController extends Controller
      */
     public function update(SalesRequest $request, $id): RedirectResponse|JsonResponse
     {
-        $sale = Sales::findOrFail($id);
+        $sale = SalesTransaction::findOrFail($id);
         $validated = $request->validated();
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
@@ -245,7 +245,7 @@ class SalesController extends Controller
         $salesDetails = $validated['sales_details'] ?? [];
 
         // Update sales with details using the model method
-        Sales::updateSalesWithDetails($sale, $salesData, $salesDetails, $brokerId);
+        SalesTransaction::updateSalesWithDetails($sale, $salesData, $salesDetails, $brokerId);
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale updated successfully!');
@@ -263,7 +263,7 @@ class SalesController extends Controller
      */
     public function destroy(Request $request, $id): RedirectResponse|JsonResponse
     {
-        $sale = Sales::findOrFail($id);
+        $sale = SalesTransaction::findOrFail($id);
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
@@ -289,7 +289,7 @@ class SalesController extends Controller
                 foreach ($boxIds as $boxId) {
 
                     FishBox::updateStatus((int) $boxId, FishBoxStatusConstant::IN_STOCK, $userId);
-                    InventoryLog::deleteLogForFishBox((int) $boxId, $sale->created_at);
+                    InventoryMovement::deleteLogForFishBox((int) $boxId, $sale->created_at);
                 }
             }
 
@@ -315,7 +315,7 @@ class SalesController extends Controller
         $validated = $request->validated();
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $sale = $brokerId
-            ? Sales::query()->where('broker_id', $brokerId)->find($validated['sales_id'])
+            ? SalesTransaction::query()->where('broker_id', $brokerId)->find($validated['sales_id'])
             : null;
 
         if (!$sale) {
@@ -329,7 +329,7 @@ class SalesController extends Controller
 
         DB::transaction(function () use ($validated, $sale) {
             // Create the payment
-            SalesPayment::create([
+            PaymentRecord::create([
                 'sale_id' => $sale->id,
                 'paid_amount' => $validated['paid_amount'],
                 'payment_date' => $validated['payment_date'],
@@ -357,7 +357,7 @@ class SalesController extends Controller
      */
     public function destroyPayment(Request $request, $id): RedirectResponse|JsonResponse
     {
-        $payment = SalesPayment::findOrFail($id);
+        $payment = PaymentRecord::findOrFail($id);
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
@@ -463,16 +463,16 @@ class SalesController extends Controller
      * @param string $modalType
      * @param string $paramName
      * @param array $withRelations
-     * @return Sales|null
+     * @return SalesTransaction|null
      */
-    private function getModalSales(Request $request, string $modalType, string $paramName, array $withRelations = []): ?Sales
+    private function getModalSales(Request $request, string $modalType, string $paramName, array $withRelations = []): ?SalesTransaction
     {
         if ($request->get('modal') !== $modalType || !$request->has($paramName)) {
             return null;
         }
 
         $salesId = $request->get($paramName);
-        $query = Sales::query();
+        $query = SalesTransaction::query();
 
         if (!empty($withRelations)) {
             $query->with($withRelations);
@@ -490,10 +490,10 @@ class SalesController extends Controller
     /**
      * Check if the current broker has access to the sales record
      *
-     * @param Sales $sales
+     * @param SalesTransaction $sales
      * @return bool
      */
-    private function authorizeSalesAccess(Sales $sales): bool
+    private function authorizeSalesAccess(SalesTransaction $sales): bool
     {
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
@@ -505,10 +505,10 @@ class SalesController extends Controller
      * Prepare fish boxes for editing mode by including already selected boxes
      *
      * @param \Illuminate\Database\Eloquent\Collection $fishBoxes
-     * @param Sales|null $editingSales
+     * @param SalesTransaction|null $editingSales
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    private function prepareFishBoxesForEdit($fishBoxes, ?Sales $editingSales)
+    private function prepareFishBoxesForEdit($fishBoxes, ?SalesTransaction $editingSales)
     {
         if (!$editingSales || $editingSales->salesDetails->count() === 0) {
             return $fishBoxes;
@@ -523,10 +523,10 @@ class SalesController extends Controller
      * Prepare fish types for editing mode by including already selected boxes
      *
      * @param \Illuminate\Database\Eloquent\Collection $fishTypes
-     * @param Sales|null $editingSales
+     * @param SalesTransaction|null $editingSales
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    private function prepareFishTypeForEdit($fishTypes, ?Sales $editingSales)
+    private function prepareFishTypeForEdit($fishTypes, ?SalesTransaction $editingSales)
     {
         $selectedBoxIds = $editingSales->salesDetails->pluck('box_id')->flatten()->unique()->toArray();
         $selectedFishBoxes = FishBox::whereIn('id', $selectedBoxIds)->get();
@@ -545,10 +545,10 @@ class SalesController extends Controller
      * Prepare sales details for form display
      *
      * @param Request $request
-     * @param Sales|null $editingSales
+     * @param SalesTransaction|null $editingSales
      * @return array
      */
-    private function prepareSalesDetailsForForm(Request $request, ?Sales $editingSales): array
+    private function prepareSalesDetailsForForm(Request $request, ?SalesTransaction $editingSales): array
     {
         if ($request->get('modal') === 'edit' && $editingSales) {
             return $editingSales->salesDetails->map(function($detail) {

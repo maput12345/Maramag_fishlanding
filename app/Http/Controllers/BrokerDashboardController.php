@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Broker\SalesController;
-use App\Models\Sales;
+use App\Models\SalesTransaction;
 use App\Models\Broker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Broker;
-use App\Models\Sales;
+use App\Models\SalesTransaction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Validator;
@@ -26,7 +26,7 @@ class SalesPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sales_id' => 'required|exists:sales,id',
+            'sales_id' => 'required|exists:SalesTransaction,id',
             'paid_amount' => [
                 'required',
                 'numeric',
@@ -96,13 +96,13 @@ class SalesPaymentRequest extends FormRequest
             return false;
         }
 
-        return Sales::query()->whereKey($salesId)->exists();
+        return SalesTransaction::query()->whereKey($salesId)->exists();
     }
 
     /**
      * Get the submitted sale only when it belongs to the current broker.
      */
-    private function getAuthorizedSale(): ?Sales
+    private function getAuthorizedSale(): ?SalesTransaction
     {
         $salesId = $this->input('sales_id');
         $brokerId = $this->resolveCurrentBrokerId();
@@ -111,7 +111,7 @@ class SalesPaymentRequest extends FormRequest
             return null;
         }
 
-        return Sales::query()
+        return SalesTransaction::query()
             ->whereKey($salesId)
             ->where('broker_id', $brokerId)
             ->first();

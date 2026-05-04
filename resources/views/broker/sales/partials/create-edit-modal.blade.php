@@ -70,7 +70,7 @@
         {{-- Unified Sale Modal --}}
         <x-app-modal
             :title="request('modal') === 'create' ? 'Transaction' : 'Edit Sale'"
-            :subtitle="request('modal') === 'create' ? 'Build a sale clearly, assign boxes automatically, and keep buyer details in one place.' : 'Review and update this sale without losing the itemized details.'"
+            :subtitle="request('modal') === 'create' ? 'Assign boxes automatically, and keep buyer details in one place.' : 'Review and update this sale without losing the itemized details.'"
             :close-url="$salesBaseUrl"
             max-width="7xl"
             body-class="workspace-popup__body--soft"
@@ -122,9 +122,6 @@
                     <label class="block text-sm font-medium text-gray-700">
                         Sales Details <span class="text-red-500">*</span>
                     </label>
-                    <p class="text-xs text-gray-500">
-                        Price per box auto-fills from your current broker fish price list when available. If a fish has no saved selling price yet, you can still enter it manually here.
-                    </p>
 
                     <div class="space-y-4" id="sales-details-container">
                         @foreach($salesDetails as $index => $detail)

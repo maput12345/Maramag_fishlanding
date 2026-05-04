@@ -7,7 +7,7 @@ use App\Models\Broker;
 use App\Models\User;
 use App\Constants\FishBoxStatusConstant;
 use App\Constants\InventoryLogActionConstant;
-use App\Models\InventoryLog;
+use App\Models\InventoryMovement;
 use App\Repositories\SalesRepository;
 use Illuminate\Http\Request;
 
@@ -38,7 +38,7 @@ class AdminDashboardController extends Controller
         $topBrokers = $this->salesRepository->getTopBrokersWithFishBoxCount();
 
         // Get top fish types sold
-        $topFishTypes = InventoryLog::getTopFishTypesSold();
+        $topFishTypes = InventoryMovement::getTopFishTypesSold();
 
         // Get current missing boxes with broker ownership
         $currentMissingBoxes = FishBox::getCurrentMissingBoxes();

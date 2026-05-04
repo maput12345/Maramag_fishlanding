@@ -10,6 +10,8 @@ class Role extends Model
 {
     use HasFactory;
 
+    protected $table = 'Role';
+
     protected $fillable = [
         'role_name',
         'description',
@@ -20,6 +22,6 @@ class Role extends Model
      */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'user_roles')->withTimestamps();
+        return $this->belongsToMany(User::class, 'UserRoleAssignment')->withTimestamps();
     }
 }

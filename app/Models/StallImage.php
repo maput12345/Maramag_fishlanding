@@ -10,6 +10,8 @@ class StallImage extends Model
 {
     use HasFactory;
 
+    protected $table = 'StallImage';
+
     protected $fillable = [
         'stall_id',
         'image_path',

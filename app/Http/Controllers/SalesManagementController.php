@@ -7,7 +7,7 @@ use App\Models\FishBox;
 use App\Models\Broker;
 use App\Models\FishType;
 use App\Constants\FishBoxStatusConstant;
-use App\Models\InventoryLog;
+use App\Models\InventoryMovement;
 use App\Repositories\SalesRepository;
 use App\Repositories\InventoryRepository;
 use Illuminate\Http\Request;
@@ -146,7 +146,7 @@ class SalesManagementController extends Controller
         ];
 
         $trackedFishBoxes = FishBox::getAdminTrackingStatuses($action, $dateFrom, $dateTo, 12, 'tracking_page');
-        $inventoryLogs = InventoryLog::getPaginatedWithFilters($action, $dateFrom, $dateTo, 12, 'history_page');
+        $inventoryLogs = InventoryMovement::getPaginatedWithFilters($action, $dateFrom, $dateTo, 12, 'history_page');
 
         return [
             'summary' => $summary,

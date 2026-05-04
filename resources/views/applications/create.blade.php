@@ -8,6 +8,8 @@
     $visibleRequirementCount = collect($requirementDefinitions)
         ->filter(fn (array $definition) => in_array($definition['audience'], [$selectedApplicantType, $sharedApplicantType], true))
         ->count();
+    $stall = $opening->stall;
+    $stallGallery = $stall?->gallery_image_urls ?? [];
 @endphp
 
 @section('body-class', 'portal-shell theme-admin')
@@ -44,89 +46,10 @@
         <form method="POST"
               action="{{ route('applications.store', $opening) }}"
               enctype="multipart/form-data"
-              class="portal-form-shell">
+              class="portal-form-shell"
+              data-application-autosave-form
+              data-autosave-key="broker-application-draft:{{ auth()->id() }}:{{ $opening->id }}">
             @csrf
-
-            @php
-                $stallGallery = $opening->stall?->gallery_image_urls ?? [];
-                $primaryStallImage = $stallGallery[0] ?? null;
-            @endphp
-
-            <section class="portal-section-card">
-                <div class="portal-section-card__header">
-                    <div>
-                        <p class="portal-section-card__eyebrow">Selected Stall</p>
-                        <h1 class="portal-section-card__title">{{ $opening->stall?->display_name ?? 'Open Stall Application' }}</h1>
-                        <p class="portal-section-card__description">Review the stall exterior, surrounding location, and schedule details before submitting your application.</p>
-                    </div>
-                    <span class="portal-status-badge portal-status-badge--open">{{ $opening->opening_status }}</span>
-                </div>
-
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                        @if($primaryStallImage)
-                            <img src="{{ $primaryStallImage }}"
-                                 alt="{{ $opening->stall->display_name }} exterior"
-                                 class="h-full w-full object-cover"
-                                 style="height: 18rem;">
-                        @else
-                            <div class="flex items-center justify-center text-slate-500" style="height: 18rem;">
-                                <div class="text-center">
-                                    <x-heroicon-o-photo class="mx-auto h-8 w-8 text-slate-400" />
-                                    <p class="mt-3 text-sm">No stall image uploaded yet</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-
-                    <div class="portal-detail-list">
-                        <div class="portal-detail-item">
-                            <div class="portal-detail-item__icon">
-                                <x-heroicon-o-calendar-days class="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p class="portal-detail-item__label">Application Window</p>
-                                <p class="portal-detail-item__value">{{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}</p>
-                            </div>
-                        </div>
-
-                        <div class="portal-detail-item">
-                            <div class="portal-detail-item__icon portal-detail-item__icon--gold">
-                                <x-heroicon-o-clock class="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p class="portal-detail-item__label">Bidding Schedule</p>
-                                <p class="portal-detail-item__value">{{ optional($opening->bidding_date)->format('M d, Y') ?? 'Not set' }}</p>
-                            </div>
-                        </div>
-
-                        @if($opening->stall?->remarks)
-                            <div class="portal-detail-item">
-                                <div class="portal-detail-item__icon">
-                                    <x-heroicon-o-map-pin class="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p class="portal-detail-item__label">Location Details</p>
-                                    <p class="portal-detail-item__value">{{ $opening->stall->remarks }}</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                @if(count($stallGallery) > 1)
-                    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                        @foreach(array_slice($stallGallery, 1) as $galleryImage)
-                            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-                                <img src="{{ $galleryImage }}"
-                                     alt="{{ $opening->stall->display_name }} gallery view"
-                                     class="h-full w-full object-cover"
-                                     style="height: 7rem;">
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </section>
 
             @if($errors->any())
                 <div class="portal-alert-stack">
@@ -150,13 +73,76 @@
             <section class="portal-section-card portal-section-card--form">
                 <div class="portal-section-card__header">
                     <div>
+                    </div>
+                    <span class="portal-status-badge portal-status-badge--open">{{ $opening->opening_status }}</span>
+                </div>
+
+                @if(count($stallGallery) > 0)
+                    <div class="stall-gallery-modal__grid">
+                        @foreach($stallGallery as $galleryImage)
+                            <a href="{{ $galleryImage }}" target="_blank" rel="noopener" class="stall-gallery-modal__image-link">
+                                <img
+                                    src="{{ $galleryImage }}"
+                                    alt="{{ $stall?->display_name ?? 'Stall' }} photo {{ $loop->iteration }}"
+                                    class="stall-gallery-modal__image"
+                                >
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="portal-detail-list">
+                    <div class="portal-detail-item">
+                        <div class="portal-detail-item__icon">
+                            <x-heroicon-o-calendar-days class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="portal-detail-item__label">Application Window</p>
+                            <p class="portal-detail-item__value">
+                                {{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    @if($opening->bidding_location)
+                        <div class="portal-detail-item">
+                            <div class="portal-detail-item__icon portal-detail-item__icon--gold">
+                                <x-heroicon-o-map-pin class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="portal-detail-item__label">Bidding Location</p>
+                                <p class="portal-detail-item__value">{{ $opening->bidding_location }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($stall?->remarks)
+                        <div class="portal-detail-item">
+                            <div class="portal-detail-item__icon">
+                                <x-heroicon-o-document-text class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="portal-detail-item__label">Description</p>
+                                <p class="portal-detail-item__value">{{ $stall->remarks }}</p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </section>
+
+            <section class="portal-section-card portal-section-card--form">
+                <div class="portal-section-card__header">
+                    <div>
                         <p class="portal-section-card__eyebrow">Application Form</p>
                         <h2 class="portal-section-card__title">Applicant Details</h2>
                         <p class="portal-section-card__description">
                             Complete one broker application for the current available stall openings. Provide the personal or representative information that will appear on your submission.
                         </p>
                     </div>
-                    <span class="portal-count-pill">Step 1 of 2</span>
+                    <div class="flex flex-col items-start gap-2 sm:items-end">
+                        <span class="portal-count-pill">Step 1 of 2</span>
+                        <span class="portal-count-pill" data-autosave-status>Draft saved</span>
+                    </div>
                 </div>
 
                 <div class="portal-form-grid">
@@ -361,18 +347,21 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const applicationForm = document.querySelector('[data-application-autosave-form]');
     const applicantTypeSelect = document.getElementById('applicant_type');
 
     if (!applicantTypeSelect) {
         return;
     }
 
+    const hasServerErrors = @json($errors->any());
     const sharedApplicantType = @json($sharedApplicantType);
     const requirementItems = document.querySelectorAll('[data-requirement-item]');
     const businessInput = document.querySelector('[data-business-input]');
     const businessBadge = document.querySelector('[data-business-badge]');
     const businessHint = document.querySelector('[data-business-hint]');
     const checklistCountPill = document.querySelector('[data-checklist-count-pill]');
+    const autosaveStatus = document.querySelector('[data-autosave-status]');
     const juridicalType = @json(\App\Models\RequirementType::APPLICANT_TYPE_JURIDICAL);
 
     const updateRequirementVisibility = () => {
@@ -420,7 +409,120 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    const initApplicationAutosave = () => {
+        if (!applicationForm || !applicationForm.dataset.autosaveKey) {
+            return;
+        }
+
+        const storageKey = applicationForm.dataset.autosaveKey;
+        let saveTimer = null;
+
+        const setAutosaveStatus = (message) => {
+            if (autosaveStatus) {
+                autosaveStatus.textContent = message;
+            }
+        };
+
+        const storageIsAvailable = () => {
+            try {
+                const testKey = `${storageKey}:test`;
+                window.localStorage.setItem(testKey, '1');
+                window.localStorage.removeItem(testKey);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
+
+        if (!storageIsAvailable()) {
+            setAutosaveStatus('Autosave unavailable');
+            return;
+        }
+
+        const autosaveFields = () => Array.from(applicationForm.elements).filter((field) => {
+            return field.name
+                && field.name !== '_token'
+                && field.type !== 'file'
+                && field.type !== 'hidden'
+                && ['INPUT', 'SELECT', 'TEXTAREA'].includes(field.tagName);
+        });
+
+        const restoreDraft = () => {
+            if (hasServerErrors) {
+                return;
+            }
+
+            try {
+                const savedDraft = JSON.parse(window.localStorage.getItem(storageKey) || '{}');
+                const savedFields = savedDraft.fields || {};
+
+                autosaveFields().forEach((field) => {
+                    if (!Object.prototype.hasOwnProperty.call(savedFields, field.name)) {
+                        return;
+                    }
+
+                    if (field.type === 'checkbox') {
+                        field.checked = Boolean(savedFields[field.name]);
+                        return;
+                    }
+
+                    if (field.type === 'radio') {
+                        field.checked = savedFields[field.name] === field.value;
+                        return;
+                    }
+
+                    field.value = savedFields[field.name] ?? '';
+                });
+
+                if (Object.keys(savedFields).length > 0) {
+                    setAutosaveStatus('Draft restored');
+                }
+            } catch (error) {
+                window.localStorage.removeItem(storageKey);
+            }
+        };
+
+        const saveDraft = () => {
+            const fields = {};
+
+            autosaveFields().forEach((field) => {
+                if (field.type === 'checkbox') {
+                    fields[field.name] = field.checked;
+                    return;
+                }
+
+                if (field.type === 'radio') {
+                    if (field.checked) {
+                        fields[field.name] = field.value;
+                    }
+                    return;
+                }
+
+                fields[field.name] = field.value;
+            });
+
+            window.localStorage.setItem(storageKey, JSON.stringify({
+                updatedAt: new Date().toISOString(),
+                fields,
+            }));
+            setAutosaveStatus('Draft saved');
+        };
+
+        const queueSave = () => {
+            setAutosaveStatus('Saving draft...');
+            window.clearTimeout(saveTimer);
+            saveTimer = window.setTimeout(saveDraft, 300);
+        };
+
+        restoreDraft();
+
+        applicationForm.addEventListener('input', queueSave);
+        applicationForm.addEventListener('change', queueSave);
+        applicationForm.addEventListener('submit', saveDraft);
+    };
+
     applicantTypeSelect.addEventListener('change', updateRequirementVisibility);
+    initApplicationAutosave();
     updateRequirementVisibility();
 });
 </script>

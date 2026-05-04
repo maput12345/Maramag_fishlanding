@@ -17,13 +17,13 @@ class StoreApplicationOpeningRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'stall_id' => ['required', 'exists:stalls,id'],
+            'stall_id' => ['required', 'exists:Stall,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'bidding_date' => ['required', 'date', 'after_or_equal:start_date'],
             'bidding_location' => ['required', 'string', 'max:255'],
             'requirement_type_ids' => ['required', 'array', 'min:1'],
-            'requirement_type_ids.*' => ['integer', 'exists:requirement_types,id'],
+            'requirement_type_ids.*' => ['integer', 'exists:RequirementType,id'],
         ];
     }
 
