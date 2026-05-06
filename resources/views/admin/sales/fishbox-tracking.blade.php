@@ -41,7 +41,7 @@
                 <div class="filter-layout">
                     <div class="search-field">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select name="action" x-model="action" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <select name="action" x-model="action" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Status</option>
                             @foreach($actions as $action)
                                 <option value="{{ $action }}" {{ request('action') == $action ? 'selected' : '' }}>{{ $action }}</option>
@@ -120,16 +120,7 @@
                                     <div class="text-xs md:text-sm text-gray-900">{{ $fishBox->fish_type_name ?? 'N/A' }}</div>
                                 </td>
                                 <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                                    @php
-                                        $statusColors = [
-                                            'Returned' => 'bg-yellow-100 text-yellow-800',
-                                            'Missing' => 'bg-red-100 text-red-800',
-                                        ];
-                                        $statusClass = $statusColors[$fishBox->status] ?? 'bg-gray-100 text-gray-800';
-                                    @endphp
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
-                                        {{ $fishBox->status }}
-                                    </span>
+                                    <x-status-badge :status="$fishBox->status" size="sm" />
                                 </td>
                                 <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 font-mono">
                                     {{ Str::limit($fishBox->qr_code ?? 'N/A', 12) }}
@@ -206,28 +197,12 @@
                                 </td>
                                 <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
                                     @php
-                                        $actionColors = [
-                                            'Returned' => 'bg-yellow-100 text-yellow-800',
-                                            'Missing' => 'bg-red-100 text-red-800',
-                                        ];
-                                        $colorClass = $actionColors[$log->action] ?? 'bg-gray-100 text-gray-800';
                                         $currentStatus = $log->fishBox?->status;
-                                        $currentStatusColors = [
-                                            'In Stock' => 'bg-emerald-100 text-emerald-800',
-                                            'Sold' => 'bg-blue-100 text-blue-800',
-                                            'Returned' => 'bg-yellow-100 text-yellow-800',
-                                            'Missing' => 'bg-red-100 text-red-800',
-                                        ];
-                                        $currentStatusClass = $currentStatusColors[$currentStatus] ?? 'bg-gray-100 text-gray-800';
                                     @endphp
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $colorClass }}">
-                                        {{ $log->action }}
-                                    </span>
+                                    <x-status-badge :status="$log->action" size="sm" />
                                 </td>
                                 <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $currentStatusClass }}">
-                                        {{ $currentStatus ?? 'N/A' }}
-                                    </span>
+                                    <x-status-badge :status="$currentStatus ?? 'N/A'" size="sm" />
                                 </td>
                                 <td class="px-3 py-3 md:px-6 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 font-mono">
                                     {{ Str::limit($log->fishBox?->qr_code ?? 'N/A', 12) }}

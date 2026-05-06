@@ -74,12 +74,11 @@ class SalesFormPriceAutofillTest extends TestCase
 
         $this->actingAs($user);
 
-        $response = $this->get(route('broker.sales.sales', [
-            'modal' => 'create',
-        ], false));
+        $response = $this->get(route('broker.transaction', [], false));
 
         $response->assertOk();
         $response->assertSee('Transaction');
+        $response->assertSee('data-sales-form-root', false);
         $response->assertSee('Price per box auto-fills from your current broker fish price list when available.');
         $response->assertSee('data-suggested-price="180.5"', false);
         $response->assertSee('data-currency-input="true"', false);

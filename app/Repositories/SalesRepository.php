@@ -351,9 +351,9 @@ class SalesRepository
     private function getStatusBackgroundClass(string $status): string
     {
         return match ($status) {
-            SalesStatusConstant::PAID => 'bg-green-50',
-            SalesStatusConstant::ACTIVE => 'bg-yellow-50',
-            SalesStatusConstant::PARTIALLY_PAID => 'bg-blue-50',
+            SalesStatusConstant::PAID => 'bg-emerald-50',
+            SalesStatusConstant::ACTIVE => 'bg-amber-50',
+            SalesStatusConstant::PARTIALLY_PAID => 'bg-orange-50',
             default => 'bg-gray-50'
         };
     }
@@ -364,9 +364,9 @@ class SalesRepository
     private function getStatusProgressColor(string $status): string
     {
         return match ($status) {
-            SalesStatusConstant::PAID => 'bg-green-500',
-            SalesStatusConstant::ACTIVE => 'bg-yellow-500',
-            SalesStatusConstant::PARTIALLY_PAID => 'bg-blue-500',
+            SalesStatusConstant::PAID => 'bg-emerald-500',
+            SalesStatusConstant::ACTIVE => 'bg-amber-500',
+            SalesStatusConstant::PARTIALLY_PAID => 'bg-orange-500',
             default => 'bg-gray-500'
         };
     }

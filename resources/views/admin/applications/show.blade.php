@@ -4,7 +4,7 @@
     $requirementsVerified = $application->canBeQualified();
     $canConfirmWinner = !$application->broker && $application->application_status === 'Qualified' && $requirementsVerified;
     $winnerAlreadyConfirmed = (bool) $application->broker;
-    $openingHasBiddingSchedule = (bool) ($application->applicationOpening?->bidding_date && $application->applicationOpening?->bidding_location);
+    $openingHasBiddingSchedule = (bool) ($application->applicationOpening?->bidding_date && $application->applicationOpening?->bidding_time && $application->applicationOpening?->bidding_location);
     $reviewStallLabel = $application->selectedStall?->display_name
         ?? ($application->application_status === 'Winner'
             ? ($application->applicationOpening?->stall?->display_name ?? 'Awarded stall')
@@ -13,11 +13,7 @@
     $reviewDraftRequirements = collect($reviewDraftPayload['requirements'] ?? [])
         ->filter(fn ($draftRequirement) => is_array($draftRequirement))
         ->keyBy(fn ($draftRequirement) => (int) ($draftRequirement['id'] ?? 0));
-    $statusBadgeClass = match ($application->application_status) {
-        'Qualified', 'Winner' => 'app-status-badge--active',
-        'Rejected', 'Not Selected' => 'app-status-badge--inactive',
-        default => 'app-status-badge--neutral',
-    };
+    $isRevisionResubmission = $application->isRevisionResubmission();
 @endphp
 
 @section('content')
@@ -29,10 +25,12 @@
                 <p class="app-page-kicker">Application Review</p>
                 <h1 class="app-page-title">{{ $application->name }}</h1>
                 <p class="app-page-description">
-                    {{ $reviewStallLabel }} - submitted {{ optional($application->submitted_at)->format('M d, Y h:i A') ?? 'N/A' }}
+                    {{ $reviewStallLabel }} -
+                    {{ $isRevisionResubmission ? 'resubmitted' : 'submitted' }}
+                    {{ optional($isRevisionResubmission ? $application->revision_resubmitted_at : $application->submitted_at)->format('M d, Y h:i A') ?? 'N/A' }}
                 </p>
             </div>
-            <span class="app-status-badge {{ $statusBadgeClass }}">{{ $application->application_status }}</span>
+            <x-status-badge :status="$application->application_status" />
         </div>
     </section>
 
@@ -50,14 +48,23 @@
     @unless($openingHasBiddingSchedule)
         <section class="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900 shadow-sm">
             <p class="font-semibold">Bidding schedule is incomplete.</p>
-            <p class="mt-2">Set the bidding start date and bidding location on the application opening before marking this applicant as qualified.</p>
+            <p class="mt-2">Set the bidding date, time, and location on the application opening before marking this applicant as qualified.</p>
         </section>
     @endunless
 
-    @if($reviewDraft?->last_saved_at)
-        <section class="rounded-3xl border border-sky-200 bg-sky-50 p-6 text-sm text-sky-900 shadow-sm">
-            <p class="font-semibold">Autosaved draft restored.</p>
-            <p class="mt-2">Your unfinished review remarks were restored from {{ $reviewDraft->last_saved_at->format('M d, Y h:i A') }}. Click <span class="font-semibold">Save Review</span> when the official review is ready.</p>
+    @if($isRevisionResubmission)
+        <section class="rounded-3xl border border-orange-200 bg-orange-50 p-6 text-sm text-orange-900 shadow-sm">
+            <div class="flex items-start gap-3">
+                <x-heroicon-o-arrow-path class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600" />
+                <div>
+                    <p class="font-semibold">Revision Resubmitted</p>
+                    <p class="mt-2">
+                        The applicant submitted updated revision items on
+                        {{ optional($application->revision_resubmitted_at)->format('M d, Y h:i A') }}.
+                        This is revision attempt #{{ $application->revision_count }}.
+                    </p>
+                </div>
+            </div>
         </section>
     @endif
 
@@ -96,8 +103,12 @@
                     <dd class="mt-1 text-sm text-slate-900">{{ $application->selectedBy?->name ?? 'Pending' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Start Date</dt>
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Date</dt>
                     <dd class="mt-1 text-sm text-slate-900">{{ optional($application->applicationOpening?->bidding_date)->format('M d, Y') ?? 'Not set' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Time</dt>
+                    <dd class="mt-1 text-sm text-slate-900">{{ optional($application->applicationOpening?->bidding_time)->format('h:i A') ?? 'Not set' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Location</dt>
@@ -127,7 +138,7 @@
                         @csrf
                         <div>
                             <label for="selected_stall_id" class="block text-sm font-medium text-slate-700">Awarded Stall</label>
-                            <select id="selected_stall_id" name="selected_stall_id" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                            <select id="selected_stall_id" name="selected_stall_id" class="app-select mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                                 <option value="">Select the stall to award</option>
                                 @foreach($availableWinnerStalls as $stall)
                                     <option value="{{ $stall->id }}" {{ (string) old('selected_stall_id', $application->selected_stall_id) === (string) $stall->id ? 'selected' : '' }}>
@@ -211,7 +222,9 @@
                                 );
                             @endphp
                             <input type="hidden" name="requirements[{{ $loop->index }}][id]" value="{{ $requirement->id }}">
-                            <select name="requirements[{{ $loop->index }}][verification_status]" class="rounded-full border border-slate-300 px-4 py-2 text-sm">
+                            <select name="requirements[{{ $loop->index }}][verification_status]"
+                                    class="app-select requirement-status-select rounded-full border border-slate-300 px-4 py-2 text-sm"
+                                    data-requirement-status-select>
                                 @foreach(['Pending', 'Verified', 'Rejected'] as $verificationStatus)
                                     <option value="{{ $verificationStatus }}" {{ $selectedVerificationStatus === $verificationStatus ? 'selected' : '' }}>
                                         {{ $verificationStatus }}
@@ -231,7 +244,7 @@
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label for="application_status" class="block text-sm font-medium text-slate-700">Overall Application Status</label>
-                    <select id="application_status" name="application_status" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                    <select id="application_status" name="application_status" class="app-select mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                         @foreach(['Under Review', 'Needs Revision', 'Rejected', 'Qualified'] as $reviewStatus)
                             <option value="{{ $reviewStatus }}" {{ old('application_status', $reviewDraftPayload['application_status'] ?? $application->application_status) === $reviewStatus ? 'selected' : '' }}>
                                 {{ $reviewStatus }}
@@ -276,6 +289,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let autosaveTimer = null;
     let activeRequest = null;
     let isSubmittingOfficialReview = false;
+    const verificationStatusSelects = form.querySelectorAll('[data-requirement-status-select]');
+    const verificationStatusClasses = [
+        'requirement-status-select--pending',
+        'requirement-status-select--verified',
+        'requirement-status-select--rejected',
+    ];
+
+    const updateVerificationStatusColor = (select) => {
+        select.classList.remove(...verificationStatusClasses);
+
+        const statusClass = {
+            Pending: 'requirement-status-select--pending',
+            Verified: 'requirement-status-select--verified',
+            Rejected: 'requirement-status-select--rejected',
+        }[select.value] || 'requirement-status-select--pending';
+
+        select.classList.add(statusClass);
+    };
+
+    verificationStatusSelects.forEach((select) => {
+        updateVerificationStatusColor(select);
+        select.addEventListener('change', () => updateVerificationStatusColor(select));
+    });
 
     const setStatus = (message) => {
         if (statusEl) {

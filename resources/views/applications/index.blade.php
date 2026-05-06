@@ -1,33 +1,19 @@
-@extends('layouts.app')
+@extends('layouts.applicant')
 
 @php
     $openingsCount = $openings->count();
-    $applicationsCount = $applications->count();
+    $currentApplicationStatus = $currentApplication?->application_status ?? 'No submission yet';
 @endphp
 
-@section('body-class', 'portal-shell theme-admin')
-
 @section('content')
-<div class="portal-page">
-    <div class="portal-stage">
-        <div class="portal-topbar">
-            <div class="portal-topbar__brand">
-                <span class="portal-brand-pill">LEEO Digital Services</span>
+<div class="portal-page portal-page--broker-aligned">
+    <div class="portal-stage portal-stage--broker-aligned dashboard-shell">
+        <div class="applicant-dashboard-header">
+            <div class="dashboard-header">
                 <div>
-                    <p class="portal-topbar__title">Broker Application Portal</p>
+                    <h1 class="dashboard-title">Applicant Dashboard</h1>
                 </div>
             </div>
-
-            <a href="{{ route('logout') }}"
-               onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-               class="portal-button portal-button--ghost">
-                <x-heroicon-o-arrow-right-on-rectangle class="portal-button__icon" />
-                <span>Logout</span>
-            </a>
-
-            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
-                @csrf
-            </form>
         </div>
 
         @if(session('success') || session('error') || session('info'))
@@ -46,24 +32,55 @@
             </div>
         @endif
 
-        <section id="open-stalls" class="portal-section-card">
-            <div class="portal-section-card__header">
+        <div class="metric-grid applicant-metric-grid">
+            <div class="metric-card metric-card--primary">
+                <div class="metric-card__row">
+                    <div>
+                        <p class="metric-card__eyebrow">Open Stall Applications</p>
+                        <p class="metric-card__value">{{ number_format($openingsCount) }}</p>
+                        <p class="metric-card__meta">{{ $openingsCount === 1 ? 'Opening available now' : 'Openings available now' }}</p>
+                    </div>
+                    <span class="metric-card__icon">
+                        <x-heroicon-o-building-storefront />
+                    </span>
+                </div>
+            </div>
+
+            <div class="metric-card metric-card--success">
+                <div class="metric-card__row">
+                    <div>
+                        <p class="metric-card__eyebrow">Current Application Status</p>
+                        <div class="mt-2">
+                            <x-status-badge :status="$currentApplicationStatus" size="lg" />
+                        </div>
+                        <p class="metric-card__meta">{{ $currentApplication ? 'Track details under My Applications' : 'Submit when a stall is open' }}</p>
+                    </div>
+                    <span class="metric-card__icon">
+                        <x-heroicon-o-document-check />
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <section id="open-stalls" class="panel-card applicant-panel-card">
+            <div class="panel-card__inner">
+            <div class="panel-card__header applicant-panel-card__header">
                 <div>
-                    <p class="portal-section-card__eyebrow">Available Openings</p>
-                    <h2 class="portal-section-card__title">Open Stall Applications</h2>
-                    <p class="portal-section-card__description">Submit one application for the current vacant stalls. LEEO will assign the final stall after review and bidding.</p>
+                    <h2 class="panel-card__title">Open Stall Applications</h2>
+                    <p class="panel-card__hint">Submit one application for the current vacant stalls. LEEO will assign the final stall after review and bidding.</p>
                 </div>
                 <span class="portal-count-pill">{{ $openingsCount }} {{ $openingsCount === 1 ? 'opening' : 'openings' }}</span>
             </div>
 
             @if($openingsCount > 0)
-                <div class="mb-6">
+                <div class="applicant-action-strip">
                     @if($currentApplication)
                         <div class="portal-inline-alert portal-inline-alert--success">
                             You already submitted an application for the current open stalls.
                         </div>
                     @elseif($primaryOpening)
                         <a href="{{ route('applications.create', $primaryOpening) }}" class="portal-button portal-button--primary portal-button--cta">
+                            <x-heroicon-o-paper-airplane class="portal-button__icon" />
                             <span>Apply Now</span>
                         </a>
                     @endif
@@ -75,26 +92,13 @@
                     @php
                         $stallGallery = $opening->stall?->gallery_image_urls ?? [];
                     @endphp
-                    <article class="portal-card portal-card--stall">
-                        @if(count($stallGallery) > 0)
-                            <div class="mb-5">
-                                <button
-                                    type="button"
-                                    class="portal-button portal-button--secondary"
-                                    data-stall-gallery-open="{{ $opening->id }}"
-                                >
-                                    <x-heroicon-o-photo class="portal-button__icon" />
-                                    <span>View Photos</span>
-                                </button>
-                            </div>
-                        @endif
-
+                    <article class="portal-card portal-card--stall applicant-stall-card">
                         <div class="portal-card__split">
                             <div>
                                 <p class="portal-card__eyebrow">Vacant Stall</p>
                                 <h3 class="portal-card__title">{{ $opening->stall?->display_name ?? 'Unassigned Stall' }}</h3>
                             </div>
-                            <span class="portal-status-badge portal-status-badge--open">{{ $opening->opening_status }}</span>
+                            <x-status-badge :status="$opening->opening_status" />
                         </div>
 
                         <div class="portal-detail-list">
@@ -120,16 +124,34 @@
                                 </div>
                             </div>
 
-                            @if($opening->stall?->remarks)
+                            @if($opening->stall?->address || $opening->stall?->area_sqm)
                                 <div class="portal-detail-item">
                                     <div class="portal-detail-item__icon">
                                         <x-heroicon-o-document-text class="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <p class="portal-detail-item__label">Description</p>
-                                        <p class="portal-detail-item__value">{{ $opening->stall->remarks }}</p>
+                                        <p class="portal-detail-item__label">Location and Size</p>
+                                        <p class="portal-detail-item__value">
+                                            {{ $opening->stall->address ?: 'No address recorded' }}
+                                            @if($opening->stall->area_sqm)
+                                                - {{ number_format((float) $opening->stall->area_sqm, 2) }} sqm
+                                            @endif
+                                        </p>
                                     </div>
                                 </div>
+                            @endif
+                        </div>
+
+                        <div class="applicant-card-actions">
+                            @if(count($stallGallery) > 0)
+                                <button
+                                    type="button"
+                                    class="portal-button portal-button--secondary"
+                                    data-stall-gallery-open="{{ $opening->id }}"
+                                >
+                                    <x-heroicon-o-photo class="portal-button__icon" />
+                                    <span>View Photos</span>
+                                </button>
                             @endif
                         </div>
 
@@ -181,75 +203,9 @@
                     </div>
                 @endforelse
             </div>
-        </section>
-
-        <section id="my-applications" class="portal-section-card">
-            <div class="portal-section-card__header">
-                <div>
-                    <p class="portal-section-card__eyebrow">Application History</p>
-                    <h2 class="portal-section-card__title">My Submitted Applications</h2>
-                </div>
-                <span class="portal-count-pill">{{ $applicationsCount }} {{ $applicationsCount === 1 ? 'submission' : 'submissions' }}</span>
             </div>
-
-            @forelse($applications as $application)
-                @php
-                    $statusTone = match ($application->application_status) {
-                        'Qualified', 'Winner' => 'portal-status-badge--success',
-                        'Needs Revision' => 'portal-status-badge--warning',
-                        'Rejected', 'Not Selected' => 'portal-status-badge--danger',
-                        default => 'portal-status-badge--neutral',
-                    };
-                    $applicationStallLabel = $application->selectedStall?->display_name
-                        ?? ($application->application_status === 'Winner'
-                            ? ($application->applicationOpening?->stall?->display_name ?? 'Awarded stall')
-                            : 'Open stall application');
-                @endphp
-
-                <article class="portal-card portal-card--application">
-                    <div class="portal-card__split portal-card__split--stack-on-mobile">
-                        <div class="portal-application-card__body">
-                            <p class="portal-card__eyebrow">{{ $applicationStallLabel }}</p>
-                            <h3 class="portal-card__title">{{ $application->name }}</h3>
-                            <div class="portal-application-card__meta">
-                                <span>
-                                    <x-heroicon-o-calendar-days class="h-4 w-4" />
-                                    Submitted {{ optional($application->submitted_at)->format('M d, Y h:i A') ?? 'Pending timestamp' }}
-                                </span>
-                                <span>
-                                    <x-heroicon-o-document-text class="h-4 w-4" />
-                                    Requirement review managed by the LEEO office
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="portal-application-card__actions">
-                            <span class="portal-status-badge {{ $statusTone }}">{{ $application->application_status }}</span>
-                            @if($application->application_status === 'Needs Revision')
-                                <a href="{{ route('applications.edit', $application) }}" class="portal-button portal-button--primary">
-                                    <span>Edit Application</span>
-                                </a>
-                            @endif
-                            <a href="{{ route('applications.show', $application) }}" class="portal-button portal-button--secondary">
-                                <span>View Details</span>
-                            </a>
-                        </div>
-                    </div>
-                </article>
-            @empty
-                <div class="portal-empty">
-                    <div class="portal-empty__icon">
-                        <x-heroicon-o-inbox class="h-7 w-7" />
-                    </div>
-                    <h3 class="portal-empty__title">No submitted applications yet</h3>
-                    @if($openingsCount > 0)
-                        <a href="#open-stalls" class="portal-button portal-button--secondary portal-empty__action">
-                            <span>Browse Open Stalls</span>
-                        </a>
-                    @endif
-                </div>
-            @endforelse
         </section>
+
     </div>
 </div>
 

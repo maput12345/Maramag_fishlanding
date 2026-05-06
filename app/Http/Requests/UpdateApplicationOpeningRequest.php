@@ -15,6 +15,7 @@ class UpdateApplicationOpeningRequest extends FormRequest
     {
         return [
             'bidding_date' => ['required', 'date'],
+            'bidding_time' => ['required', 'date_format:H:i'],
             'bidding_location' => ['required', 'string', 'max:255'],
         ];
     }

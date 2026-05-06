@@ -87,7 +87,7 @@ class SalesController extends Controller
 
         // Filter fish types to only show those with available fish boxes in both create and edit modes
         $availableFishTypeIds = $fishBoxes->pluck('fish_type_id')->unique()->filter()->toArray();
-        $fishTypes = $allFishTypes->whereIn('id', $availableFishTypeIds);
+        $fishTypes = $this->prepareFishTypesForForm($allFishTypes->whereIn('id', $availableFishTypeIds));
         $fishPriceMap = BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
             ->with([
@@ -132,7 +132,7 @@ class SalesController extends Controller
         // Handle fish boxes for editing mode - only include truly available fish boxes
         if ($editingSales) {
             $fishBoxes = $this->prepareFishBoxesForEdit($fishBoxes, $editingSales);
-            $fishTypes = $this->prepareFishTypeForEdit($fishTypes, $editingSales);
+            $fishTypes = $this->prepareFishTypesForForm($this->prepareFishTypeForEdit($fishTypes, $editingSales));
         }
 
         // Prepare sales details for the form
@@ -204,6 +204,11 @@ class SalesController extends Controller
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale created successfully!');
+        }
+
+        if ($request->input('after_save') === 'transaction') {
+            return redirect()->route('broker.transaction')
+                ->with('success', 'Sale created successfully!');
         }
 
         return redirect()->route('broker.sales.sales')
@@ -535,10 +540,21 @@ class SalesController extends Controller
         $selectedFishTypeIds = $selectedFishBoxes->pluck('fish_type_id')->filter()->unique()->toArray();
 
         // Get fish types using the fish_type_id from selected fish boxes
-        $selectedFishTypes = FishType::whereIn('id', $selectedFishTypeIds)->get();
+        $selectedFishTypes = FishType::getFishTypeByBrokerId($editingSales->broker_id)
+            ->whereIn('id', $selectedFishTypeIds);
 
         // Merge with existing fish types and remove duplicates
         return $fishTypes->merge($selectedFishTypes)->unique('id');
+    }
+
+    private function prepareFishTypesForForm($fishTypes)
+    {
+        return $fishTypes->values()->map(function (FishType $fishType): FishType {
+            $fishType->setAttribute('name', $fishType->display_name);
+            $fishType->setAttribute('description', $fishType->display_description);
+
+            return $fishType;
+        });
     }
 
     /**

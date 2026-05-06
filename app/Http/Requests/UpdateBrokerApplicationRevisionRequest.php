@@ -19,10 +19,6 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'suffix' => ['nullable', 'string', 'max:50'],
             'business_name' => ['nullable', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:1000'],
             'contact_number' => ['required', 'string', 'max:50'],
@@ -49,13 +45,41 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
                 $validator->errors()->add('application', 'Only applications marked Needs Revision can be resubmitted.');
             }
 
-            $allowedRequirementIds = $application->requirements()->pluck('id')->all();
+            $requirements = $application->requirements()
+                ->select(['id', 'verification_status'])
+                ->get()
+                ->keyBy('id');
+            $allowedRequirementIds = $requirements->keys()->all();
+            $hasReplacementFile = false;
 
             foreach ($this->input('requirements', []) as $payload) {
-                if (!in_array((int) ($payload['id'] ?? 0), $allowedRequirementIds, true)) {
+                $requirementId = (int) ($payload['id'] ?? 0);
+
+                if (!in_array($requirementId, $allowedRequirementIds, true)) {
                     $validator->errors()->add('requirements', 'One or more requirement rows do not belong to this application.');
                     break;
                 }
+
+                $requirement = $requirements->get($requirementId);
+
+                if (!$requirement || strcasecmp((string) $requirement->verification_status, 'Verified') === 0) {
+                    continue;
+                }
+
+                if ($this->hasFile('requirements.' . $requirementId . '.file')) {
+                    $hasReplacementFile = true;
+                }
+            }
+
+            $hasRequirementForRevision = $requirements
+                ->contains(fn ($requirement) => strcasecmp((string) $requirement->verification_status, 'Verified') !== 0);
+
+            if (!$hasRequirementForRevision) {
+                $validator->errors()->add('requirements', 'There are no requirements currently open for revision.');
+            }
+
+            if ($hasRequirementForRevision && !$hasReplacementFile) {
+                $validator->errors()->add('requirements', 'Please upload at least one replacement file before resubmitting your revision.');
             }
         });
     }

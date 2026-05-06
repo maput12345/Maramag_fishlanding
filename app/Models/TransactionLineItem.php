@@ -103,7 +103,11 @@ class TransactionLineItem extends Model
      */
     public function getItemAttribute(): string
     {
-        return $this->fishBoxPurchase?->fishType?->name ?? '';
+        $purchase = $this->purchaseForDisplay();
+        $brokerId = $this->brokerIdForDisplay($purchase);
+        $fishType = $this->fishTypeForDisplay($purchase);
+
+        return BrokerFishTypeAssignment::resolveDisplayName($brokerId, $fishType) ?? '';
     }
 
     /**
@@ -111,7 +115,71 @@ class TransactionLineItem extends Model
      */
     public function getItemDescriptionAttribute(): ?string
     {
-        return $this->fishBoxPurchase?->fishType?->description;
+        $purchase = $this->purchaseForDisplay();
+        $brokerId = $this->brokerIdForDisplay($purchase);
+        $fishType = $this->fishTypeForDisplay($purchase);
+
+        return BrokerFishTypeAssignment::resolveDisplayDescription($brokerId, $fishType);
+    }
+
+    private function purchaseForDisplay(): ?FishBoxStockCycle
+    {
+        if ($this->relationLoaded('fishBoxPurchase')) {
+            return $this->getRelation('fishBoxPurchase');
+        }
+
+        if (!$this->fish_box_purchase_id) {
+            return null;
+        }
+
+        return FishBoxStockCycle::query()
+            ->with([
+                'fishType:id,name,description',
+                'fishBox:id,broker_id',
+            ])
+            ->find($this->fish_box_purchase_id);
+    }
+
+    private function brokerIdForDisplay(?FishBoxStockCycle $purchase): ?int
+    {
+        if ($this->relationLoaded('sale')) {
+            return $this->getRelation('sale')?->broker_id;
+        }
+
+        if ($this->sale_id) {
+            return SalesTransaction::query()
+                ->whereKey($this->sale_id)
+                ->value('broker_id');
+        }
+
+        if ($purchase?->relationLoaded('fishBox')) {
+            return $purchase->getRelation('fishBox')?->broker_id;
+        }
+
+        if ($purchase?->fish_box_id) {
+            return FishBox::query()
+                ->whereKey($purchase->fish_box_id)
+                ->value('broker_id');
+        }
+
+        return null;
+    }
+
+    private function fishTypeForDisplay(?FishBoxStockCycle $purchase): ?FishType
+    {
+        if (!$purchase) {
+            return null;
+        }
+
+        if ($purchase->relationLoaded('fishType')) {
+            return $purchase->getRelation('fishType');
+        }
+
+        if (!$purchase->fish_type_id) {
+            return null;
+        }
+
+        return FishType::query()->find($purchase->fish_type_id);
     }
 
     /**

@@ -9,16 +9,20 @@ require('./bootstrap');
 import toastr from 'toastr';
 import 'toastr/build/toastr.min.css';
 import Swal from 'sweetalert2';
+import Alpine from 'alpinejs';
 
 // Make SweetAlert and Toastr available globally
 window.Swal = Swal;
 window.toastr = toastr;
 
+window.Alpine = Alpine;
+Alpine.start();
+
 
 
 /**
  * POS System JavaScript
- * Using Alpine.js for reactive components and vanilla JS for custom functionality
+ * Uses local Alpine.js for reactive components and vanilla JS for custom functionality.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -49,8 +53,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize SweetAlert form handlers
     initializeSweetAlert();
+    initializeProfileDropdowns();
 
 });
+
+function initializeProfileDropdowns() {
+    const dropdowns = document.querySelectorAll('[data-profile-menu]');
+
+    if (!dropdowns.length) {
+        return;
+    }
+
+    const closeDropdown = (dropdown) => {
+        const button = dropdown.querySelector('[data-profile-menu-button]');
+        const panel = dropdown.querySelector('[data-profile-menu-panel]');
+        const icon = dropdown.querySelector('[data-profile-menu-icon]');
+
+        if (!button || !panel) {
+            return;
+        }
+
+        panel.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        icon?.classList.remove('rotate-180');
+    };
+
+    const closeOtherDropdowns = (currentDropdown) => {
+        dropdowns.forEach((dropdown) => {
+            if (dropdown !== currentDropdown) {
+                closeDropdown(dropdown);
+            }
+        });
+    };
+
+    dropdowns.forEach((dropdown) => {
+        const button = dropdown.querySelector('[data-profile-menu-button]');
+        const panel = dropdown.querySelector('[data-profile-menu-panel]');
+        const icon = dropdown.querySelector('[data-profile-menu-icon]');
+
+        if (!button || !panel) {
+            return;
+        }
+
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const isOpen = !panel.hidden;
+            closeOtherDropdowns(dropdown);
+
+            panel.hidden = isOpen;
+            button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            icon?.classList.toggle('rotate-180', !isOpen);
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        dropdowns.forEach((dropdown) => {
+            if (!dropdown.contains(event.target)) {
+                closeDropdown(dropdown);
+            }
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            dropdowns.forEach(closeDropdown);
+        }
+    });
+}
 
 
 /**

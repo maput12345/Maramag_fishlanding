@@ -173,6 +173,7 @@ class ApplicantAccountArchivingTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDays(7)->toDateString(),
             'bidding_date' => now()->addDays(10)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);

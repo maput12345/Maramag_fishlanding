@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateBrokerApplicationRevisionRequest;
 use App\Models\ApplicationOpening;
 use App\Models\SubmittedRequirement;
 use App\Models\BrokerApplication;
+use App\Models\RequirementType;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +50,33 @@ class ApplicationPortalController extends Controller
             ->first();
 
         return view('applications.index', compact('openings', 'applications', 'primaryOpening', 'currentApplication'));
+    }
+
+    /**
+     * Show the applicant's submitted applications on a dedicated page.
+     */
+    public function myApplications(): View|RedirectResponse
+    {
+        $user = Auth::user();
+        if ($redirect = $this->redirectNonApplicants()) {
+            return $redirect;
+        }
+
+        $applications = $user->brokerApplications()
+            ->with([
+                'applicationOpening.stall',
+                'selectedStall',
+                'requirements.requirementType',
+                'reviewedBy',
+                'selectedBy',
+                'broker',
+            ])
+            ->latest()
+            ->get();
+
+        $applicationsCount = $applications->count();
+
+        return view('applications.my-applications', compact('applications', 'applicationsCount'));
     }
 
     /**
@@ -100,16 +129,49 @@ class ApplicationPortalController extends Controller
         $requirementTypes = $opening->resolvedRequirementTypes();
 
         DB::transaction(function () use ($validated, $opening, $requirementTypes, $request) {
+            /** @var User $user */
+            $user = Auth::user();
+            $applicantType = $validated['applicant_type'];
+            $isJuridicalPerson = $applicantType === RequirementType::APPLICANT_TYPE_JURIDICAL;
+            $nameParts = $isJuridicalPerson
+                ? $this->representativeNameParts($validated['representative_name'])
+                : $this->validatedNaturalPersonNameParts($validated, $user);
+            $contactNumber = $isJuridicalPerson
+                ? $validated['representative_contact_number']
+                : ($validated['contact_number'] ?? $user->contact_number);
+            $address = $isJuridicalPerson
+                ? $validated['business_address']
+                : ($validated['address'] ?? $user->address);
+
+            if (!$isJuridicalPerson) {
+                $user->updateProfile([
+                    'first_name' => $nameParts['first_name'],
+                    'middle_name' => $nameParts['middle_name'],
+                    'last_name' => $nameParts['last_name'],
+                    'suffix' => $nameParts['suffix'],
+                    'contact_number' => $contactNumber,
+                    'address' => $address,
+                ]);
+            }
+
             $application = BrokerApplication::create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'application_opening_id' => $opening->id,
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'suffix' => $validated['suffix'] ?? null,
+                'opening_batch_id' => $opening->opening_batch_id,
+                'applicant_type' => $applicantType,
+                'first_name' => $nameParts['first_name'],
+                'middle_name' => $nameParts['middle_name'],
+                'last_name' => $nameParts['last_name'],
+                'suffix' => $nameParts['suffix'] ?? null,
+                'civil_status' => $isJuridicalPerson ? null : $validated['civil_status'],
+                'spouse_name' => $isJuridicalPerson ? null : ($validated['spouse_name'] ?? null),
+                'spouse_contact_number' => $isJuridicalPerson ? null : ($validated['spouse_contact_number'] ?? null),
                 'business_name' => $validated['business_name'] ?? null,
-                'address' => $validated['address'],
-                'contact_number' => $validated['contact_number'],
+                'business_address' => $isJuridicalPerson ? $validated['business_address'] : null,
+                'representative_name' => $isJuridicalPerson ? $validated['representative_name'] : null,
+                'representative_position' => $isJuridicalPerson ? $validated['representative_position'] : null,
+                'address' => $address,
+                'contact_number' => $contactNumber,
                 'application_status' => 'Submitted',
                 'submitted_at' => now(),
             ]);
@@ -212,11 +274,24 @@ class ApplicationPortalController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($application, $validated, $request) {
+            /** @var User $user */
+            $user = Auth::user();
+            $nameParts = $this->applicantProfileNameParts($user);
+
+            $user->updateProfile([
+                'first_name' => $nameParts['first_name'],
+                'middle_name' => $nameParts['middle_name'],
+                'last_name' => $nameParts['last_name'],
+                'suffix' => $user->suffix,
+                'contact_number' => $validated['contact_number'],
+                'address' => $validated['address'],
+            ]);
+
             $application->update([
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'suffix' => $validated['suffix'] ?? null,
+                'first_name' => $nameParts['first_name'],
+                'middle_name' => $nameParts['middle_name'],
+                'last_name' => $nameParts['last_name'],
+                'suffix' => $user->suffix,
                 'business_name' => $validated['business_name'] ?? null,
                 'address' => $validated['address'],
                 'contact_number' => $validated['contact_number'],
@@ -224,6 +299,8 @@ class ApplicationPortalController extends Controller
                 'reviewed_by_employee_id' => null,
                 'review_date' => null,
                 'submitted_at' => now(),
+                'revision_resubmitted_at' => now(),
+                'revision_count' => ((int) $application->revision_count) + 1,
             ]);
 
             $requirements = $application->requirements()
@@ -290,5 +367,51 @@ class ApplicationPortalController extends Controller
         }
 
         return null;
+    }
+
+    private function applicantProfileNameParts(User $user): array
+    {
+        $fallbackNameParts = User::splitName($user->name);
+        $nameParts = User::extractNameParts([
+            'first_name' => $user->first_name,
+            'middle_name' => $user->middle_name,
+            'last_name' => $user->last_name,
+        ], $fallbackNameParts);
+
+        $nameParts['first_name'] = $nameParts['first_name'] ?: ($fallbackNameParts['first_name'] ?? 'Applicant');
+        $nameParts['last_name'] = $nameParts['last_name'] ?: ($fallbackNameParts['last_name'] ?? $nameParts['first_name']);
+
+        return $nameParts;
+    }
+
+    private function validatedNaturalPersonNameParts(array $validated, User $user): array
+    {
+        $fallbackNameParts = $this->applicantProfileNameParts($user);
+
+        return [
+            'first_name' => trim((string) ($validated['first_name'] ?? $fallbackNameParts['first_name'])),
+            'middle_name' => $this->nullableApplicationText($validated['middle_name'] ?? $fallbackNameParts['middle_name'] ?? null),
+            'last_name' => trim((string) ($validated['last_name'] ?? $fallbackNameParts['last_name'])),
+            'suffix' => $this->nullableApplicationText($validated['suffix'] ?? $user->suffix),
+        ];
+    }
+
+    private function representativeNameParts(string $representativeName): array
+    {
+        $nameParts = User::splitName($representativeName);
+
+        return [
+            'first_name' => $nameParts['first_name'] ?: 'Representative',
+            'middle_name' => $this->nullableApplicationText($nameParts['middle_name'] ?? null),
+            'last_name' => $nameParts['last_name'] ?: $nameParts['first_name'] ?: 'Representative',
+            'suffix' => null,
+        ];
+    }
+
+    private function nullableApplicationText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

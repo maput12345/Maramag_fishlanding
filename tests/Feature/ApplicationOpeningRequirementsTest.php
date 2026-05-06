@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Constants\RoleStatusConstant;
 use App\Models\ApplicationOpening;
 use App\Models\BrokerApplication;
+use App\Models\OpeningBatch;
 use App\Models\RequirementType;
 use App\Models\Stall;
 use App\Models\User;
@@ -34,6 +35,10 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'stall_number' => 'C-1',
             'stall_status' => 'Vacant',
         ]);
+        $secondStall = Stall::create([
+            'stall_number' => 'C-2',
+            'stall_status' => 'Vacant',
+        ]);
 
         $requirementResponse = $this->actingAs($admin)->post('/admin/stalls/requirements', [
             'requirement_name' => 'Police Clearance',
@@ -42,17 +47,18 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'is_required' => '1',
         ]);
 
-        $requirementResponse->assertRedirect(route('admin.stalls.index'));
+        $requirementResponse->assertRedirect(route('admin.stalls.requirements.index'));
 
         $requirement = RequirementType::where('requirement_name', 'Police Clearance')->first();
 
         $this->assertNotNull($requirement);
 
         $openingResponse = $this->actingAs($admin)->post('/admin/stalls/openings', [
-            'stall_id' => $stall->id,
+            'stall_ids' => [$stall->id, $secondStall->id],
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'requirement_type_ids' => [$requirement->id],
         ]);
@@ -60,8 +66,15 @@ class ApplicationOpeningRequirementsTest extends TestCase
         $openingResponse->assertRedirect(route('admin.stalls.index'));
 
         $opening = ApplicationOpening::first();
+        $openingBatch = OpeningBatch::first();
 
         $this->assertNotNull($opening);
+        $this->assertNotNull($openingBatch);
+        $this->assertSame(1, OpeningBatch::count());
+        $this->assertSame(2, ApplicationOpening::count());
+        $this->assertTrue(ApplicationOpening::query()->where('opening_batch_id', $openingBatch->id)->count() === 2);
+        $this->assertSame('Open for Application', $stall->fresh()->stall_status);
+        $this->assertSame('Open for Application', $secondStall->fresh()->stall_status);
         $this->assertDatabaseHas('OpeningRequirement', [
             'application_opening_id' => $opening->id,
             'requirement_type_id' => $requirement->id,
@@ -100,6 +113,7 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);
@@ -123,6 +137,7 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
             'first_name' => 'Snapshot',
             'last_name' => 'Applicant',
+            'civil_status' => 'Single',
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09170000001',
             'requirements' => [],
@@ -134,6 +149,7 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
             'first_name' => 'Snapshot',
             'last_name' => 'Applicant',
+            'civil_status' => 'Single',
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09170000001',
             'requirements' => [
@@ -148,6 +164,8 @@ class ApplicationOpeningRequirementsTest extends TestCase
         $application = BrokerApplication::first();
 
         $this->assertNotNull($application);
+        $this->assertSame('Snapshot', $application->first_name);
+        $this->assertSame('Applicant', $application->last_name);
         $this->assertSame(1, $application->requirements()->count());
         $this->assertDatabaseHas('SubmittedRequirement', [
             'application_id' => $application->id,
@@ -157,6 +175,104 @@ class ApplicationOpeningRequirementsTest extends TestCase
             'application_id' => $application->id,
             'requirement_type_id' => $unselectedRequirement->id,
         ]);
+    }
+
+    public function test_admin_can_filter_submitted_applications_by_opening_batch_stall_date_and_status(): void
+    {
+        $admin = $this->createAdmin();
+        $firstApplicant = $this->createApplicant();
+        $secondApplicant = $this->createApplicant();
+
+        $stallSix = Stall::create([
+            'stall_number' => '6',
+            'stall_status' => 'Vacant',
+        ]);
+        $stallNine = Stall::create([
+            'stall_number' => '9',
+            'stall_status' => 'Vacant',
+        ]);
+        $stallTen = Stall::create([
+            'stall_number' => '10',
+            'stall_status' => 'Vacant',
+        ]);
+
+        $requirement = RequirementType::create([
+            'requirement_name' => 'Valid ID',
+            'audience' => RequirementType::APPLICANT_TYPE_BOTH,
+            'is_required' => true,
+            'sort_order' => 10,
+        ]);
+
+        $this->actingAs($admin)->post('/admin/stalls/openings', [
+            'stall_ids' => [$stallSix->id, $stallNine->id],
+            'start_date' => '2026-05-05',
+            'end_date' => '2026-05-20',
+            'bidding_date' => '2026-05-22',
+            'bidding_time' => '09:30',
+            'bidding_location' => 'LEEO Office',
+            'requirement_type_ids' => [$requirement->id],
+        ])->assertRedirect(route('admin.stalls.index'));
+
+        $firstBatch = OpeningBatch::firstOrFail();
+        $firstOpening = ApplicationOpening::where('opening_batch_id', $firstBatch->id)->firstOrFail();
+
+        $stallTen->update(['stall_status' => 'Vacant']);
+        $this->actingAs($admin)->post('/admin/stalls/openings', [
+            'stall_ids' => [$stallTen->id],
+            'start_date' => '2026-05-06',
+            'end_date' => '2026-05-20',
+            'bidding_date' => '2026-05-23',
+            'bidding_time' => '10:30',
+            'bidding_location' => 'LEEO Office',
+            'requirement_type_ids' => [$requirement->id],
+        ])->assertRedirect(route('admin.stalls.index'));
+
+        $secondBatch = OpeningBatch::query()->whereKeyNot($firstBatch->id)->firstOrFail();
+        $secondOpening = ApplicationOpening::where('opening_batch_id', $secondBatch->id)->firstOrFail();
+
+        $firstApplication = BrokerApplication::create([
+            'user_id' => $firstApplicant->id,
+            'application_opening_id' => $firstOpening->id,
+            'opening_batch_id' => $firstBatch->id,
+            'first_name' => 'Batch',
+            'last_name' => 'Applicant',
+            'address' => 'Maramag',
+            'contact_number' => '09170000001',
+            'application_status' => 'Submitted',
+            'submitted_at' => '2026-05-07 08:00:00',
+        ]);
+        $secondApplication = BrokerApplication::create([
+            'user_id' => $secondApplicant->id,
+            'application_opening_id' => $secondOpening->id,
+            'opening_batch_id' => $secondBatch->id,
+            'first_name' => 'Other',
+            'last_name' => 'Applicant',
+            'address' => 'Maramag',
+            'contact_number' => '09170000002',
+            'application_status' => 'Qualified',
+            'submitted_at' => '2026-05-08 08:00:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.index', ['opening_batch_id' => $firstBatch->id]))
+            ->assertOk()
+            ->assertSee($firstApplication->name)
+            ->assertDontSee($secondApplication->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.index', ['stall_id' => $stallNine->id]))
+            ->assertOk()
+            ->assertSee($firstApplication->name)
+            ->assertDontSee($secondApplication->name);
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.index', [
+                'application_date' => '2026-05-08',
+                'status' => 'Qualified',
+            ]))
+            ->assertOk()
+            ->assertSee($secondApplication->name)
+            ->assertDontSee($firstApplication->name);
     }
 
     private function createAdmin(): User
@@ -176,10 +292,18 @@ class ApplicationOpeningRequirementsTest extends TestCase
 
     private function createApplicant(): User
     {
-        return User::createUserWithRole([
-            'email' => 'opening-requirement-applicant-' . Str::random(8) . '@example.com',
-            'password' => 'password',
-            'role' => RoleStatusConstant::APPLICANT,
-        ]);
+        return User::createUserWithRole(
+            [
+                'email' => 'opening-requirement-applicant-' . Str::random(8) . '@example.com',
+                'password' => 'password',
+                'role' => RoleStatusConstant::APPLICANT,
+            ],
+            [
+                'first_name' => 'Snapshot',
+                'last_name' => 'Applicant',
+                'contact_number' => '09170000001',
+                'address' => 'Maramag, Bukidnon',
+            ]
+        );
     }
 }

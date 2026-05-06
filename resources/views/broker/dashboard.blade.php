@@ -106,13 +106,14 @@
                                 </div>
                                 <div class="flex-1">
                                     <p class="text-sm font-medium text-gray-900"> {{ $sale->buyer_name }} ({{ $sale->formatted_items }})</p>
-                                    @if($sale->status === \App\Constants\SalesStatusConstant::PAID)
-                                        <p class="text-xs text-gray-500">Fully Paid  •</p>
-                                    @elseif($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
-                                        <p class="text-xs text-gray-500">Partially Paid  • Balance: {{ $sale->total_amount - $sale->paid_amount }}</p>
-                                    @else
-                                        <p class="text-xs text-gray-500">Pending Payment  • Balance: {{ $sale->total_amount }}</p>
-                                    @endif
+                                    <div class="mt-1 text-xs text-gray-500">
+                                        <x-status-badge :status="\App\Constants\SalesStatusConstant::getDisplayName($sale->status)" size="sm" />
+                                        @if($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
+                                            <span class="ml-2">Balance: {{ $sale->total_amount - $sale->paid_amount }}</span>
+                                        @elseif($sale->status !== \App\Constants\SalesStatusConstant::PAID)
+                                            <span class="ml-2">Balance: {{ $sale->total_amount }}</span>
+                                        @endif
+                                    </div>
                                     <!-- <p class="text-xs text-gray-500">Just completed • Table 5</p> -->
                                 </div>
                                 <span class="text-sm font-semibold text-gray-900">₱ {{ $sale->paid_amount }}</span>

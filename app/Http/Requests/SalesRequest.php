@@ -34,8 +34,8 @@ class SalesRequest extends FormRequest
             'initial_payment_date' => 'nullable|required_with:initial_paid_amount,initial_payment_method|date',
             'initial_payment_method' => 'nullable|required_with:initial_paid_amount,initial_payment_date|string|max:255',
             'sales_details' => 'required|array|min:1',
-            'sales_details.*.box_id' => 'required|array|min:1',
-            'sales_details.*.box_id.*' => 'required|distinct|exists:FishBox,id',
+            'sales_details.*.box_id' => 'nullable|array',
+            'sales_details.*.box_id.*' => 'nullable|exists:FishBox,id',
             'sales_details.*.fish_type_id' => 'required|exists:FishType,id',
             'sales_details.*.item' => 'nullable|string|max:255',
             'sales_details.*.item_description' => 'nullable|string',
@@ -66,6 +66,40 @@ class SalesRequest extends FormRequest
                 ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
                 ->map(fn ($boxId): int => (int) $boxId)
                 ->values();
+
+            collect($this->input('sales_details', []))->each(function ($detail, $index) use ($validator): void {
+                if (!is_array($detail)) {
+                    return;
+                }
+
+                $boxIds = collect($detail['box_id'] ?? [])
+                    ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+                    ->values();
+
+                if ($boxIds->isNotEmpty()) {
+                    return;
+                }
+
+                $quantity = (int) ($detail['quantity'] ?? 0);
+
+                if ($quantity < 1) {
+                    $validator->errors()->add("sales_details.{$index}.quantity", 'Please enter how many boxes to auto-assign.');
+                }
+            });
+
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $initialPaidAmount = $this->input('initial_paid_amount');
+
+            if ($initialPaidAmount !== null && $initialPaidAmount !== '') {
+                $totalAmount = (float) $this->input('total_amount', 0);
+
+                if ((float) $initialPaidAmount > $totalAmount) {
+                    $validator->errors()->add('initial_paid_amount', 'Initial payment cannot exceed the total sale amount.');
+                }
+            }
 
             if ($flattenedBoxIds->isEmpty()) {
                 return;
@@ -102,18 +136,6 @@ class SalesRequest extends FormRequest
 
             if ($ownedBoxCount !== $boxIds->count()) {
                 $validator->errors()->add('sales_details', 'One or more selected fish boxes do not belong to your broker account.');
-            }
-
-            $initialPaidAmount = $this->input('initial_paid_amount');
-
-            if ($initialPaidAmount === null || $initialPaidAmount === '') {
-                return;
-            }
-
-            $totalAmount = (float) $this->input('total_amount', 0);
-
-            if ((float) $initialPaidAmount > $totalAmount) {
-                $validator->errors()->add('initial_paid_amount', 'Initial payment cannot exceed the total sale amount.');
             }
         });
     }
@@ -154,10 +176,7 @@ class SalesRequest extends FormRequest
             'initial_payment_method.max' => 'Initial payment method cannot exceed 255 characters.',
             'sales_details.required' => 'Please add at least one sales detail.',
             'sales_details.min' => 'Please add at least one sales detail.',
-            'sales_details.*.box_id.required' => 'Please select at least one fish box.',
             'sales_details.*.box_id.array' => 'Fish boxes must be provided as an array.',
-            'sales_details.*.box_id.min' => 'Please select at least one fish box.',
-            'sales_details.*.box_id.*.required' => 'Please select a fish box.',
             'sales_details.*.box_id.*.exists' => 'The selected fish box is invalid.',
             'sales_details.*.fish_type_id.required' => 'Please select a fish type.',
             'sales_details.*.fish_type_id.exists' => 'The selected fish type is invalid.',

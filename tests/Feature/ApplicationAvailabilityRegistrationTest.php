@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Constants\RoleStatusConstant;
 use App\Models\ApplicationOpening;
+use App\Models\RequirementType;
 use App\Models\Stall;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +28,9 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk();
+        $response->assertSee('View Stalls and Requirements');
+        $response->assertSee('Application Requirements');
+        $response->assertSee('Barangay Clearance and Community Tax Certificate');
         $response->assertSee('No vacant stall available');
         $response->assertDontSee('Apply here!');
         $response->assertDontSee('href="' . route('register') . '"', false);
@@ -39,6 +43,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk();
+        $response->assertSee('View Stalls and Requirements');
         $response->assertSee('Apply here!');
         $response->assertSee('href="' . route('register') . '"', false);
         $response->assertDontSee('No vacant stall available');
@@ -57,6 +62,8 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this
             ->from('/register')
             ->post('/register', [
+                'first_name' => 'Blocked',
+                'last_name' => 'Applicant',
                 'email' => 'blocked-applicant@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
@@ -74,6 +81,10 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $this->createAvailableOpening();
 
         $response = $this->post('/register', [
+            'first_name' => 'New',
+            'middle_name' => 'Account',
+            'last_name' => 'Applicant',
+            'suffix' => 'Jr.',
             'email' => 'new-applicant@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -83,7 +94,53 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $this->assertAuthenticated();
         $this->assertDatabaseHas('User', [
             'email' => 'new-applicant@example.com',
+            'first_name' => 'New',
+            'middle_name' => 'Account',
+            'last_name' => 'Applicant',
+            'suffix' => 'Jr.',
         ]);
+    }
+
+    public function test_login_page_shows_available_stall_and_requirements_preview_before_account_creation(): void
+    {
+        $opening = $this->createAvailableOpening();
+        $requirementType = RequirementType::create([
+            'requirement_name' => 'Police Clearance',
+            'description' => 'Bring one original and one photocopy.',
+            'is_required' => true,
+            'audience' => RequirementType::APPLICANT_TYPE_BOTH,
+            'sort_order' => 10,
+        ]);
+
+        $opening->requirementTypes()->sync([
+            $requirementType->id => [
+                'is_required' => true,
+                'audience' => RequirementType::APPLICANT_TYPE_BOTH,
+                'sort_order' => 10,
+            ],
+        ]);
+
+        $response = $this->get('/login');
+
+        $response->assertOk();
+        $response->assertSee('View Stalls and Requirements');
+        $response->assertSee('Available Stalls');
+        $response->assertSee('Application Requirements');
+        $response->assertSee('Stall A-1');
+        $response->assertSee('Police Clearance');
+        $response->assertSee('Bring one original and one photocopy.');
+    }
+
+    public function test_registration_page_keeps_create_account_form_without_preview_sections(): void
+    {
+        $this->createAvailableOpening();
+
+        $response = $this->get('/register');
+
+        $response->assertOk();
+        $response->assertSee('Create Applicant Account');
+        $response->assertDontSee('Available Stalls');
+        $response->assertDontSee('Application Requirements');
     }
 
     private function createAvailableOpening(): ApplicationOpening
@@ -111,6 +168,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);

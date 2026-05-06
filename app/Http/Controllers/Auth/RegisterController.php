@@ -64,6 +64,10 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         $validator = Validator::make($data, [
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:User'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
@@ -89,7 +93,12 @@ class RegisterController extends Controller
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => 'applicant',
-        ], []);
+        ], [
+            'first_name' => $data['first_name'],
+            'middle_name' => $data['middle_name'] ?? null,
+            'last_name' => $data['last_name'],
+            'suffix' => $data['suffix'] ?? null,
+        ]);
     }
 
     private function hasAvailableApplicationOpening(): bool

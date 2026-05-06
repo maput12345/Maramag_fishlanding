@@ -27,7 +27,9 @@ class FishType extends Model
      */
     public function brokers(): BelongsToMany
     {
-        return $this->belongsToMany(Broker::class, 'BrokerFishTypeAssignment')->withTimestamps();
+        return $this->belongsToMany(Broker::class, 'BrokerFishTypeAssignment')
+            ->withPivot(['display_name', 'display_description'])
+            ->withTimestamps();
     }
 
     /**
@@ -61,11 +63,25 @@ class FishType extends Model
         return $this->hasMany(BrokerFishTypeAssignment::class, 'fish_type_id');
     }
 
+    public function getDisplayNameAttribute(): ?string
+    {
+        return ($this->attributes['broker_display_name'] ?? null) ?: ($this->attributes['name'] ?? null);
+    }
+
+    public function getDisplayDescriptionAttribute(): ?string
+    {
+        return ($this->attributes['broker_display_description'] ?? null) ?: ($this->attributes['description'] ?? null);
+    }
+
     /**
      * Check if this fish type is already used by any fish boxes.
      */
     public function isUsed(?int $brokerId = null): bool
     {
+        if ($brokerId !== null && array_key_exists('broker_fish_boxes_count', $this->attributes)) {
+            return (int) $this->attributes['broker_fish_boxes_count'] > 0;
+        }
+
         if ($brokerId === null && array_key_exists('fish_boxes_count', $this->attributes)) {
             return (int) $this->attributes['fish_boxes_count'] > 0;
         }
@@ -99,12 +115,16 @@ class FishType extends Model
         $query = static::query();
 
         if ($brokerId) {
-            $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
-                $brokerQuery->where('Broker.id', $brokerId);
-            });
+            $query->select([
+                    'FishType.*',
+                    'BrokerFishTypeAssignment.display_name as broker_display_name',
+                    'BrokerFishTypeAssignment.display_description as broker_display_description',
+                ])
+                ->join('BrokerFishTypeAssignment', 'BrokerFishTypeAssignment.fish_type_id', '=', 'FishType.id')
+                ->where('BrokerFishTypeAssignment.broker_id', $brokerId);
         }
 
-        return $query->get();
+        return $query->orderBy('FishType.name')->get();
     }
 
     /**
@@ -118,23 +138,47 @@ class FishType extends Model
      */
     public static function getPaginatedWithSearch(?string $search = null, ?int $brokerId = null, int $perPage = 12): LengthAwarePaginator
     {
-        $query = static::query()
-            ->select(['id', 'name', 'description', 'created_at'])
-            ->withCount('fishBoxes');
+        $query = static::query();
 
         if ($brokerId) {
-            $query->whereHas('brokers', function ($brokerQuery) use ($brokerId) {
-                $brokerQuery->where('Broker.id', $brokerId);
-            });
+            $query->select([
+                    'FishType.id',
+                    'FishType.name',
+                    'FishType.description',
+                    'FishType.created_at',
+                    'BrokerFishTypeAssignment.display_name as broker_display_name',
+                    'BrokerFishTypeAssignment.display_description as broker_display_description',
+                ])
+                ->join('BrokerFishTypeAssignment', 'BrokerFishTypeAssignment.fish_type_id', '=', 'FishType.id')
+                ->where('BrokerFishTypeAssignment.broker_id', $brokerId)
+                ->withCount([
+                    'fishBoxes as broker_fish_boxes_count' => function ($fishBoxQuery) use ($brokerId) {
+                        $fishBoxQuery->whereHas('fishBox', function ($query) use ($brokerId) {
+                            $query->where('broker_id', $brokerId);
+                        });
+                    },
+                ]);
+        } else {
+            $query->select([
+                    'FishType.id',
+                    'FishType.name',
+                    'FishType.description',
+                    'FishType.created_at',
+                ])
+                ->withCount('fishBoxes');
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($search, $brokerId) {
+                $q->where('FishType.name', 'like', '%' . $search . '%');
+
+                if ($brokerId) {
+                    $q->orWhere('BrokerFishTypeAssignment.display_name', 'like', '%' . $search . '%');
+                }
             });
         }
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+        return $query->orderBy('FishType.created_at', 'desc')->paginate($perPage);
     }
 
 }

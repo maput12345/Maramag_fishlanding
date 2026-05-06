@@ -28,9 +28,6 @@ class FishBoxStatusConstant
     {
         return [
             self::IN_STOCK,
-            self::SOLD,
-            self::RETURNED,
-            self::MISSING,
         ];
     }
 

@@ -5,12 +5,6 @@
         ['title' => 'Financial Statement'],
     ];
 
-    $topbarAction = [
-        'label' => 'Transaction',
-        'url' => route('broker.sales.sales', ['modal' => 'create']),
-        'modal' => false,
-    ];
-
     $statementDateCarbon = Carbon::parse($statementDate);
     $previousDate = $statementDateCarbon->copy()->subDay()->toDateString();
     $nextDate = $statementDateCarbon->copy()->addDay()->toDateString();
@@ -208,6 +202,12 @@
                                 <p class="mt-1 text-xs text-orange-700/80">As of {{ $statementDateCarbon->format('M d, Y') }}</p>
                             </div>
                             <p class="text-lg font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</p>
+                        </div>
+                        <div class="mt-4 flex items-start justify-between gap-4 border-t border-orange-200 pt-4">
+                            <div>
+                                <p class="text-sm font-semibold text-orange-900">Cash on Hand</p>
+                            </div>
+                            <p class="text-lg font-semibold text-orange-900">PHP {{ number_format($statement['cash_on_hand'], 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -509,6 +509,10 @@
                     <div class="flex items-center justify-between text-sm">
                         <span class="font-medium text-orange-900">As of {{ $statementDateCarbon->format('M d, Y') }}</span>
                         <span class="font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between border-t border-orange-100 pt-2 text-sm">
+                        <span class="font-medium text-orange-900">Cash on Hand</span>
+                        <span class="font-semibold text-orange-900">PHP {{ number_format($statement['cash_on_hand'], 2) }}</span>
                     </div>
                 </div>
             </div>

@@ -416,23 +416,18 @@
 
                 const badge = card.querySelector('[data-fish-box-status-badge]');
                 const statusClasses = {
-                    'Unassigned': ['bg-slate-100', 'text-slate-700'],
-                    'In Stock': ['bg-green-100', 'text-green-800'],
-                    'Sold': ['bg-blue-100', 'text-blue-800'],
-                    'Returned': ['bg-yellow-100', 'text-yellow-800'],
-                    'Missing': ['bg-red-100', 'text-red-800'],
+                    'Unassigned': ['status-badge--neutral'],
+                    'In Stock': ['status-badge--success'],
+                    'Sold': ['status-badge--open'],
+                    'Returned': ['status-badge--warning'],
+                    'Missing': ['status-badge--danger'],
                 };
 
                 if (badge) {
                     badge.className = [
-                        'inline-flex',
-                        'items-center',
-                        'px-2.5',
-                        'py-0.5',
-                        'rounded-full',
-                        'text-xs',
-                        'font-medium',
-                        ...(statusClasses[newStatus] || ['bg-gray-100', 'text-gray-700']),
+                        'status-badge',
+                        'status-badge--sm',
+                        ...(statusClasses[newStatus] || ['status-badge--neutral']),
                     ].join(' ');
                     badge.textContent = newStatus;
                 }

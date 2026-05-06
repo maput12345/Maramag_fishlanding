@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Models\ApplicationOpening;
+use App\Models\RequirementType;
 use App\Models\User;
 use App\Constants\UserStatusConstant;
 
@@ -108,8 +109,16 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        $applicationOpenings = ApplicationOpening::with(['stall', 'requirementTypes'])
+            ->availableForApplication()
+            ->withCount('brokerApplications')
+            ->orderBy('start_date')
+            ->get();
+
         return view('auth.login-polished', [
-            'hasAvailableStall' => ApplicationOpening::availableForApplication()->exists(),
+            'hasAvailableStall' => $applicationOpenings->isNotEmpty(),
+            'applicationOpenings' => $applicationOpenings,
+            'defaultRequirementTypes' => RequirementType::officialChecklistTypes(),
         ]);
     }
 

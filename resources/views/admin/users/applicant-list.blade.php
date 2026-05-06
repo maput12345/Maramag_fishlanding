@@ -79,11 +79,6 @@
                             $displayName = $latestApplication?->name ?: $applicant->name;
                             $applicationStatus = $latestApplication?->application_status ?? 'No Application';
                             $accountIsArchived = $applicant->status === \App\Constants\UserStatusConstant::DEACTIVATED;
-                            $statusClass = match ($applicationStatus) {
-                                'Winner', 'Qualified' => 'app-status-badge--active',
-                                'Rejected', 'Not Selected' => 'app-status-badge--inactive',
-                                default => 'app-status-badge--neutral',
-                            };
                         @endphp
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -98,7 +93,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="app-status-badge {{ $statusClass }}">{{ $applicationStatus }}</span>
+                                <x-status-badge :status="$applicationStatus" />
                                 @if($latestApplication?->selectedStall)
                                     <div class="mt-1 text-xs text-gray-500">{{ $latestApplication->selectedStall->display_name }}</div>
                                 @elseif($latestApplication?->applicationOpening?->stall)
@@ -106,9 +101,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="app-status-badge {{ $accountIsArchived ? 'app-status-badge--inactive' : 'app-status-badge--active' }}">
-                                    {{ $accountIsArchived ? 'Archived' : 'Active Login' }}
-                                </span>
+                                <x-status-badge :status="$accountIsArchived ? 'Archived' : 'Active Login'" />
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ optional($latestApplication?->submitted_at)->format('M d, Y') ?? $applicant->created_at->format('M d, Y') }}
@@ -116,7 +109,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center gap-2">
                                     @if($latestApplication)
-                                        <a href="{{ route('admin.applications.show', $latestApplication) }}" class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100">
+                                        <a href="{{ route('admin.applications.show', $latestApplication) }}" class="app-button app-button--primary px-3 py-2 text-xs">
                                             View Application
                                         </a>
                                     @endif
@@ -125,7 +118,7 @@
                                         <form method="POST" action="{{ route('admin.users.deactivate', $applicant) }}" class="inline" data-swal="deactivate">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100">
+                                            <button type="submit" class="app-button app-button--danger px-3 py-2 text-xs">
                                                 Archive Login
                                             </button>
                                         </form>
@@ -133,7 +126,7 @@
                                         <form method="POST" action="{{ route('admin.users.activate', $applicant) }}" class="inline" data-swal="activate">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100">
+                                            <button type="submit" class="app-button app-button--success px-3 py-2 text-xs">
                                                 Reactivate
                                             </button>
                                         </form>

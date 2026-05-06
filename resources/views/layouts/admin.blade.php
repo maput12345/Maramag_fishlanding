@@ -25,27 +25,26 @@
     <link rel="stylesheet" href="{{ asset('css/filter-layout.css') }}">
     <link rel="stylesheet" href="{{ asset('css/next-gen-ui.css') }}">
 
-
-    <!-- Alpine.js for interactive components -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
     <!-- POS System Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
 <body class="shell-body theme-admin">
-    <div class="shell-frame min-h-screen" x-data="{ reportsOpen: false, sidebarOpen: true }" @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
+    <div class="shell-frame min-h-screen">
         <div class="shell-orb shell-orb-one"></div>
         <div class="shell-orb shell-orb-two"></div>
         <!-- Sidebar Component -->
         @include('layouts.partials.sidebar')
 
         <!-- Main Content -->
-        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-0" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
+        <div
+            class="app-main-shell admin-main-shell main-content min-h-screen min-w-0 flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-64"
+            data-admin-main
+        >
             <!-- Navbar Component -->
             @include('layouts.partials.navbar')
 
             <!-- Page Content -->
-            <main class="app-main flex-1 overflow-auto p-6 pb-24 md:pb-6">
+            <main class="app-main flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6 pb-24 md:pb-6">
                 @yield('content')
             </main>
 
@@ -59,5 +58,42 @@
         <!-- Profile Modal -->
         @include('auth.profile')
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.querySelector('[data-admin-sidebar-toggle]');
+            const sidebar = document.querySelector('[data-admin-sidebar]');
+            const main = document.querySelector('[data-admin-main]');
+            const expandedItems = document.querySelectorAll('[data-admin-sidebar-expanded]');
+            const stallMenus = document.querySelectorAll('[data-admin-stall-menu]');
+
+            if (!toggle || !sidebar || !main) {
+                return;
+            }
+
+            const setCollapsed = function (collapsed) {
+                sidebar.classList.toggle('w-64', !collapsed);
+                sidebar.classList.toggle('w-16', collapsed);
+                main.classList.toggle('md:ml-64', !collapsed);
+                main.classList.toggle('md:ml-16', collapsed);
+
+                expandedItems.forEach(function (item) {
+                    item.hidden = collapsed;
+                });
+
+                if (collapsed) {
+                    stallMenus.forEach(function (menu) {
+                        menu.open = false;
+                    });
+                }
+            };
+
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                setCollapsed(sidebar.classList.contains('w-64'));
+            }, true);
+        });
+    </script>
 </body>
 </html>

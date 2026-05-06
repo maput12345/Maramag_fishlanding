@@ -68,9 +68,7 @@
                         </div>
                         <div class="mb-2 flex justify-between text-sm">
                             <span class="text-gray-600">Status:</span>
-                            <span class="font-medium {{ $salesStatusesWithColorClasses[$printingSales->status] }}">
-                                {{ $salesStatusesWithDisplayNames[$printingSales->status] }}
-                            </span>
+                            <x-status-badge :status="$salesStatusesWithDisplayNames[$printingSales->status]" size="sm" />
                         </div>
                     </div>
 

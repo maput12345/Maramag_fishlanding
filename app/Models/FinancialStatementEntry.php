@@ -167,6 +167,7 @@ class FinancialStatementEntry extends Model
         $costOfSales = (float) (clone $costBaseQuery)->sum('FishBoxStockCycle.cost_price');
         $soldBoxes = (int) (clone $costBaseQuery)->count('TransactionLineItem.id');
         $collections = (float) (clone $collectionsBaseQuery)->sum('PaymentRecord.paid_amount');
+        $cashOnHand = SalesTransaction::getSummaryForFilters(null, null, $brokerId, $date, $date)['paid_total'];
         $outstandingReceivableBalance = SalesTransaction::getTotalSalesBalance($brokerId, $date);
 
         $entryTotals = static::getDailyEntryTotals($brokerId, $date);
@@ -189,6 +190,7 @@ class FinancialStatementEntry extends Model
             'loss_on_sale' => $lossOnSale,
             'net_income' => $netIncome,
             'collections' => $collections,
+            'cash_on_hand' => $cashOnHand,
             'outstanding_receivable_balance' => $outstandingReceivableBalance,
         ];
     }

@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::controller(ApplicationPortalController::class)->prefix('applications')->name('applications.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/my-applications', 'myApplications')->name('my-applications');
         Route::get('/openings/{opening}', 'create')->name('create');
         Route::post('/openings/{opening}', 'store')->name('store');
         Route::get('/{application}/edit', 'edit')->name('edit');
@@ -112,6 +113,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::controller(ApplicationManagementController::class)->prefix('admin/stalls')->name('admin.stalls.')->group(function () {
         Route::get('/', 'stallsIndex')->name('index');
+        Route::get('/requirements', 'stallsRequirements')->name('requirements.index');
+        Route::get('/overview', 'stallsOverview')->name('overview');
         Route::post('/', 'storeStall')->name('store');
         Route::post('/requirements', 'storeRequirementType')->name('requirements.store');
         Route::post('/openings', 'storeOpening')->name('openings.store');
@@ -124,6 +127,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware(['auth', 'broker'])->group(function () {
     Route::get('/broker/dashboard', [BrokerDashboardController::class, 'index'])->name('broker.dashboard');
     Route::get('/broker/analytics', [SalesManagementController::class, 'analytics'])->name('broker.sales.analytics');
+    Route::get('/broker/transaction', [SalesManagementController::class, 'transaction'])->name('broker.transaction');
     Route::get('/broker/sales', [SalesManagementController::class, 'sales'])->name('broker.sales.sales');
     Route::get('/broker/financial-statement', [FinancialStatementController::class, 'index'])->name('broker.financial-statements.index');
     Route::post('/broker/financial-statement/entries', [FinancialStatementController::class, 'store'])->name('broker.financial-statements.entries.store');

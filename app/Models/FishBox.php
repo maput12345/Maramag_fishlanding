@@ -148,6 +148,10 @@ class FishBox extends Model
      */
     public function getFishTypeIdAttribute(): ?int
     {
+        if ($this->box_status === FishBoxStatusConstant::UNASSIGNED) {
+            return null;
+        }
+
         return $this->currentPurchase?->fish_type_id;
     }
 
@@ -156,7 +160,14 @@ class FishBox extends Model
      */
     public function getFishTypeNameAttribute(): ?string
     {
-        return $this->currentPurchase?->fishType?->name;
+        if ($this->box_status === FishBoxStatusConstant::UNASSIGNED) {
+            return null;
+        }
+
+        return BrokerFishTypeAssignment::resolveDisplayName(
+            $this->broker_id,
+            $this->currentPurchase?->fishType
+        );
     }
 
     /**
@@ -164,6 +175,10 @@ class FishBox extends Model
      */
     public function getCostPriceAttribute(): ?string
     {
+        if ($this->box_status === FishBoxStatusConstant::UNASSIGNED) {
+            return null;
+        }
+
         return $this->currentPurchase?->cost_price;
     }
 
@@ -909,9 +924,9 @@ class FishBox extends Model
     }
 
     /**
-     * Return all returned fish boxes to in-stock status for a broker.
+     * Clear returned fish boxes so they are ready for a new stock cycle.
      */
-    public static function returnAllToStock(int $brokerId): int
+    public static function returnAllToStock(int $brokerId, ?int $userId = null): int
     {
         $returnedFishBoxes = static::returned()
             ->where('broker_id', $brokerId)
@@ -924,7 +939,7 @@ class FishBox extends Model
         $count = 0;
 
         foreach ($returnedFishBoxes as $fishBox) {
-            self::updateStatus($fishBox->id, FishBoxStatusConstant::IN_STOCK);
+            $fishBox->update(['box_status' => FishBoxStatusConstant::UNASSIGNED]);
             $count++;
         }
 

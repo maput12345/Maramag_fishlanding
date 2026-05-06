@@ -36,13 +36,42 @@
             </div>
             <form action="{{ route('admin.stalls.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4">
                 @csrf
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <p class="mt-2 text-lg font-semibold text-slate-950">Next stall number: Stall {{ $nextStallNumber }}</p>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3" data-stall-area-calculator>
+                    <div>
+                        <label for="length_meters" class="block text-sm font-medium text-slate-700">Length (meters)</label>
+                        <input id="length_meters" name="length_meters" type="number" step="0.01" min="0.01" value="{{ old('length_meters') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required data-stall-length>
+                        @error('length_meters')
+                            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="width_meters" class="block text-sm font-medium text-slate-700">Width (meters)</label>
+                        <input id="width_meters" name="width_meters" type="number" step="0.01" min="0.01" value="{{ old('width_meters') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required data-stall-width>
+                        @error('width_meters')
+                            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="area_sqm_preview" class="block text-sm font-medium text-slate-700">Area (sqm)</label>
+                        <input id="area_sqm_preview" type="text" value="0.00" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700" readonly data-stall-area>
+                    </div>
+                </div>
                 <div>
-                    <label for="stall_number" class="block text-sm font-medium text-slate-700">Stall Number</label>
-                    <input id="stall_number" name="stall_number" type="text" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                    <label for="stall_address" class="block text-sm font-medium text-slate-700">Address</label>
+                    <input id="stall_address" name="address" type="text" value="{{ old('address') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" placeholder="Enter stall location or market area" required>
+                    @error('address')
+                        <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
                     <label for="stall_remarks" class="block text-sm font-medium text-slate-700">Description</label>
-                    <textarea id="stall_remarks" name="remarks" rows="3" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"></textarea>
+                    <textarea id="stall_remarks" name="remarks" rows="3" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" placeholder="Add notes about the stall layout, landmarks, or condition">{{ old('remarks') }}</textarea>
+                    @error('remarks')
+                        <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
                     <label for="stall_images" class="block text-sm font-medium text-slate-700">Stall Photos</label>
@@ -66,20 +95,57 @@
 
         <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             <div class="app-section-heading">
-                <h2 class="app-section-title">Declare Vacancy</h2>
+                <h2 class="app-section-title">Stall Vacancy and Bidding Schedule</h2>
             </div>
             <form action="{{ route('admin.stalls.openings.store') }}" method="POST" class="mt-6 space-y-4">
                 @csrf
                 <div>
-                    <label for="stall_id" class="block text-sm font-medium text-slate-700">Vacant Stall</label>
-                    <select id="stall_id" name="stall_id" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                        <option value="">Select a stall</option>
-                        @foreach($stalls as $stall)
-                            <option value="{{ $stall->id }}" {{ (string) old('stall_id') === (string) $stall->id ? 'selected' : '' }}>
-                                {{ $stall->display_name }} - {{ $stall->stall_status }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @php
+                        $selectedStallIds = collect(old('stall_ids', []))
+                            ->map(fn ($stallId) => (int) $stallId)
+                            ->all();
+                    @endphp
+                    <div class="flex items-center justify-between gap-3">
+                        <label class="block text-sm font-medium text-slate-700">Vacant Stalls</label>
+                        <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white" data-stall-selected-summary>
+                            {{ count($selectedStallIds) }} {{ count($selectedStallIds) === 1 ? 'stall' : 'stalls' }} selected
+                        </span>
+                    </div>
+                    <div class="mt-2 rounded-3xl border border-slate-200 bg-slate-50 p-4" data-stall-multi-select>
+                        @if($vacantStalls->isEmpty())
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+                                No vacant stalls available
+                            </div>
+                        @else
+                            <div class="grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                                @foreach($vacantStalls as $stall)
+                                    <label
+                                        for="opening_stall_{{ $stall->id }}"
+                                        class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm transition hover:border-slate-400"
+                                    >
+                                        <input
+                                            id="opening_stall_{{ $stall->id }}"
+                                            name="stall_ids[]"
+                                            type="checkbox"
+                                            value="{{ $stall->id }}"
+                                            class="mt-1 rounded border-slate-300 text-slate-900"
+                                            data-stall-checkbox
+                                            @checked(in_array($stall->id, $selectedStallIds, true))
+                                        >
+                                        <span>
+                                            <span class="block font-semibold text-slate-950">{{ $stall->display_name }}</span>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    @error('stall_ids')
+                        <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
+                    @error('stall_ids.*')
+                        <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
@@ -93,13 +159,17 @@
                 </div>
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
-                        <label for="bidding_date" class="block text-sm font-medium text-slate-700">Bidding Start Date</label>
+                        <label for="bidding_date" class="block text-sm font-medium text-slate-700">Bidding Date</label>
                         <input id="bidding_date" name="bidding_date" type="date" value="{{ old('bidding_date') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     </div>
                     <div>
-                        <label for="bidding_location" class="block text-sm font-medium text-slate-700">Bidding Location</label>
-                        <input id="bidding_location" name="bidding_location" type="text" value="{{ old('bidding_location', 'Maramag Fish Landing') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" maxlength="255" required>
+                        <label for="bidding_time" class="block text-sm font-medium text-slate-700">Bidding Time</label>
+                        <input id="bidding_time" name="bidding_time" type="time" value="{{ old('bidding_time') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     </div>
+                </div>
+                <div>
+                    <label for="bidding_location" class="block text-sm font-medium text-slate-700">Bidding Location</label>
+                    <input id="bidding_location" name="bidding_location" type="text" value="{{ old('bidding_location', 'Maramag Fish Landing') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" maxlength="255" required>
                 </div>
 
                 @php
@@ -208,138 +278,51 @@
                         </div>
                     </div>
                 </details>
-                <button type="submit" class="app-button app-button--primary">Declare</button>
+                <button type="submit" class="app-button app-button--primary">Open</button>
             </form>
         </div>
     </section>
 
-    <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-slate-900">Add Requirement</h2>
-            </div>
-            <span class="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">{{ $requirementTypes->count() }} requirements</span>
-        </div>
-
-        <form action="{{ route('admin.stalls.requirements.store') }}" method="POST" class="mt-6 grid gap-4 lg:grid-cols-[1fr,0.8fr,0.7fr]">
-            @csrf
-            <div>
-                <label for="requirement_name" class="block text-sm font-medium text-slate-700">Requirement Name</label>
-                <input id="requirement_name" name="requirement_name" type="text" value="{{ old('requirement_name') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" placeholder="Example: Police Clearance" required>
-            </div>
-            <div>
-                <label for="audience" class="block text-sm font-medium text-slate-700">Applies To</label>
-                <select id="audience" name="audience" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                    @foreach([
-                        \App\Models\RequirementType::APPLICANT_TYPE_BOTH => 'All Applicants',
-                        \App\Models\RequirementType::APPLICANT_TYPE_NATURAL => 'Natural Person',
-                        \App\Models\RequirementType::APPLICANT_TYPE_JURIDICAL => 'Juridical Person',
-                    ] as $audienceValue => $audienceLabel)
-                        <option value="{{ $audienceValue }}" @selected(old('audience', \App\Models\RequirementType::APPLICANT_TYPE_BOTH) === $audienceValue)>{{ $audienceLabel }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex items-end gap-3">
-                <label class="flex min-h-[3rem] flex-1 items-center gap-3 rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
-                    <input name="is_required" type="checkbox" value="1" class="rounded border-slate-300 text-slate-900" @checked(old('is_required', '1'))>
-                    Required by default
-                </label>
-                <button type="submit" class="app-button app-button--dark">Add</button>
-            </div>
-        </form>
-    </section>
-
-    <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-slate-900">Stall Occupancy Overview</h2>
-            </div>
-        </div>
-
-        <div class="mt-6 overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Stall</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Application Period</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Bidding Schedule</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Applications</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @forelse($openings as $opening)
-                        @php
-                            $openingAvailabilityStatus = $opening->opening_status === 'Cancelled'
-                                ? 'Cancelled'
-                                : ($opening->stall?->stall_status === 'Occupied' ? 'Occupied' : 'Vacant');
-                        @endphp
-                        <tr>
-                            <td class="px-4 py-4">{{ $opening->stall?->display_name }}</td>
-                            <td class="px-4 py-4">{{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}</td>
-                            <td class="px-4 py-4">
-                                <div class="font-medium text-slate-900">{{ optional($opening->bidding_date)->format('M d, Y') ?? 'Not set' }}</div>
-                                <div class="text-xs text-slate-500">{{ $opening->bidding_location ?: 'No location set' }}</div>
-                            </td>
-                            <td class="px-4 py-4">{{ $openingAvailabilityStatus }}</td>
-                            <td class="px-4 py-4">{{ $opening->broker_applications_count }}</td>
-                            <td class="px-4 py-4">
-                                <form action="{{ route('admin.stalls.openings.status', $opening) }}" method="POST" class="flex items-center gap-2">
-                                    @csrf
-                                    @method('PATCH')
-                                    <select name="opening_status" class="rounded-full border border-slate-300 px-3 py-2 text-xs font-medium">
-                                        @foreach(['Vacant', 'Occupied', 'Cancelled'] as $openingStatus)
-                                            <option value="{{ $openingStatus }}" {{ $openingAvailabilityStatus === $openingStatus ? 'selected' : '' }}>{{ $openingStatus }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="app-button app-button--secondary">Save</button>
-                                </form>
-
-                                <details class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <summary class="cursor-pointer text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Edit Bidding Schedule</summary>
-                                    <form action="{{ route('admin.stalls.openings.update', $opening) }}" method="POST" class="mt-4 space-y-3">
-                                        @csrf
-                                        @method('PATCH')
-                                        <div>
-                                            <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Start Date</label>
-                                            <input
-                                                name="bidding_date"
-                                                type="date"
-                                                value="{{ optional($opening->bidding_date)->format('Y-m-d') }}"
-                                                class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                required
-                                            >
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Location</label>
-                                            <input
-                                                name="bidding_location"
-                                                type="text"
-                                                value="{{ $opening->bidding_location }}"
-                                                class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                maxlength="255"
-                                                required
-                                            >
-                                        </div>
-                                        <button type="submit" class="app-button app-button--secondary">Save Schedule</button>
-                                    </form>
-                                </details>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-slate-500">No application openings yet.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </section>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-stall-area-calculator]').forEach((calculator) => {
+        const lengthInput = calculator.querySelector('[data-stall-length]');
+        const widthInput = calculator.querySelector('[data-stall-width]');
+        const areaOutput = calculator.querySelector('[data-stall-area]');
+
+        const updateArea = () => {
+            const length = parseFloat(lengthInput?.value || '0');
+            const width = parseFloat(widthInput?.value || '0');
+            const area = length > 0 && width > 0 ? length * width : 0;
+
+            if (areaOutput) {
+                areaOutput.value = area.toFixed(2);
+            }
+        };
+
+        lengthInput?.addEventListener('input', updateArea);
+        widthInput?.addEventListener('input', updateArea);
+        updateArea();
+    });
+
+    document.querySelectorAll('[data-stall-multi-select]').forEach((manager) => {
+        const checkboxes = Array.from(manager.querySelectorAll('[data-stall-checkbox]'));
+        const summary = document.querySelector('[data-stall-selected-summary]');
+
+        const updateSummary = () => {
+            const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+
+            if (summary) {
+                summary.textContent = `${selectedCount} ${selectedCount === 1 ? 'stall' : 'stalls'} selected`;
+            }
+        };
+
+        checkboxes.forEach((checkbox) => checkbox.addEventListener('change', updateSummary));
+        updateSummary();
+    });
+
     document.querySelectorAll('[data-requirement-manager]').forEach((manager) => {
         const searchInput = manager.querySelector('[data-requirement-search]');
         const checkboxes = Array.from(manager.querySelectorAll('[data-requirement-checkbox]'));

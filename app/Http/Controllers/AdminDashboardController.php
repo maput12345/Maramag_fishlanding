@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FishBox;
-use App\Models\Broker;
-use App\Models\User;
-use App\Constants\FishBoxStatusConstant;
-use App\Constants\InventoryLogActionConstant;
+use App\Models\BrokerApplication;
 use App\Models\InventoryMovement;
+use App\Models\Stall;
 use App\Repositories\SalesRepository;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class AdminDashboardController extends Controller
 {
@@ -22,35 +19,73 @@ class AdminDashboardController extends Controller
 
     public function index()
     {
-        // Get total brokers count
-        $totalBrokers = Broker::count();
-
         // Count total fish boxes sold from sales_details
         $totalFishBoxesSold = $this->salesRepository->getTotalFishBoxesSoldCount();
 
-        // Count fish boxes with current status Missing (net missing count)
-        $totalFishBoxesMissing = FishBox::missing()->count();
-        
-        // Count fish boxes with current status Returned
-        $totalFishBoxesReturned = FishBox::returned()->count();
+        $needsReviewCount = BrokerApplication::query()
+            ->where('application_status', 'Submitted')
+            ->count();
 
-        // Get top brokers with fishbox count
-        $topBrokers = $this->salesRepository->getTopBrokersWithFishBoxCount();
+        $totalApplicationsCount = BrokerApplication::query()
+            ->whereIn('application_status', [
+                'Submitted',
+                'Pending',
+                'Needs Review',
+                'Under Review',
+                'Revision Resubmitted',
+                'For Revision',
+            ])
+            ->count();
 
-        // Get top fish types sold
-        $topFishTypes = InventoryMovement::getTopFishTypesSold();
+        $vacantStallsCount = Stall::query()
+            ->where('stall_status', 'Vacant')
+            ->count();
 
-        // Get current missing boxes with broker ownership
-        $currentMissingBoxes = FishBox::getCurrentMissingBoxes();
+        $occupiedStallsCount = Stall::query()
+            ->where('stall_status', 'Occupied')
+            ->count();
+
+        $today = Carbon::today();
+        $weekStart = $today->copy()->subDays(6);
+
+        $topBrokersDaily = $this->salesRepository->getTopBrokersForAdmin(
+            $today->toDateString(),
+            $today->toDateString(),
+            null,
+            4
+        );
+
+        $topBrokersWeekly = $this->salesRepository->getTopBrokersForAdmin(
+            $weekStart->toDateString(),
+            $today->toDateString(),
+            null,
+            4
+        );
+
+        $topFishDaily = InventoryMovement::getTopFishTypesSoldForAdmin(
+            $today->toDateString(),
+            $today->toDateString(),
+            null,
+            4
+        );
+
+        $topFishWeekly = InventoryMovement::getTopFishTypesSoldForAdmin(
+            $weekStart->toDateString(),
+            $today->toDateString(),
+            null,
+            4
+        );
 
         return view('admin.dashboard', compact(
-            'totalBrokers',
             'totalFishBoxesSold',
-            'totalFishBoxesMissing',
-            'totalFishBoxesReturned',
-            'topBrokers',
-            'topFishTypes',
-            'currentMissingBoxes'
+            'needsReviewCount',
+            'totalApplicationsCount',
+            'vacantStallsCount',
+            'occupiedStallsCount',
+            'topBrokersDaily',
+            'topBrokersWeekly',
+            'topFishDaily',
+            'topFishWeekly'
         ));
     }
 }

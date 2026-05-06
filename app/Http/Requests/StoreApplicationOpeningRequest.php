@@ -17,10 +17,12 @@ class StoreApplicationOpeningRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'stall_id' => ['required', 'exists:Stall,id'],
+            'stall_ids' => ['required', 'array', 'min:1'],
+            'stall_ids.*' => ['integer', 'distinct', 'exists:Stall,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'bidding_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'bidding_time' => ['required', 'date_format:H:i'],
             'bidding_location' => ['required', 'string', 'max:255'],
             'requirement_type_ids' => ['required', 'array', 'min:1'],
             'requirement_type_ids.*' => ['integer', 'exists:RequirementType,id'],
@@ -30,24 +32,43 @@ class StoreApplicationOpeningRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $stallId = (int) $this->input('stall_id');
+            $stallIds = collect($this->input('stall_ids', []))
+                ->map(fn ($stallId) => (int) $stallId)
+                ->filter()
+                ->unique()
+                ->values();
 
-            if (!$stallId) {
-                return;
-            }
+            if ($stallIds->isNotEmpty()) {
+                $nonVacantStallNames = Stall::query()
+                    ->whereIn('id', $stallIds)
+                    ->where('stall_status', '!=', 'Vacant')
+                    ->get()
+                    ->map(fn (Stall $stall) => $stall->display_name)
+                    ->values();
 
-            $stall = Stall::find($stallId);
+                if ($nonVacantStallNames->isNotEmpty()) {
+                    $validator->errors()->add(
+                        'stall_ids',
+                        'Only vacant stalls can be opened. Please remove: ' . $nonVacantStallNames->implode(', ') . '.'
+                    );
+                }
 
-            if ($stall && $stall->stall_status === 'Occupied') {
-                $validator->errors()->add('stall_id', 'Occupied stalls cannot be opened for new applications.');
-            }
+                $stallsWithActiveOpenings = ApplicationOpening::query()
+                    ->whereIn('stall_id', $stallIds)
+                    ->whereIn('opening_status', ['Open', 'Closed'])
+                    ->with('stall:id,stall_number')
+                    ->get()
+                    ->map(fn (ApplicationOpening $opening) => $opening->stall?->display_name)
+                    ->filter()
+                    ->unique()
+                    ->values();
 
-            $hasActiveOpening = ApplicationOpening::where('stall_id', $stallId)
-                ->whereIn('opening_status', ['Open', 'Closed'])
-                ->exists();
-
-            if ($hasActiveOpening) {
-                $validator->errors()->add('stall_id', 'This stall already has an active application opening.');
+                if ($stallsWithActiveOpenings->isNotEmpty()) {
+                    $validator->errors()->add(
+                        'stall_ids',
+                        'These stalls already have an active application opening: ' . $stallsWithActiveOpenings->implode(', ') . '.'
+                    );
+                }
             }
 
             $selectedRequirementIds = collect($this->input('requirement_type_ids', []))

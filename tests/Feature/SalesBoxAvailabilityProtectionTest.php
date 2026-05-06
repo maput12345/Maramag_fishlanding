@@ -101,6 +101,43 @@ class SalesBoxAvailabilityProtectionTest extends TestCase
         $this->assertSame(FishBoxStatusConstant::IN_STOCK, $fishBox->fresh()->status);
     }
 
+    public function test_manual_transaction_auto_assigns_available_box_on_save(): void
+    {
+        [$user, $broker] = $this->createBrokerUser('auto-assign@example.com');
+        $fishType = FishType::create([
+            'name' => 'budlisan',
+            'description' => 'Threadfin bream',
+        ]);
+        $fishBox = $this->createAvailableFishBox($broker, $user, $fishType, 'auto-assign-box', 1800.00);
+
+        $this->actingAs($user);
+
+        $response = $this->post('/broker/sales', [
+            'sales_date' => '2026-04-27',
+            'buyer_name' => 'auto-buyer',
+            'buyer_contact' => '09170000055',
+            'total_amount' => 2500,
+            'after_save' => 'transaction',
+            'sales_details' => [
+                [
+                    'box_id' => [''],
+                    'fish_type_id' => $fishType->id,
+                    'unit_price' => 2500,
+                    'quantity' => 1,
+                    'sub_total' => 2500,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('broker.transaction', [], false));
+        $response->assertSessionHas('success');
+
+        $this->assertSame(1, Sales::count());
+        $this->assertSame(1, SalesDetails::count());
+        $this->assertSame($fishBox->id, SalesDetails::first()?->fishBoxPurchase?->fish_box_id);
+        $this->assertSame(FishBoxStatusConstant::SOLD, $fishBox->fresh()->status);
+    }
+
     /**
      * @return array{0: User, 1: Broker}
      */

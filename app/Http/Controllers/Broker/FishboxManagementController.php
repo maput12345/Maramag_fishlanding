@@ -17,6 +17,11 @@ class FishboxManagementController extends Controller
     public function index(Request $request): View
     {
         $tab = $request->get('tab', 'fishBoxes'); // Default to fishBoxes tab
+        $validTabs = ['fishBoxes', 'fishTypes', 'fishPrices'];
+
+        if (!in_array($tab, $validTabs, true)) {
+            $tab = 'fishBoxes';
+        }
 
         // Delegate to appropriate controller based on tab
         switch ($tab) {

@@ -64,9 +64,7 @@
                                         <x-heroicon-o-flag class="w-4 h-4 mr-2" />
                                         Status
                                     </span>
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $salesStatusesWithColorClasses[$viewingSales->status] }}">
-                                        {{ $salesStatusesWithDisplayNames[$viewingSales->status] }}
-                                    </span>
+                                    <x-status-badge :status="$salesStatusesWithDisplayNames[$viewingSales->status]" />
                                 </div>
                             </div>
                         </div>
@@ -127,22 +125,7 @@
                                          style="width: {{ $progressPercentage }}%"></div>
                                 </div>
                                 <div class="text-center">
-                                    @if($viewingSales->status === \App\Constants\SalesStatusConstant::PAID)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <x-heroicon-o-check-circle class="w-4 h-4 mr-1" />
-                                            Fully Paid
-                                        </span>
-                                    @elseif($viewingSales->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            <x-heroicon-o-clock class="w-4 h-4 mr-1" />
-                                            Partially Paid
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <x-heroicon-o-exclamation-triangle class="w-4 h-4 mr-1" />
-                                            Pending Payment
-                                        </span>
-                                    @endif
+                                    <x-status-badge :status="$salesStatusesWithDisplayNames[$viewingSales->status]" />
                                 </div>
                             </div>
                         </div>
@@ -198,9 +181,7 @@
                                                         <div>
                                                                 <div class="flex flex-wrap gap-2">
                                                                     @foreach($detail->box_id as $boxId)
-                                                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                                                        {{ $detail->fishBox?->name ?? ('Fish Box #' . $boxId) }}
-                                                                        </span>
+                                                                        <x-status-badge status="Sold" :label="$detail->fishBox?->name ?? ('Fish Box #' . $boxId)" size="sm" />
                                                                     @endforeach
                                                                 </div>
                                                         </div>
@@ -288,11 +269,7 @@
                                                         </div>
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap">
-                                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
-                                                            {{ $payment->status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                                            <x-heroicon-o-check-circle class="w-3 h-3 mr-1" />
-                                                            {{ $payment->status }}
-                                                        </span>
+                                                        <x-status-badge :status="$payment->status" size="sm" />
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                         <form action="{{ route('broker.sales-payments.destroy', $payment->id) }}"

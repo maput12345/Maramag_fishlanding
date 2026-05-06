@@ -34,7 +34,7 @@
                 <div class="analytics-filter-layout">
                     <div class="status-field">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select name="status" x-model="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <select name="status" x-model="status" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Status</option>
                             <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Pending Payment</option>
                             <option value="{{ \App\Constants\SalesStatusConstant::PAID }}">Paid</option>
@@ -53,10 +53,10 @@
                     </div>
 
                     <div class="buttons-field flex justify-end space-x-2">
-                        <a href="{{ route('broker.sales.analytics') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        <a href="{{ route('broker.sales.analytics') }}" class="app-button app-button--secondary px-4 py-2 text-sm">
                             Clear
                         </a>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                        <button type="submit" class="app-button app-button--primary px-4 py-2 text-sm">
                             Search
                         </button>
                     </div>
@@ -216,13 +216,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->total_amount, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->paid_amount, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($sale->status === \App\Constants\SalesStatusConstant::PAID)
-                                        <span class="status-badge status-badge--paid">Paid</span>
-                                    @elseif($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
-                                        <span class="status-badge status-badge--partial">Partial</span>
-                                    @else
-                                        <span class="status-badge status-badge--pending">Pending</span>
-                                    @endif
+                                    <x-status-badge :status="\App\Constants\SalesStatusConstant::getDisplayName($sale->status)" />
                                 </td>
                             </tr>
                         @empty

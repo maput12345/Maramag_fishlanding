@@ -76,6 +76,7 @@ class FinancialStatementFeatureTest extends TestCase
         $this->assertEqualsWithDelta(50.0, $statement['operating_income'], 0.01);
         $this->assertEqualsWithDelta(50.0, $statement['loss_on_sale'], 0.01);
         $this->assertEqualsWithDelta(0.0, $statement['net_income'], 0.01);
+        $this->assertEqualsWithDelta(0.0, $statement['cash_on_hand'], 0.01);
         $this->assertCount(2, $salesBreakdown);
         $this->assertSame(
             collect([$dataset['sale_one']->formatted_id, $dataset['sale_two']->formatted_id])->sort()->values()->all(),
@@ -144,6 +145,7 @@ class FinancialStatementFeatureTest extends TestCase
         $response->assertSee('Selling, General and Administrative Expenses');
         $response->assertSee('Fuel');
         $response->assertSee('Sales Revenue');
+        $response->assertSee('Cash on Hand');
     }
 
     public function test_daily_financial_statement_includes_outstanding_receivable_balance_as_of_statement_date(): void
@@ -170,6 +172,8 @@ class FinancialStatementFeatureTest extends TestCase
 
         $this->assertEqualsWithDelta(420.0, $statementApr25['outstanding_receivable_balance'], 0.01);
         $this->assertEqualsWithDelta(400.0, $statementApr26['outstanding_receivable_balance'], 0.01);
+        $this->assertEqualsWithDelta(100.0, $statementApr25['cash_on_hand'], 0.01);
+        $this->assertEqualsWithDelta(0.0, $statementApr26['cash_on_hand'], 0.01);
     }
 
     /**

@@ -6,7 +6,9 @@ use App\Constants\FishBoxStatusConstant;
 use App\Constants\RoleStatusConstant;
 use App\Constants\SalesStatusConstant;
 use App\Http\Controllers\Broker\FishBoxController;
+use App\Http\Controllers\Broker\FishTypesController;
 use App\Http\Requests\FishBoxRequest;
+use App\Http\Requests\FishTypeRequest;
 use App\Models\Broker;
 use App\Models\BrokerFishType;
 use App\Models\Buyer;
@@ -23,6 +25,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class InventorySummaryConsistencyTest extends TestCase
@@ -89,6 +92,130 @@ class InventorySummaryConsistencyTest extends TestCase
         $this->assertTrue(collect($createdBoxes)->every(fn (FishBox $fishBox): bool => !$fishBox->canBeEdited()));
         $this->assertSame(2, $summary['unassigned']);
         $this->assertSame(2, $summary['total']);
+    }
+
+    public function test_manual_fish_box_edit_rejects_direct_sold_status_changes(): void
+    {
+        [$broker] = $this->createBrokerPair();
+        $user = User::findOrFail($broker->user_id);
+        $brokerRole = Role::firstOrCreate([
+            'role_name' => RoleStatusConstant::BROKER,
+        ]);
+        $user->roles()->syncWithoutDetaching([$brokerRole->id]);
+
+        $fishType = FishType::create([
+            'name' => 'manual-status-bangus',
+            'description' => 'Milkfish',
+        ]);
+
+        BrokerFishType::create([
+            'broker_id' => $broker->id,
+            'fish_type_id' => $fishType->id,
+        ]);
+
+        $fishBox = FishBox::create([
+            'broker_id' => $broker->id,
+            'qr_code' => 'manual-status-box',
+            'box_status' => FishBoxStatusConstant::IN_STOCK,
+        ]);
+
+        FishBoxPurchase::create([
+            'fish_box_id' => $fishBox->id,
+            'fish_type_id' => $fishType->id,
+            'created_by_user_id' => $broker->user_id,
+            'purchase_date' => '2026-04-22',
+            'cost_price' => 100,
+        ]);
+
+        $this->actingAs($user);
+
+        try {
+            $this->makeFishBoxUpdateRequest($fishBox->id, [
+                'fish_type_id' => $fishType->id,
+                'cost_price' => 100,
+                'status' => FishBoxStatusConstant::SOLD,
+            ], $user);
+
+            $this->fail('Direct Sold status changes should fail validation.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('status', $exception->errors());
+        }
+
+        $this->assertSame(FishBoxStatusConstant::IN_STOCK, $fishBox->fresh()->status);
+    }
+
+    public function test_broker_fish_type_edit_does_not_rename_shared_fish_for_other_brokers(): void
+    {
+        [$broker, $otherBroker] = $this->createBrokerPair();
+        $user = User::findOrFail($broker->user_id);
+        $brokerRole = Role::firstOrCreate([
+            'role_name' => RoleStatusConstant::BROKER,
+        ]);
+        $user->roles()->syncWithoutDetaching([$brokerRole->id]);
+
+        $sharedFishType = FishType::create([
+            'name' => 'shared-bangus',
+            'description' => 'Shared fish',
+        ]);
+
+        BrokerFishType::create([
+            'broker_id' => $broker->id,
+            'fish_type_id' => $sharedFishType->id,
+        ]);
+
+        BrokerFishType::create([
+            'broker_id' => $otherBroker->id,
+            'fish_type_id' => $sharedFishType->id,
+        ]);
+
+        $fishBox = FishBox::create([
+            'broker_id' => $broker->id,
+            'qr_code' => 'shared-fish-box',
+            'box_status' => FishBoxStatusConstant::IN_STOCK,
+        ]);
+
+        $purchase = FishBoxPurchase::create([
+            'fish_box_id' => $fishBox->id,
+            'fish_type_id' => $sharedFishType->id,
+            'created_by_user_id' => $broker->user_id,
+            'purchase_date' => '2026-04-22',
+            'cost_price' => 100,
+        ]);
+
+        $controller = app(FishTypesController::class);
+
+        $this->actingAs($user);
+
+        $response = $controller->update(
+            $this->makeFishTypeUpdateRequest($sharedFishType->id, [
+                'name' => 'broker-one-bangus',
+                'description' => 'Broker-specific fish',
+            ], $user),
+            $sharedFishType->id
+        );
+
+        $this->assertSame(route('broker.inventory.index', ['tab' => 'fishTypes']), $response->getTargetUrl());
+        $this->assertSame(
+            'This fish is already used in purchases or prices. Add the new fish instead to keep history accurate.',
+            session('error')
+        );
+
+        $brokerAssignment = BrokerFishType::where('broker_id', $broker->id)
+            ->where('fish_type_id', $sharedFishType->id)
+            ->first();
+        $otherBrokerAssignment = BrokerFishType::where('broker_id', $otherBroker->id)
+            ->where('fish_type_id', $sharedFishType->id)
+            ->first();
+
+        $this->assertNull(FishType::where('name', 'broker-one-bangus')->first());
+        $this->assertSame('shared-bangus', $sharedFishType->fresh()->name);
+        $this->assertSame('shared-bangus', $brokerAssignment?->display_name);
+        $this->assertSame('Shared fish', $brokerAssignment?->display_description);
+        $this->assertSame('shared-bangus', $otherBrokerAssignment?->display_name);
+        $this->assertTrue($sharedFishType->brokers()->where('Broker.id', $otherBroker->id)->exists());
+        $this->assertTrue($sharedFishType->brokers()->where('Broker.id', $broker->id)->exists());
+        $this->assertSame($sharedFishType->id, $purchase->fresh()->fish_type_id);
+        $this->assertSame('shared-bangus', $fishBox->fresh()->fish_type_name);
     }
 
     public function test_inventory_log_summary_groups_statuses_for_the_given_day(): void
@@ -1013,6 +1140,37 @@ class InventorySummaryConsistencyTest extends TestCase
                     'tab' => 'fishBoxes',
                     'modal' => 'edit',
                     'edit' => $fishBoxId,
+                ]),
+            ]
+        );
+        $router = $this->app->make('router');
+        $route = $router->getRoutes()->match($request);
+
+        $router->substituteBindings($route);
+        $router->substituteImplicitBindings($route);
+
+        $request->setContainer($this->app);
+        $request->setRedirector($this->app->make('redirect'));
+        $request->setRouteResolver(fn () => $route);
+        $request->setUserResolver(fn () => $user);
+        $request->validateResolved();
+
+        return $request;
+    }
+
+    private function makeFishTypeUpdateRequest(int $fishTypeId, array $payload, User $user): FishTypeRequest
+    {
+        $request = FishTypeRequest::create(
+            '/broker/fish-types/' . $fishTypeId,
+            'PUT',
+            $payload,
+            [],
+            [],
+            [
+                'HTTP_REFERER' => route('broker.inventory.index', [
+                    'tab' => 'fishTypes',
+                    'modal' => 'edit',
+                    'edit' => $fishTypeId,
                 ]),
             ]
         );

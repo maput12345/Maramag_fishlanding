@@ -1,52 +1,63 @@
-@extends('layouts.app')
+@extends('layouts.applicant')
 
 @php
     $defaultApplicantType = old('applicant_type', array_key_first(\App\Models\RequirementType::applicantTypeOptions()));
     $applicantTypeOptions = \App\Models\RequirementType::applicantTypeOptions();
     $sharedApplicantType = \App\Models\RequirementType::APPLICANT_TYPE_BOTH;
+    $naturalApplicantType = \App\Models\RequirementType::APPLICANT_TYPE_NATURAL;
+    $juridicalApplicantType = \App\Models\RequirementType::APPLICANT_TYPE_JURIDICAL;
     $selectedApplicantType = old('applicant_type', $defaultApplicantType);
+    $selectedIsNatural = $selectedApplicantType === $naturalApplicantType;
+    $selectedIsJuridical = $selectedApplicantType === $juridicalApplicantType;
+    $selectedIsMarriedNatural = $selectedIsNatural && old('civil_status') === 'Married';
+    $hasRequirementErrors = collect($errors->getBag('default')->keys())
+        ->contains(fn (string $key) => str_starts_with($key, 'requirements.'));
+    $initialStep = $hasRequirementErrors ? 2 : 1;
     $visibleRequirementCount = collect($requirementDefinitions)
         ->filter(fn (array $definition) => in_array($definition['audience'], [$selectedApplicantType, $sharedApplicantType], true))
         ->count();
     $stall = $opening->stall;
     $stallGallery = $stall?->gallery_image_urls ?? [];
+    $applicant = auth()->user();
 @endphp
-
-@section('body-class', 'portal-shell theme-admin')
 
 @section('content')
 <div class="portal-page">
     <div class="portal-stage portal-stage--form">
-        <div class="portal-topbar">
-            <div class="portal-topbar__brand">
-                <span class="portal-brand-pill">LEEO Digital Services</span>
-                <div>
-                    <p class="portal-topbar__title">Broker Application Portal</p>
-                </div>
-            </div>
-
-            <div class="portal-topbar__controls">
-                <a href="{{ route('applications.index') }}" class="portal-button portal-button--secondary">
-                    <span>Back to Portal</span>
-                </a>
-
-                <a href="{{ route('logout') }}"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                   class="portal-button portal-button--ghost">
-                    <x-heroicon-o-arrow-right-on-rectangle class="portal-button__icon" />
-                    <span>Logout</span>
-                </a>
-            </div>
-
-            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
-                @csrf
-            </form>
-        </div>
-
         <form method="POST"
               action="{{ route('applications.store', $opening) }}"
               enctype="multipart/form-data"
               class="portal-form-shell"
+              @submit="if (currentStep === 1) { $event.preventDefault(); nextStep($root); }"
+              x-data="{
+                  currentStep: @js($initialStep),
+                  applicantType: @js($selectedApplicantType),
+                  civilStatus: @js(old('civil_status', '')),
+                  naturalType: @js($naturalApplicantType),
+                  juridicalType: @js($juridicalApplicantType),
+                  goToStep(step) {
+                      this.currentStep = step;
+                      window.setTimeout(() => {
+                          document.querySelector('[data-application-form-top]')?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start'
+                          });
+                      }, 0);
+                  },
+                  nextStep(form) {
+                      const fields = Array.from(form.querySelectorAll('[data-step-one-input]'))
+                          .filter((field) => !field.disabled);
+                      const invalidField = fields.find((field) => !field.checkValidity());
+
+                      if (invalidField) {
+                          invalidField.reportValidity();
+                          invalidField.focus({ preventScroll: false });
+                          return;
+                      }
+
+                      this.goToStep(2);
+                  }
+              }"
               data-application-autosave-form
               data-autosave-key="broker-application-draft:{{ auth()->id() }}:{{ $opening->id }}">
             @csrf
@@ -70,9 +81,11 @@
                 </div>
             @endif
 
-            <section class="portal-section-card portal-section-card--form">
+            <section class="portal-section-card portal-section-card--form" data-application-form-top>
                 <div class="portal-section-card__header">
                     <div>
+                        <p class="portal-section-card__eyebrow">Apply for Stall</p>
+                        <h1 class="portal-section-card__title">{{ $stall?->display_name ?? 'Open Stall Application' }}</h1>
                     </div>
                     <span class="portal-status-badge portal-status-badge--open">{{ $opening->opening_status }}</span>
                 </div>
@@ -130,14 +143,13 @@
                 </div>
             </section>
 
-            <section class="portal-section-card portal-section-card--form">
+            <section class="portal-section-card portal-section-card--form"
+                     x-show="currentStep === 1"
+                     x-cloak>
                 <div class="portal-section-card__header">
                     <div>
                         <p class="portal-section-card__eyebrow">Application Form</p>
                         <h2 class="portal-section-card__title">Applicant Details</h2>
-                        <p class="portal-section-card__description">
-                            Complete one broker application for the current available stall openings. Provide the personal or representative information that will appear on your submission.
-                        </p>
                     </div>
                     <div class="flex flex-col items-start gap-2 sm:items-end">
                         <span class="portal-count-pill">Step 1 of 2</span>
@@ -146,6 +158,13 @@
                 </div>
 
                 <div class="portal-form-grid">
+                    <div class="portal-field portal-field--wide">
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Applicant Name</p>
+                            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $applicant->name }}</p>
+                        </div>
+                    </div>
+
                     <div class="portal-field">
                         <div class="portal-field__label-row">
                             <label for="applicant_type" class="portal-field__label">Applicant Type</label>
@@ -153,6 +172,8 @@
                         </div>
                         <select id="applicant_type"
                                 name="applicant_type"
+                                x-model="applicantType"
+                                data-step-one-input
                                 class="portal-input portal-select @error('applicant_type') portal-input--error @enderror">
                             @foreach($applicantTypeOptions as $value => $label)
                                 <option value="{{ $value }}" @selected(old('applicant_type', $selectedApplicantType) === $value)>{{ $label }}</option>
@@ -164,63 +185,119 @@
                         @enderror
                     </div>
 
-                    <div class="portal-field">
-                        <label for="first_name" class="portal-field__label">First Name</label>
-                        <input id="first_name"
-                               name="first_name"
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="contact_number" class="portal-field__label">Contact Number</label>
+                        <input id="contact_number"
+                               name="contact_number"
                                type="text"
-                               value="{{ old('first_name') }}"
-                               class="portal-input @error('first_name') portal-input--error @enderror"
-                               placeholder="Enter first name">
-                        @error('first_name')
+                               value="{{ old('contact_number', $applicant->contact_number) }}"
+                               class="portal-input @error('contact_number') portal-input--error @enderror"
+                               placeholder="09xx xxx xxxx"
+                               data-applicant-type-input
+                               data-step-one-input
+                               :disabled="applicantType !== naturalType"
+                               :required="applicantType === naturalType">
+                        @error('contact_number')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field">
-                        <label for="middle_name" class="portal-field__label">Middle Name</label>
-                        <input id="middle_name"
-                               name="middle_name"
-                               type="text"
-                               value="{{ old('middle_name') }}"
-                               class="portal-input @error('middle_name') portal-input--error @enderror"
-                               placeholder="Enter middle name">
-                        @error('middle_name')
+                    <div class="portal-field portal-field--wide"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="address" class="portal-field__label">Address</label>
+                        <textarea id="address"
+                                  name="address"
+                                  rows="4"
+                                  class="portal-input portal-textarea @error('address') portal-input--error @enderror"
+                                  placeholder="Enter complete address"
+                                  data-applicant-type-input
+                                  data-step-one-input
+                                  :disabled="applicantType !== naturalType"
+                                  :required="applicantType === naturalType">{{ old('address', $applicant->address) }}</textarea>
+                        @error('address')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field">
-                        <label for="last_name" class="portal-field__label">Last Name</label>
-                        <input id="last_name"
-                               name="last_name"
-                               type="text"
-                               value="{{ old('last_name') }}"
-                               class="portal-input @error('last_name') portal-input--error @enderror"
-                               placeholder="Enter last name">
-                        @error('last_name')
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="civil_status" class="portal-field__label">Civil Status</label>
+                        <select id="civil_status"
+                                name="civil_status"
+                                x-model="civilStatus"
+                                class="portal-input portal-select @error('civil_status') portal-input--error @enderror"
+                                data-applicant-type-input
+                                data-civil-status-input
+                                data-step-one-input
+                                :disabled="applicantType !== naturalType"
+                                :required="applicantType === naturalType">
+                            <option value="">Select civil status</option>
+                            @foreach(['Single', 'Married', 'Widowed', 'Separated'] as $civilStatus)
+                                <option value="{{ $civilStatus }}" @selected(old('civil_status') === $civilStatus)>{{ $civilStatus }}</option>
+                            @endforeach
+                        </select>
+                        @error('civil_status')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field">
-                        <label for="suffix" class="portal-field__label">Suffix</label>
-                        <input id="suffix"
-                               name="suffix"
+                    <div class="portal-field portal-field--wide"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         data-married-section
+                         x-show="applicantType === naturalType && civilStatus === 'Married'"
+                         x-cloak>
+                        <label for="spouse_name" class="portal-field__label">Spouse Name</label>
+                        <input id="spouse_name"
+                               name="spouse_name"
                                type="text"
-                               value="{{ old('suffix') }}"
-                               class="portal-input @error('suffix') portal-input--error @enderror"
-                               placeholder="If none, leave it blank">
-                        <p class="portal-field__hint">If none, leave it blank.</p>
-                        @error('suffix')
+                               value="{{ old('spouse_name') }}"
+                               class="portal-input @error('spouse_name') portal-input--error @enderror"
+                               placeholder="Enter spouse name"
+                               data-applicant-type-input
+                               data-married-input
+                               data-step-one-input
+                               :disabled="applicantType !== naturalType || civilStatus !== 'Married'"
+                               :required="applicantType === naturalType && civilStatus === 'Married'">
+                        @error('spouse_name')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field portal-field--wide">
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         data-married-section
+                         x-show="applicantType === naturalType && civilStatus === 'Married'"
+                         x-cloak>
+                        <label for="spouse_contact_number" class="portal-field__label">Spouse Contact Number</label>
+                        <input id="spouse_contact_number"
+                               name="spouse_contact_number"
+                               type="text"
+                               value="{{ old('spouse_contact_number') }}"
+                               class="portal-input @error('spouse_contact_number') portal-input--error @enderror"
+                               placeholder="09xx xxx xxxx"
+                               data-applicant-type-input
+                               data-married-input
+                               data-step-one-input
+                               :disabled="applicantType !== naturalType || civilStatus !== 'Married'">
+                        @error('spouse_contact_number')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field portal-field--wide"
+                         data-applicant-type-section="{{ $juridicalApplicantType }}"
+                         x-show="applicantType === juridicalType"
+                         x-cloak>
                         <div class="portal-field__label-row">
                             <label for="business_name" class="portal-field__label">Business / Entity Name</label>
-                            <span class="portal-field__badge" data-business-badge>Optional for natural persons</span>
+                            <span class="portal-field__badge">Required for juridical persons</span>
                         </div>
                         <input id="business_name"
                                name="business_name"
@@ -228,50 +305,121 @@
                                value="{{ old('business_name') }}"
                                class="portal-input @error('business_name') portal-input--error @enderror"
                                placeholder="Enter business or entity name"
-                               data-business-input>
-                        <p class="portal-field__hint" data-business-hint>Required for juridical persons such as corporations or partnerships.</p>
+                               data-applicant-type-input
+                               data-step-one-input
+                               :disabled="applicantType !== juridicalType"
+                               :required="applicantType === juridicalType">
+                        <p class="portal-field__hint">Enter the registered corporation, partnership, or entity name.</p>
                         @error('business_name')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field">
-                        <label for="contact_number" class="portal-field__label">Contact Number</label>
-                        <input id="contact_number"
-                               name="contact_number"
-                               type="text"
-                               value="{{ old('contact_number') }}"
-                               class="portal-input @error('contact_number') portal-input--error @enderror"
-                               placeholder="09xx xxx xxxx">
-                        @error('contact_number')
+                    <div class="portal-field portal-field--wide"
+                         data-applicant-type-section="{{ $juridicalApplicantType }}"
+                         x-show="applicantType === juridicalType"
+                         x-cloak>
+                        <label for="business_address" class="portal-field__label">Business Address</label>
+                        <textarea id="business_address"
+                                  name="business_address"
+                                  rows="4"
+                                  class="portal-input portal-textarea @error('business_address') portal-input--error @enderror"
+                                  placeholder="Enter complete business address"
+                                  data-applicant-type-input
+                                  data-step-one-input
+                                  :disabled="applicantType !== juridicalType"
+                                  :required="applicantType === juridicalType">{{ old('business_address') }}</textarea>
+                        @error('business_address')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="portal-field portal-field--wide">
-                        <label for="address" class="portal-field__label">Address</label>
-                        <textarea id="address"
-                                  name="address"
-                                  rows="4"
-                                  class="portal-input portal-textarea @error('address') portal-input--error @enderror"
-                                  placeholder="Enter complete address">{{ old('address') }}</textarea>
-                        @error('address')
+                    <div class="portal-field portal-field--wide"
+                         data-applicant-type-section="{{ $juridicalApplicantType }}"
+                         x-show="applicantType === juridicalType"
+                         x-cloak>
+                        <label for="representative_name" class="portal-field__label">Representative Name</label>
+                        <input id="representative_name"
+                               name="representative_name"
+                               type="text"
+                               value="{{ old('representative_name') }}"
+                               class="portal-input @error('representative_name') portal-input--error @enderror"
+                               placeholder="Enter authorized representative name"
+                               data-applicant-type-input
+                               data-step-one-input
+                               :disabled="applicantType !== juridicalType"
+                               :required="applicantType === juridicalType">
+                        @error('representative_name')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $juridicalApplicantType }}"
+                         x-show="applicantType === juridicalType"
+                         x-cloak>
+                        <label for="representative_position" class="portal-field__label">Representative Position</label>
+                        <input id="representative_position"
+                               name="representative_position"
+                               type="text"
+                               value="{{ old('representative_position') }}"
+                               class="portal-input @error('representative_position') portal-input--error @enderror"
+                               placeholder="Enter position"
+                               data-applicant-type-input
+                               data-step-one-input
+                               :disabled="applicantType !== juridicalType"
+                               :required="applicantType === juridicalType">
+                        @error('representative_position')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $juridicalApplicantType }}"
+                         x-show="applicantType === juridicalType"
+                         x-cloak>
+                        <label for="representative_contact_number" class="portal-field__label">Representative Contact Number</label>
+                        <input id="representative_contact_number"
+                               name="representative_contact_number"
+                               type="text"
+                               value="{{ old('representative_contact_number', old('contact_number')) }}"
+                               class="portal-input @error('representative_contact_number') portal-input--error @enderror"
+                               placeholder="09xx xxx xxxx"
+                               data-applicant-type-input
+                               data-step-one-input
+                               :disabled="applicantType !== juridicalType"
+                               :required="applicantType === juridicalType">
+                        @error('representative_contact_number')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
+                <div class="portal-form-actions mt-6"
+                     style="position: sticky; bottom: 0; z-index: 10; margin: 1.5rem -0.5rem -1rem; padding: 1rem 0.5rem; background: linear-gradient(180deg, rgba(255,255,255,0.86), #ffffff 28%); border-top: 1px solid rgba(148, 163, 184, 0.22);">
+                    <a href="{{ route('applications.index') }}" class="portal-button portal-button--ghost">
+                        <span>Cancel</span>
+                    </a>
+
+                    <button type="button"
+                            class="portal-button portal-button--primary portal-button--cta"
+                            @click="nextStep($root)">
+                        <span>Next</span>
+                    </button>
+                </div>
             </section>
 
-            <section class="portal-section-card portal-section-card--form">
+            <section class="portal-section-card portal-section-card--form"
+                     x-show="currentStep === 2"
+                     x-cloak>
                 <div class="portal-section-card__header">
                     <div>
                         <p class="portal-section-card__eyebrow">Document Checklist</p>
                         <h2 class="portal-section-card__title">Upload Requirements</h2>
-                        <p class="portal-section-card__description">
-                            Only the checklist for your selected applicant type is shown. Shared requirements are marked for all applicants. Accepted files: PDF, JPG, JPEG, and PNG up to 5MB each.
-                        </p>
                     </div>
-                    <span class="portal-count-pill" data-checklist-count-pill>{{ $visibleRequirementCount }} requirements shown</span>
+                    <div class="flex flex-col items-start gap-2 sm:items-end">
+                        <span class="portal-count-pill">Step 2 of 2</span>
+                        <span class="portal-count-pill" data-checklist-count-pill>{{ $visibleRequirementCount }} requirements shown</span>
+                    </div>
                 </div>
 
                 <div class="portal-requirement-grid">
@@ -330,17 +478,19 @@
                         </article>
                     @endforeach
                 </div>
+                <div class="portal-form-actions mt-6"
+                     style="position: sticky; bottom: 0; z-index: 10; margin: 1.5rem -0.5rem -1rem; padding: 1rem 0.5rem; background: linear-gradient(180deg, rgba(255,255,255,0.86), #ffffff 28%); border-top: 1px solid rgba(148, 163, 184, 0.22);">
+                    <button type="button"
+                            class="portal-button portal-button--ghost"
+                            @click="goToStep(1)">
+                        <span>Back</span>
+                    </button>
+
+                    <button type="submit" class="portal-button portal-button--primary portal-button--cta">
+                        <span>Submit Application</span>
+                    </button>
+                </div>
             </section>
-
-            <div class="portal-form-actions">
-                <a href="{{ route('applications.index') }}" class="portal-button portal-button--ghost">
-                    <span>Cancel</span>
-                </a>
-
-                <button type="submit" class="portal-button portal-button--primary portal-button--cta">
-                    <span>Submit Application</span>
-                </button>
-            </div>
         </form>
     </div>
 </div>
@@ -357,14 +507,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const hasServerErrors = @json($errors->any());
     const sharedApplicantType = @json($sharedApplicantType);
     const requirementItems = document.querySelectorAll('[data-requirement-item]');
-    const businessInput = document.querySelector('[data-business-input]');
-    const businessBadge = document.querySelector('[data-business-badge]');
-    const businessHint = document.querySelector('[data-business-hint]');
+    const applicantTypeSections = document.querySelectorAll('[data-applicant-type-section]');
+    const civilStatusInput = document.querySelector('[data-civil-status-input]');
     const checklistCountPill = document.querySelector('[data-checklist-count-pill]');
     const autosaveStatus = document.querySelector('[data-autosave-status]');
-    const juridicalType = @json(\App\Models\RequirementType::APPLICANT_TYPE_JURIDICAL);
+    const naturalType = @json($naturalApplicantType);
 
-    const updateRequirementVisibility = () => {
+    const clearFieldValue = (field) => {
+        let valueChanged = false;
+
+        if (field.type === 'checkbox' || field.type === 'radio') {
+            valueChanged = field.checked;
+            field.checked = false;
+        } else if (field.type !== 'file' && field.value !== '') {
+            valueChanged = true;
+            field.value = '';
+        }
+
+        if (valueChanged) {
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    };
+
+    const updateRequirementVisibility = (clearInactiveFields = false) => {
         const activeApplicantType = applicantTypeSelect.value;
         let visibleCount = 0;
 
@@ -392,21 +558,21 @@ document.addEventListener('DOMContentLoaded', function () {
             checklistCountPill.textContent = `${visibleCount} requirement${visibleCount === 1 ? '' : 's'} shown`;
         }
 
-        const isJuridical = activeApplicantType === juridicalType;
+        const isNatural = activeApplicantType === naturalType;
+        const isMarriedNatural = isNatural && civilStatusInput?.value === 'Married';
 
-        if (businessInput) {
-            businessInput.required = isJuridical;
-        }
+        applicantTypeSections.forEach((section) => {
+            const isActiveSection = section.dataset.applicantTypeSection === activeApplicantType;
 
-        if (businessBadge) {
-            businessBadge.textContent = isJuridical ? 'Required for juridical persons' : 'Optional for natural persons';
-        }
+            section.querySelectorAll('[data-applicant-type-input]').forEach((input) => {
+                const isMarriedInput = input.hasAttribute('data-married-input');
+                const isActiveInput = isActiveSection && (!isMarriedInput || isMarriedNatural);
 
-        if (businessHint) {
-            businessHint.textContent = isJuridical
-                ? 'Enter the registered corporation, partnership, or entity name.'
-                : 'Leave this blank unless you are applying on behalf of an entity.';
-        }
+                if (!isActiveInput && clearInactiveFields) {
+                    clearFieldValue(input);
+                }
+            });
+        });
     };
 
     const initApplicationAutosave = () => {
@@ -476,6 +642,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (Object.keys(savedFields).length > 0) {
                     setAutosaveStatus('Draft restored');
+                    applicantTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    civilStatusInput?.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             } catch (error) {
                 window.localStorage.removeItem(storageKey);
@@ -521,7 +689,8 @@ document.addEventListener('DOMContentLoaded', function () {
         applicationForm.addEventListener('submit', saveDraft);
     };
 
-    applicantTypeSelect.addEventListener('change', updateRequirementVisibility);
+    applicantTypeSelect.addEventListener('change', () => updateRequirementVisibility(true));
+    civilStatusInput?.addEventListener('change', () => updateRequirementVisibility(true));
     initApplicationAutosave();
     updateRequirementVisibility();
 });

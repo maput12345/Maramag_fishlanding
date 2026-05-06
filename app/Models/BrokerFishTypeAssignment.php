@@ -17,6 +17,8 @@ class BrokerFishTypeAssignment extends Model
     protected $fillable = [
         'broker_id',
         'fish_type_id',
+        'display_name',
+        'display_description',
     ];
 
     /**
@@ -49,5 +51,51 @@ class BrokerFishTypeAssignment extends Model
     public function latestPrice(): HasOne
     {
         return $this->hasOne(FishPriceRecord::class, 'broker_fish_type_id')->latestOfMany();
+    }
+
+    public function getDisplayNameAttribute(?string $value): ?string
+    {
+        return $value ?: $this->fishType?->name;
+    }
+
+    public function getDisplayDescriptionAttribute(?string $value): ?string
+    {
+        return $value ?: $this->fishType?->description;
+    }
+
+    public static function resolveDisplayName(?int $brokerId, ?FishType $fishType): ?string
+    {
+        if (!$fishType) {
+            return null;
+        }
+
+        if (!$brokerId) {
+            return $fishType->name;
+        }
+
+        $displayName = self::query()
+            ->where('broker_id', $brokerId)
+            ->where('fish_type_id', $fishType->id)
+            ->value('display_name');
+
+        return $displayName ?: $fishType->name;
+    }
+
+    public static function resolveDisplayDescription(?int $brokerId, ?FishType $fishType): ?string
+    {
+        if (!$fishType) {
+            return null;
+        }
+
+        if (!$brokerId) {
+            return $fishType->description;
+        }
+
+        $displayDescription = self::query()
+            ->where('broker_id', $brokerId)
+            ->where('fish_type_id', $fishType->id)
+            ->value('display_description');
+
+        return $displayDescription ?: $fishType->description;
     }
 }

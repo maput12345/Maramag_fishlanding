@@ -17,7 +17,7 @@
                 @method('PUT')
 
                 <!-- Name Fields -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
                         <input type="text"
@@ -55,6 +55,32 @@
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
+
+                    <div>
+                        <label for="suffix" class="block text-sm font-medium text-gray-700">Suffix</label>
+                        <input type="text"
+                               id="suffix"
+                               name="suffix"
+                               value="{{ old('suffix', auth()->user()->getProfile()?->suffix ?? '') }}"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('suffix') border-red-300 @enderror"
+                               placeholder="Optional">
+                        @error('suffix')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div>
+                    <label for="contact_number" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                    <input type="text"
+                           id="contact_number"
+                           name="contact_number"
+                           value="{{ old('contact_number', auth()->user()->getProfile()?->contact_number ?? '') }}"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('contact_number') border-red-300 @enderror"
+                           placeholder="09xx xxx xxxx">
+                    @error('contact_number')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Address Field -->
@@ -174,10 +200,22 @@
 
 <script>
 function togglePasswordFields() {
-    const passwordOption = document.querySelector('input[name="password_option"]:checked').value;
+    const selectedPasswordOption = document.querySelector('input[name="password_option"]:checked');
+    if (!selectedPasswordOption) {
+        return;
+    }
+
+    const passwordOption = selectedPasswordOption.value;
     const currentPasswordField = document.getElementById('current_password_field');
     const newPasswordField = document.getElementById('new_password_field');
     const confirmPasswordField = document.getElementById('confirm_password_field');
+    const currentPassword = document.getElementById('current_password');
+    const password = document.getElementById('password');
+    const passwordConfirmation = document.getElementById('password_confirmation');
+
+    if (!currentPasswordField || !newPasswordField || !confirmPasswordField || !currentPassword || !password || !passwordConfirmation) {
+        return;
+    }
 
     if (passwordOption === 'change') {
         currentPasswordField.classList.remove('hidden');
@@ -185,21 +223,21 @@ function togglePasswordFields() {
         confirmPasswordField.classList.remove('hidden');
 
         // Make password fields required
-        document.getElementById('current_password').required = true;
-        document.getElementById('password').required = true;
-        document.getElementById('password_confirmation').required = true;
+        currentPassword.required = true;
+        password.required = true;
+        passwordConfirmation.required = true;
     } else {
         currentPasswordField.classList.add('hidden');
         newPasswordField.classList.add('hidden');
         confirmPasswordField.classList.add('hidden');
 
         // Remove required attribute and clear values
-        document.getElementById('current_password').required = false;
-        document.getElementById('password').required = false;
-        document.getElementById('password_confirmation').required = false;
-        document.getElementById('current_password').value = '';
-        document.getElementById('password').value = '';
-        document.getElementById('password_confirmation').value = '';
+        currentPassword.required = false;
+        password.required = false;
+        passwordConfirmation.required = false;
+        currentPassword.value = '';
+        password.value = '';
+        passwordConfirmation.value = '';
     }
 }
 

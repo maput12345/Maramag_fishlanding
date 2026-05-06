@@ -89,12 +89,12 @@
                                 <p class="activity-row__title">{{ $sale->buyer_name }} ({{ $sale->formatted_items }})</p>
                                 <div class="activity-row__detail">
                                     @if($sale->status === \App\Constants\SalesStatusConstant::PAID)
-                                        <span class="status-badge status-badge--paid">Paid</span>
+                                        <x-status-badge :status="$sale->status" label="Paid" />
                                     @elseif($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
-                                        <span class="status-badge status-badge--partial">Partial</span>
+                                        <x-status-badge :status="$sale->status" label="Partially Paid" />
                                         <span class="ml-2">Balance: PHP {{ number_format($sale->total_amount - $sale->paid_amount, 2) }}</span>
                                     @else
-                                        <span class="status-badge status-badge--pending">Pending</span>
+                                        <x-status-badge status="Pending Payment" />
                                         <span class="ml-2">Balance: PHP {{ number_format($sale->total_amount, 2) }}</span>
                                     @endif
                                 </div>

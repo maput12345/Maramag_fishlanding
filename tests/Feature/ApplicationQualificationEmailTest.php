@@ -72,6 +72,7 @@ class ApplicationQualificationEmailTest extends TestCase
             'start_date' => '2026-05-01',
             'end_date' => '2026-05-10',
             'bidding_date' => '2026-05-12',
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);
@@ -130,7 +131,8 @@ class ApplicationQualificationEmailTest extends TestCase
                 && $mail->opening->id === $opening->id
                 && $mail->stall->id === $stall->id
                 && str_contains($mail->render(), 'LEEO Office, Maramag Fish Landing')
-                && str_contains($mail->render(), 'May 12, 2026');
+                && str_contains($mail->render(), 'May 12, 2026')
+                && str_contains($mail->render(), '09:30 AM');
         });
 
         $secondResponse = $controller->review(
@@ -171,6 +173,7 @@ class ApplicationQualificationEmailTest extends TestCase
             'start_date' => '2026-05-01',
             'end_date' => '2026-05-10',
             'bidding_date' => '2026-05-12',
+            'bidding_time' => '09:30',
             'bidding_location' => 'Old Venue',
             'opening_status' => 'Open',
         ]);
@@ -207,18 +210,20 @@ class ApplicationQualificationEmailTest extends TestCase
         $response = $controller->updateOpening(
             $this->makeUpdateOpeningRequest($opening, [
                 'bidding_date' => '2026-05-15',
+                'bidding_time' => '10:45',
                 'bidding_location' => 'LEEO Conference Hall',
             ], $admin),
             $opening
         );
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
-        $this->assertSame(route('admin.stalls.index'), $response->getTargetUrl());
+        $this->assertSame(route('admin.stalls.overview'), $response->getTargetUrl());
 
         Mail::assertSent(BrokerApplicationQualifiedForBidding::class, function (BrokerApplicationQualifiedForBidding $mail) use ($qualifiedApplicant) {
             return $mail->hasTo($qualifiedApplicant->email)
                 && str_contains($mail->render(), 'LEEO Conference Hall')
-                && str_contains($mail->render(), 'May 15, 2026');
+                && str_contains($mail->render(), 'May 15, 2026')
+                && str_contains($mail->render(), '10:45 AM');
         });
 
         Mail::assertNotSent(BrokerApplicationQualifiedForBidding::class, function (BrokerApplicationQualifiedForBidding $mail) use ($underReviewApplicant) {
@@ -258,6 +263,7 @@ class ApplicationQualificationEmailTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);
@@ -268,6 +274,7 @@ class ApplicationQualificationEmailTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);

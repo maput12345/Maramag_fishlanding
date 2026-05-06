@@ -105,6 +105,16 @@ class SalesManagementController extends Controller
         return view('broker.sales.sales-polished', $data);
     }
 
+    public function transaction(Request $request)
+    {
+        $request->merge(['modal' => 'create']);
+
+        $salesController = new SalesController();
+        $data = $salesController->getIndexData($request);
+
+        return view('broker.sales.transaction', $data);
+    }
+
     /**
      * Return a fresh broker receipt snapshot for admin printing.
      */

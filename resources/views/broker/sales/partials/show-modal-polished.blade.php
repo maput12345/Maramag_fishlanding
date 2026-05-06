@@ -93,9 +93,7 @@
                                             <x-heroicon-o-flag class="mr-2 h-4 w-4" />
                                             Status
                                         </span>
-                                        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ $salesStatusesWithColorClasses[$viewingSales->status] }}">
-                                            {{ $salesStatusesWithDisplayNames[$viewingSales->status] }}
-                                        </span>
+                                        <x-status-badge :status="$salesStatusesWithDisplayNames[$viewingSales->status]" />
                                     </div>
                                 </div>
                             </div>
@@ -151,22 +149,7 @@
                                              style="width: {{ min(100, $paymentProgress) }}%"></div>
                                     </div>
                                     <div class="text-center">
-                                        @if($viewingSales->status === \App\Constants\SalesStatusConstant::PAID)
-                                            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                                                <x-heroicon-o-check-circle class="mr-1 h-4 w-4" />
-                                                Fully Paid
-                                            </span>
-                                        @elseif($viewingSales->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
-                                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
-                                                <x-heroicon-o-clock class="mr-1 h-4 w-4" />
-                                                Partially Paid
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                                                <x-heroicon-o-exclamation-triangle class="mr-1 h-4 w-4" />
-                                                Pending Payment
-                                            </span>
-                                        @endif
+                                        <x-status-badge :status="$salesStatusesWithDisplayNames[$viewingSales->status]" />
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +198,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                                    {{ $detail->fishBoxPurchase?->fishType?->name ?? 'Unknown fish' }}
+                                                    {{ $detail->item ?: 'Unknown fish' }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                                     {{ $detail->fishBoxPurchase?->purchase_date?->format('M d, Y') ?? '-' }}
@@ -294,10 +277,7 @@
                                                         </div>
                                                     </td>
                                                     <td class="whitespace-nowrap px-6 py-4">
-                                                        <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-                                                            <x-heroicon-o-check-circle class="mr-1 h-3 w-3" />
-                                                            Recorded
-                                                        </span>
+                                                        <x-status-badge status="Recorded" size="sm" />
                                                     </td>
                                                     @unless($brokerViewReadOnly)
                                                         <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">

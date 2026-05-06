@@ -2,13 +2,12 @@
     $breadcrumbs = [
         ['title' => 'Dashboard']
     ];
-    $canAccessAdminFishBoxTracking = auth()->check() && auth()->user()->isAdmin();
 @endphp
 
 @extends('layouts.admin')
 
 @section('content')
-<div class="w-full dashboard-shell">
+<div class="w-full min-w-0 dashboard-shell">
     <div class="dashboard-header">
         <span class="dashboard-kicker">LEEO Command Center</span>
         <div>
@@ -16,141 +15,202 @@
         </div>
     </div>
 
-    <div class="metric-grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
-        @if($canAccessAdminFishBoxTracking)
-            <a href="{{ route('admin.sales.tracking') }}" class="metric-card metric-card--warning">
-                <div class="metric-card__row">
-                    <div>
-                        <p class="metric-card__eyebrow">Current Missing Boxes</p>
-                        <p class="metric-card__value">{{ number_format($totalFishBoxesMissing) }}</p>
-                    </div>
-                    <span class="metric-card__icon">
-                        <x-heroicon-o-exclamation-triangle />
-                    </span>
+    <div class="dashboard-metric-grid">
+        <a href="{{ route('admin.sales.index') }}" class="metric-card metric-card--success h-full">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Total Sold Boxes</p>
+                    <p class="metric-card__value">{{ number_format($totalFishBoxesSold) }}</p>
                 </div>
-            </a>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-shopping-bag />
+                </span>
+            </div>
+        </a>
 
-            <a href="{{ route('admin.sales.tracking') }}" class="metric-card metric-card--neutral">
-                <div class="metric-card__row">
-                    <div>
-                        <p class="metric-card__eyebrow">Currently Returned Boxes</p>
-                        <p class="metric-card__value">{{ number_format($totalFishBoxesReturned) }}</p>
-                    </div>
-                    <span class="metric-card__icon">
-                        <x-heroicon-o-arrow-uturn-left />
-                    </span>
+        <a href="{{ route('admin.stalls.index') }}" class="metric-card metric-card--neutral h-full">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Occupied Stalls</p>
+                    <p class="metric-card__value">{{ number_format($occupiedStallsCount) }}</p>
                 </div>
-            </a>
-        @endif
+                <span class="metric-card__icon">
+                    <x-heroicon-o-home-modern />
+                </span>
+            </div>
+        </a>
+
+        <a href="{{ route('admin.stalls.index') }}" class="metric-card metric-card--primary h-full">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Vacant Stalls</p>
+                    <p class="metric-card__value">{{ number_format($vacantStallsCount) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-building-storefront />
+                </span>
+            </div>
+        </a>
+
+        <a href="{{ route('admin.applications.index', ['status' => 'Submitted']) }}" class="metric-card metric-card--warning h-full">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Needs Review</p>
+                    <p class="metric-card__value">{{ number_format($needsReviewCount) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-clipboard-document-check />
+                </span>
+            </div>
+        </a>
+
+        <a href="{{ route('admin.applications.index') }}" class="metric-card metric-card--neutral h-full">
+            <div class="metric-card__row">
+                <div>
+                    <p class="metric-card__eyebrow">Total Applications</p>
+                    <p class="metric-card__value">{{ number_format($totalApplicationsCount) }}</p>
+                </div>
+                <span class="metric-card__icon">
+                    <x-heroicon-o-document-text />
+                </span>
+            </div>
+        </a>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <section class="panel-card">
+        <section class="panel-card" x-data="{ period: 'daily' }">
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Top Fish Sold</h3>
+                        <h3 class="panel-card__title">Top Brokers</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                            <button type="button"
+                                class="rounded-md px-3 py-1 text-xs font-semibold transition"
+                                :class="period === 'daily' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                                @click="period = 'daily'">
+                                Daily
+                            </button>
+                            <button type="button"
+                                class="rounded-md px-3 py-1 text-xs font-semibold transition"
+                                :class="period === 'weekly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                                @click="period = 'weekly'">
+                                Weekly
+                            </button>
+                        </div>
+                        <a href="{{ route('admin.sales.index') }}" class="panel-card__action">View All</a>
                     </div>
                 </div>
 
-                <div class="activity-list">
-                    @forelse($topFishTypes as $fishType)
+                <div class="activity-list" x-show="period === 'daily'">
+                    @forelse($topBrokersDaily as $index => $brokerData)
                         <div class="activity-row">
-                            <div class="activity-row__icon">
-                                <x-heroicon-o-archive-box class="w-4 h-4" />
-                            </div>
-                            <div class="activity-row__body">
-                                <p class="activity-row__title">{{ $fishType['fish_type']->name }}</p>
-                            </div>
-                            <div class="activity-row__value">
-                                <p class="activity-row__amount">{{ $fishType['sold_count'] }} sold</p>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-state">
-                            <x-heroicon-o-archive-box class="heroicon" />
-                            <p class="text-sm">No fish sold yet.</p>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </section>
-
-        <section class="panel-card">
-            <div class="panel-card__inner">
-                <div class="panel-card__header">
-                    <div>
-                        <h3 class="panel-card__title">Top Brokers This Month</h3>
-                    </div>
-                    <a href="{{ route('admin.sales.index') }}" class="panel-card__action">View All</a>
-                </div>
-
-                <div class="activity-list">
-                    @forelse($topBrokers as $brokerData)
-                        <div class="activity-row">
-                            <div class="activity-row__icon">
-                                <x-heroicon-o-users class="w-4 h-4" />
-                            </div>
+                            <div class="activity-row__icon">{{ $index + 1 }}</div>
                             <div class="activity-row__body">
                                 <p class="activity-row__title">{{ $brokerData['broker']->name ?? 'Unknown Broker' }}</p>
-                                <p class="activity-row__detail">{{ $brokerData['sales_count'] }} sales this month</p>
+                                <p class="activity-row__detail">Sales today</p>
                             </div>
                             <div class="activity-row__value">
-                                <p class="activity-row__amount">{{ $brokerData['fishbox_count'] }} boxes</p>
+                                <p class="activity-row__amount">{{ number_format($brokerData['sales_count']) }} sales</p>
                             </div>
                         </div>
                     @empty
                         <div class="empty-state">
                             <x-heroicon-o-users class="heroicon" />
-                            <p class="text-sm">No broker sales recorded this month.</p>
+                            <p class="text-sm">No broker sales today.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="activity-list" x-show="period === 'weekly'" x-cloak>
+                    @forelse($topBrokersWeekly as $index => $brokerData)
+                        <div class="activity-row">
+                            <div class="activity-row__icon">{{ $index + 1 }}</div>
+                            <div class="activity-row__body">
+                                <p class="activity-row__title">{{ $brokerData['broker']->name ?? 'Unknown Broker' }}</p>
+                                <p class="activity-row__detail">Sales in the last 7 days</p>
+                            </div>
+                            <div class="activity-row__value">
+                                <p class="activity-row__amount">{{ number_format($brokerData['sales_count']) }} sales</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <x-heroicon-o-users class="heroicon" />
+                            <p class="text-sm">No broker sales this week.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-card" x-data="{ period: 'daily' }">
+            <div class="panel-card__inner">
+                <div class="panel-card__header">
+                    <div>
+                        <h3 class="panel-card__title">Top Fish Sold</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                            <button type="button"
+                                class="rounded-md px-3 py-1 text-xs font-semibold transition"
+                                :class="period === 'daily' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                                @click="period = 'daily'">
+                                Daily
+                            </button>
+                            <button type="button"
+                                class="rounded-md px-3 py-1 text-xs font-semibold transition"
+                                :class="period === 'weekly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                                @click="period = 'weekly'">
+                                Weekly
+                            </button>
+                        </div>
+                        <a href="{{ route('admin.sales.index') }}" class="panel-card__action">View All</a>
+                    </div>
+                </div>
+
+                <div class="activity-list" x-show="period === 'daily'">
+                    @forelse($topFishDaily as $index => $fishData)
+                        <div class="activity-row">
+                            <div class="activity-row__icon">{{ $index + 1 }}</div>
+                            <div class="activity-row__body">
+                                <p class="activity-row__title">{{ $fishData['fish_type']->name ?? 'Unknown Fish' }}</p>
+                                <p class="activity-row__detail">Sold today</p>
+                            </div>
+                            <div class="activity-row__value">
+                                <p class="activity-row__amount">{{ number_format($fishData['sold_count']) }} boxes</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <x-heroicon-o-archive-box class="heroicon" />
+                            <p class="text-sm">No fish sold today.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="activity-list" x-show="period === 'weekly'" x-cloak>
+                    @forelse($topFishWeekly as $index => $fishData)
+                        <div class="activity-row">
+                            <div class="activity-row__icon">{{ $index + 1 }}</div>
+                            <div class="activity-row__body">
+                                <p class="activity-row__title">{{ $fishData['fish_type']->name ?? 'Unknown Fish' }}</p>
+                                <p class="activity-row__detail">Sold in the last 7 days</p>
+                            </div>
+                            <div class="activity-row__value">
+                                <p class="activity-row__amount">{{ number_format($fishData['sold_count']) }} boxes</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <x-heroicon-o-archive-box class="heroicon" />
+                            <p class="text-sm">No fish sold this week.</p>
                         </div>
                     @endforelse
                 </div>
             </div>
         </section>
     </div>
-
-    @if($canAccessAdminFishBoxTracking)
-        <section class="panel-card mt-6">
-            <div class="panel-card__inner">
-                <div class="panel-card__header">
-                    <div>
-                        <h3 class="panel-card__title">Current Missing Boxes</h3>
-                        <p class="panel-card__hint">See which broker currently owns each missing fish box.</p>
-                    </div>
-                    <a href="{{ route('admin.sales.tracking', ['action' => 'Missing']) }}" class="panel-card__action">Open Tracking</a>
-                </div>
-
-                <div class="activity-list">
-                    @forelse($currentMissingBoxes as $missingBox)
-                        <div class="activity-row">
-                            <div class="activity-row__icon">
-                                <x-heroicon-o-exclamation-triangle class="w-4 h-4" />
-                            </div>
-                            <div class="activity-row__body">
-                                <p class="activity-row__title">{{ $missingBox->name }}</p>
-                                <p class="activity-row__detail">
-                                    {{ $missingBox->fish_type_name ?? 'Unknown Fish' }}
-                                    • {{ $missingBox->broker?->name ?? 'Unknown Broker' }}
-                                    @if($missingBox->broker?->stall_name)
-                                        • {{ $missingBox->broker->stall_name }}
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="activity-row__value">
-                                <p class="activity-row__amount text-red-600">Missing</p>
-                                <p class="activity-row__detail">{{ $missingBox->updated_at->format('M d, Y H:i') }}</p>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-state">
-                            <x-heroicon-o-shield-check class="heroicon" />
-                            <p class="text-sm">No boxes are currently marked missing.</p>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </section>
-    @endif
 </div>
 @endsection

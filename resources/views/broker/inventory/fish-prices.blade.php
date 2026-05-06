@@ -102,7 +102,7 @@
                             @foreach($pricingAssignments as $assignment)
                                 <option value="{{ $assignment->id }}"
                                     {{ (string) old('broker_fish_type_id') === (string) $assignment->id ? 'selected' : '' }}>
-                                    {{ $assignment->fishType?->name ?? 'Unknown Fish' }}
+                                    {{ $assignment->display_name ?? 'Unknown Fish' }}
                                     @if($assignment->latestPrice)
                                         - Current: PHP {{ number_format((float) $assignment->latestPrice->price, 2) }}
                                     @endif
@@ -116,7 +116,7 @@
                 @elseif($editingBrokerFishType)
                     <div class="rounded-xl border border-green-100 bg-green-50 px-4 py-3">
                         <p class="text-xs uppercase tracking-wide text-green-700">Fish</p>
-                        <p class="mt-1 text-base font-semibold text-gray-900">{{ $editingBrokerFishType->fishType?->name ?? 'Unknown Fish' }}</p>
+                        <p class="mt-1 text-base font-semibold text-gray-900">{{ $editingBrokerFishType->display_name ?? 'Unknown Fish' }}</p>
                     </div>
                 @endif
 
@@ -193,8 +193,102 @@
         </x-app-modal>
     @endif
 
+    @if(request('modal') === 'history')
+        <x-app-modal
+            title="Price History"
+            :subtitle="$historyBrokerFishType ? 'Previous prices for ' . ($historyBrokerFishType->display_name ?? 'this fish') . '.' : 'No fish price history was found.'"
+            :close-url="route('broker.inventory.index', ['tab' => 'fishPrices'])"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm"
+                     style="background: #2563eb; color: #ffffff;">
+                    <x-heroicon-o-clock class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            @if($historyBrokerFishType)
+                <form method="GET" action="{{ route('broker.inventory.index') }}" class="mb-4">
+                    <input type="hidden" name="tab" value="fishPrices">
+                    <input type="hidden" name="modal" value="history">
+                    <input type="hidden" name="history" value="{{ $historyBrokerFishType->id }}">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <div class="flex-1">
+                            <input type="date"
+                                   name="history_date"
+                                   value="{{ request('history_date') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit"
+                                    class="inline-flex justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors"
+                                    style="background: #2563eb;">
+                                Search
+                            </button>
+                            @if(request()->filled('history_date'))
+                                <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'history', 'history' => $historyBrokerFishType->id]) }}"
+                                   class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+
+                <div class="overflow-hidden rounded-xl border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Default Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                @forelse($historyBrokerFishType->prices as $priceRecord)
+                                    <tr>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                            {{ $priceRecord->price_date?->format('M d, Y') ?? 'Not set' }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
+                                            PHP {{ number_format((float) $priceRecord->price, 2) }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                            @if($priceRecord->default_cost_price !== null)
+                                                PHP {{ number_format((float) $priceRecord->default_cost_price, 2) }}
+                                            @else
+                                                <span class="text-gray-400">Not set</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                            {{ request()->filled('history_date') ? 'No price history matched that date.' : 'No price history yet.' }}
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @else
+                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    The selected fish price history could not be found.
+                </div>
+            @endif
+
+            <div class="mt-6 flex justify-end border-t border-gray-100 pt-5">
+                <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices']) }}"
+                   class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    Close
+                </a>
+            </div>
+        </x-app-modal>
+    @endif
+
     <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
-        <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{ search: '{{ request('search') }}' }">
+        <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{ search: @js((string) request('search', '')) }">
             <input type="hidden" name="tab" value="fishPrices">
             <div class="flex items-center space-x-4">
                 <div class="flex-1">
@@ -254,7 +348,7 @@
                                         <x-heroicon-o-tag class="w-5 h-5 text-white" />
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $assignment->fishType?->name ?? 'Unknown Fish' }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $assignment->display_name ?? 'Unknown Fish' }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -277,17 +371,25 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($assignment->latestPrice)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Priced
-                                    </span>
+                                    <x-status-badge status="Available" label="Priced" size="sm" />
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                        Needs Price
-                                    </span>
+                                    <x-status-badge status="Pending" label="Needs Price" size="sm" />
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
+                                    @if((int) $assignment->prices_count > 0)
+                                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'history', 'history' => $assignment->id]) }}"
+                                           class="transition-colors"
+                                           style="color: #2563eb;"
+                                           title="View price history">
+                                            <x-heroicon-o-clock class="w-6 h-6" />
+                                        </a>
+                                    @else
+                                        <button type="button" class="text-gray-400 cursor-not-allowed" title="No price history yet">
+                                            <x-heroicon-o-clock class="w-6 h-6" />
+                                        </button>
+                                    @endif
                                     @unless($brokerViewReadOnly)
                                         <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'edit', 'edit' => $assignment->id]) }}"
                                            class="text-green-600 hover:text-green-900 transition-colors"
@@ -299,7 +401,7 @@
                                                   method="POST"
                                                   class="inline"
                                                   data-swal="delete"
-                                                  data-record-name="{{ $assignment->fishType?->name ?? 'fish price' }}">
+                                                  data-record-name="{{ $assignment->display_name ?? 'fish price' }}">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Remove price">

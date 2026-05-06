@@ -3,6 +3,22 @@
     .main-content {
         transition: margin-left 0.3s ease-in-out;
     }
+
+    .theme-admin .admin-sidebar.w-64 {
+        width: 16rem !important;
+    }
+
+    .theme-admin .admin-sidebar.w-16 {
+        width: 4rem !important;
+    }
+
+    .theme-admin .admin-main-shell.md\:ml-64 {
+        margin-left: 16rem !important;
+    }
+
+    .theme-admin .admin-main-shell.md\:ml-16 {
+        margin-left: 4rem !important;
+    }
 }
 
 /* Mobile and tablet sidebar and modal spacing fix - covers all devices that might show mobile sidebar */

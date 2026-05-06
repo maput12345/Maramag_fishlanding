@@ -26,11 +26,16 @@ class FishPricesController extends Controller
                 'fishType:id,name',
                 'latestPrice' => $this->latestPriceSelect(),
             ])
-            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->select(['id', 'broker_id', 'fish_type_id', 'display_name', 'display_description'])
+            ->withCount('prices')
             ->where('broker_id', $brokerId)
             ->when($search !== '', function ($query) use ($search) {
-                $query->whereHas('fishType', function ($fishTypeQuery) use ($search) {
-                    $fishTypeQuery->where('name', 'like', '%' . $search . '%');
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery
+                        ->where('display_name', 'like', '%' . $search . '%')
+                        ->orWhereHas('fishType', function ($fishTypeQuery) use ($search) {
+                            $fishTypeQuery->where('name', 'like', '%' . $search . '%');
+                        });
                 });
             })
             ->orderByDesc('id')
@@ -39,13 +44,14 @@ class FishPricesController extends Controller
         $pricingAssignments = collect();
 
         $editingBrokerFishType = null;
+        $historyBrokerFishType = null;
 
         if ($request->get('modal') === 'create') {
             $pricingAssignments = BrokerFishTypeAssignment::with([
                     'fishType:id,name',
                     'latestPrice' => $this->latestPriceSelect(false),
                 ])
-                ->select(['id', 'broker_id', 'fish_type_id'])
+                ->select(['id', 'broker_id', 'fish_type_id', 'display_name', 'display_description'])
                 ->where('broker_id', $brokerId)
                 ->orderByDesc('id')
                 ->get();
@@ -56,9 +62,35 @@ class FishPricesController extends Controller
                     'fishType:id,name',
                     'latestPrice' => $this->latestPriceSelect(),
                 ])
-                ->select(['id', 'broker_id', 'fish_type_id'])
+                ->select(['id', 'broker_id', 'fish_type_id', 'display_name', 'display_description'])
                 ->where('broker_id', $brokerId)
                 ->find($request->get('edit'));
+        }
+
+        if ($request->get('modal') === 'history' && $request->filled('history')) {
+            $historyDate = trim((string) $request->get('history_date'));
+
+            $historyBrokerFishType = BrokerFishTypeAssignment::with([
+                    'fishType:id,name',
+                    'prices' => function ($query) use ($historyDate) {
+                        $query->select([
+                                'id',
+                                'broker_fish_type_id',
+                                'price',
+                                'default_cost_price',
+                                'price_date',
+                                'created_at',
+                            ])
+                            ->when($historyDate !== '', function ($searchQuery) use ($historyDate) {
+                                $searchQuery->whereDate('price_date', $historyDate);
+                            })
+                            ->orderByDesc('price_date')
+                            ->orderByDesc('id');
+                    },
+                ])
+                ->select(['id', 'broker_id', 'fish_type_id', 'display_name', 'display_description'])
+                ->where('broker_id', $brokerId)
+                ->find($request->get('history'));
         }
 
         $priceMetrics = FishPriceRecord::query()
@@ -93,6 +125,7 @@ class FishPricesController extends Controller
             'brokerFishTypes',
             'pricingAssignments',
             'editingBrokerFishType',
+            'historyBrokerFishType',
             'priceSummary'
         );
     }
@@ -107,29 +140,15 @@ class FishPricesController extends Controller
 
         $assignment = $this->findMutableAssignment($brokerId, (int) $validated['broker_fish_type_id']);
 
-        $latestPrice = $assignment->latestPrice;
-
-        if ($latestPrice) {
-            $latestPrice->update([
-                'price' => $validated['price'],
-                'default_cost_price' => $validated['default_cost_price'] ?? null,
-                'price_date' => $validated['price_date'],
-            ]);
-
-            $message = 'Fish price updated successfully.';
-        } else {
-            FishPriceRecord::create([
-                'broker_fish_type_id' => $assignment->id,
-                'price' => $validated['price'],
-                'default_cost_price' => $validated['default_cost_price'] ?? null,
-                'price_date' => $validated['price_date'],
-            ]);
-
-            $message = 'Fish price created successfully.';
-        }
+        FishPriceRecord::create([
+            'broker_fish_type_id' => $assignment->id,
+            'price' => $validated['price'],
+            'default_cost_price' => $validated['default_cost_price'] ?? null,
+            'price_date' => $validated['price_date'],
+        ]);
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishPrices'])
-            ->with('success', $message);
+            ->with('success', 'Fish price saved to history successfully.');
     }
 
     /**
@@ -142,23 +161,15 @@ class FishPricesController extends Controller
 
         $assignment = $this->findMutableAssignment($brokerId, $id);
 
-        if ($assignment->latestPrice) {
-            $assignment->latestPrice->update([
-                'price' => $validated['price'],
-                'default_cost_price' => $validated['default_cost_price'] ?? null,
-                'price_date' => $validated['price_date'],
-            ]);
-        } else {
-            FishPriceRecord::create([
-                'broker_fish_type_id' => $assignment->id,
-                'price' => $validated['price'],
-                'default_cost_price' => $validated['default_cost_price'] ?? null,
-                'price_date' => $validated['price_date'],
-            ]);
-        }
+        FishPriceRecord::create([
+            'broker_fish_type_id' => $assignment->id,
+            'price' => $validated['price'],
+            'default_cost_price' => $validated['default_cost_price'] ?? null,
+            'price_date' => $validated['price_date'],
+        ]);
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishPrices'])
-            ->with('success', 'Fish price updated successfully.');
+            ->with('success', 'Fish price saved to history successfully.');
     }
 
     /**

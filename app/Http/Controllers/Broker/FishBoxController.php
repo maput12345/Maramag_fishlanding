@@ -63,6 +63,7 @@ class FishBoxController extends Controller
         $bulkRestockEligibleBoxes = collect();
 
         $editingFishBox = null;
+        $historyFishBox = null;
 
         // Check if we're in edit mode
         if ($request && $request->get('modal') === 'edit' && $request->has('edit')) {
@@ -71,6 +72,35 @@ class FishBoxController extends Controller
 
         if ($request && $request->get('modal') === 'bulk-restock') {
             $bulkRestockEligibleBoxes = FishBox::getEligibleForBulkRestock($brokerId);
+        }
+
+        if ($request && $request->get('modal') === 'history' && $request->filled('history')) {
+            $historyDate = trim((string) $request->get('box_history_date'));
+
+            $historyFishBox = FishBox::query()
+                ->select('FishBox.*')
+                ->withBrokerBoxNumber()
+                ->with([
+                    'purchases' => function ($query) use ($historyDate) {
+                        $query->select([
+                                'id',
+                                'fish_box_id',
+                                'fish_type_id',
+                                'created_by_user_id',
+                                'purchase_date',
+                                'cost_price',
+                                'created_at',
+                            ])
+                            ->with(['fishType:id,name,description'])
+                            ->when($historyDate !== '', function ($searchQuery) use ($historyDate) {
+                                $searchQuery->whereDate('purchase_date', $historyDate);
+                            })
+                            ->orderByDesc('purchase_date')
+                            ->orderByDesc('id');
+                    },
+                ])
+                ->where('broker_id', $brokerId)
+                ->find($request->get('history'));
         }
 
         return compact(
@@ -83,7 +113,8 @@ class FishBoxController extends Controller
             'bulkQrFishBoxes',
             'fishTypeDefaultCosts',
             'bulkRestockEligibleCount',
-            'bulkRestockEligibleBoxes'
+            'bulkRestockEligibleBoxes',
+            'historyFishBox'
         );
     }
 
@@ -293,7 +324,7 @@ class FishBoxController extends Controller
     public function returnToStock(): RedirectResponse
     {
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
-        $returnedCount = FishBox::returnAllToStock($brokerId);
+        $returnedCount = FishBox::returnAllToStock($brokerId, Auth::id());
 
         if ($returnedCount === 0) {
             return redirect()->back()
@@ -301,7 +332,7 @@ class FishBoxController extends Controller
         }
 
         return redirect()->back()
-            ->with('success', "{$returnedCount} fish boxes returned to stock successfully!");
+            ->with('success', "{$returnedCount} returned fish boxes cleared and marked as unassigned.");
     }
 
     /**

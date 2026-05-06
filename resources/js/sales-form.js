@@ -88,6 +88,22 @@ function initializeSalesForm(config, scope = document) {
         return fishType?.name || 'this fish';
     };
 
+    const renderAutoAssignFishBox = (container, rowIndex, availableCount = null) => {
+        const availableLabel = availableCount === null
+            ? ''
+            : `<div class="mt-1 text-xs text-slate-500">Available: ${availableCount} ${availableCount === 1 ? 'box' : 'boxes'}</div>`;
+
+        container.innerHTML = `
+            <div class="fish-box-item">
+                <select class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500" disabled>
+                    <option value="">Auto-assign available box</option>
+                </select>
+                ${availableLabel}
+                <input type="hidden" name="sales_details[${rowIndex}][box_id][]" class="fish-box-hidden-input">
+            </div>
+        `;
+    };
+
     const getSuggestedPrice = (row, fishTypeId) => {
         if (!fishTypeId) {
             return null;
@@ -302,18 +318,10 @@ function initializeSalesForm(config, scope = document) {
             }
         }
 
-        fishBoxesContainer.innerHTML = '';
-        for (let i = 0; i < quantity; i++) {
-            const fishBoxItem = document.createElement('div');
-            fishBoxItem.className = 'fish-box-item';
-            fishBoxItem.innerHTML = `
-                <select class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500" disabled>
-                    <option value="">Auto-select</option>
-                </select>
-                <input type="hidden" name="sales_details[${row.dataset.index}][box_id][]" class="fish-box-hidden-input">
-            `;
-            fishBoxesContainer.appendChild(fishBoxItem);
-        }
+        const availableBoxes = fishTypeSelect.value
+            ? getAvailableFishBoxesForType(fishTypeSelect.value, row.dataset.index)
+            : null;
+        renderAutoAssignFishBox(fishBoxesContainer, row.dataset.index, availableBoxes?.length ?? null);
 
         if (fishTypeSelect.value) handleFishTypeChange(fishTypeSelect);
         updateAllRowsFishBoxAvailability();
@@ -340,18 +348,7 @@ function initializeSalesForm(config, scope = document) {
                 const quantityInput = row.querySelector('.quantity-input');
                 if (quantityInput) quantityInput.setAttribute('max', availableBoxes.length);
 
-                fishBoxesContainer.querySelectorAll('.fish-box-item').forEach((item, index) => {
-                    const fishBoxSelect = item.querySelector('.fish-box-select');
-                    const fishBoxHiddenInput = item.querySelector('.fish-box-hidden-input');
-
-                    if (availableBoxes[index]) {
-                        const selectedBox = availableBoxes[index];
-                        fishBoxHiddenInput.value = selectedBox.id;
-                        fishBoxSelect.innerHTML = `<option value="${selectedBox.id}" selected>${selectedBox.name}</option>`;
-                    } else {
-                        fishBoxSelect.innerHTML = '<option value="">No more boxes available</option>';
-                    }
-                });
+                renderAutoAssignFishBox(fishBoxesContainer, row.dataset.index, availableBoxes.length);
 
                 const fishType = SALES_CONFIG.fishTypes.find(ft => ft.id == fishTypeId);
                 if (fishType && itemInput) itemInput.value = fishType.name;
@@ -382,10 +379,7 @@ function initializeSalesForm(config, scope = document) {
                 row.dataset.activeFishTypeId = '';
             }
         } else {
-            fishBoxesContainer.querySelectorAll('.fish-box-item').forEach(item => {
-                item.querySelector('.fish-box-select').innerHTML = '<option value="">Auto-select</option>';
-                item.querySelector('.fish-box-hidden-input').value = '';
-            });
+            renderAutoAssignFishBox(fishBoxesContainer, row.dataset.index);
             applySuggestedPriceToRow(row, {
                 clearOnMissing: true,
             });

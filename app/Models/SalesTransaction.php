@@ -166,6 +166,7 @@ class SalesTransaction extends Model
         return DB::transaction(function () use ($salesData, $salesDetails, $brokerId, $initialPayment) {
             $userId = Auth::id();
             $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
+            $salesDetails = static::assignAutomaticFishBoxes($salesDetails, $brokerId);
             $purchaseIdsByBoxId = static::resolveSellablePurchaseIds(
                 static::lockFishBoxesForUpdate($brokerId, static::extractRequestedBoxIds($salesDetails)),
                 static::extractRequestedBoxIds($salesDetails)
@@ -282,6 +283,75 @@ class SalesTransaction extends Model
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Fill manual sale rows with available fish boxes at save time.
+     */
+    private static function assignAutomaticFishBoxes(array $salesDetails, int $brokerId): array
+    {
+        $reservedBoxIds = static::extractRequestedBoxIds($salesDetails);
+
+        foreach ($salesDetails as $index => $detail) {
+            if (!is_array($detail)) {
+                continue;
+            }
+
+            $existingBoxIds = collect($detail['box_id'] ?? [])
+                ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+                ->map(fn ($boxId): int => (int) $boxId)
+                ->values()
+                ->all();
+
+            if ($existingBoxIds !== []) {
+                continue;
+            }
+
+            $fishTypeId = (int) ($detail['fish_type_id'] ?? 0);
+            $quantity = max(1, (int) ($detail['quantity'] ?? 1));
+
+            if ($fishTypeId <= 0) {
+                continue;
+            }
+
+            $availableBoxes = FishBox::query()
+                ->with([
+                    'currentPurchase' => function ($query) {
+                        $query->select([
+                            'FishBoxStockCycle.id',
+                            'FishBoxStockCycle.fish_box_id',
+                            'FishBoxStockCycle.fish_type_id',
+                        ]);
+                    },
+                ])
+                ->where('broker_id', $brokerId)
+                ->where('box_status', FishBoxStatusConstant::IN_STOCK)
+                ->whereNotIn('id', $reservedBoxIds)
+                ->whereHas('currentPurchase', function ($query) use ($fishTypeId) {
+                    $query->where('fish_type_id', $fishTypeId);
+                })
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->limit($quantity)
+                ->get();
+
+            if ($availableBoxes->count() < $quantity) {
+                throw ValidationException::withMessages([
+                    'sales_details' => 'Not enough available fish boxes for one of the selected fish. Refresh the transaction and try again.',
+                ]);
+            }
+
+            $assignedBoxIds = $availableBoxes
+                ->pluck('id')
+                ->map(fn ($boxId): int => (int) $boxId)
+                ->values()
+                ->all();
+
+            $salesDetails[$index]['box_id'] = $assignedBoxIds;
+            $reservedBoxIds = array_values(array_unique(array_merge($reservedBoxIds, $assignedBoxIds)));
+        }
+
+        return $salesDetails;
     }
 
     /**
@@ -478,7 +548,7 @@ class SalesTransaction extends Model
      *
      * @return LengthAwarePaginator
      */
-    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $brokerId, ?string $dateFrom = null, ?string $dateTo = null) : LengthAwarePaginator
+    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null) : LengthAwarePaginator
     {
         $query = self::query()
             ->withPaidAmount()
@@ -597,7 +667,7 @@ class SalesTransaction extends Model
      *
      * @return Collection
      */
-    public static function getRecentSales($limit = 4, ?int $brokerId): Collection
+    public static function getRecentSales(int $limit = 4, ?int $brokerId = null): Collection
     {
         $query = self::query()
             ->withPaidAmount()

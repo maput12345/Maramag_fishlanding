@@ -89,6 +89,7 @@
                     'mode' => request('modal') === 'edit' ? 'edit' : 'create',
                     'detailIndex' => count($salesDetails ?? []),
                 ];
+                $nextTransactionUrl = route('broker.sales.sales', array_merge($salesBaseQuery ?? [], ['modal' => 'create']));
             @endphp
 
             <script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
@@ -96,6 +97,7 @@
             <form action="{{ request('modal') === 'create' ? route('broker.sales.store') : route('broker.sales.update', $editingSales->id ?? '') }}"
                   method="POST"
                   data-sales-async-form
+                  @if(request('modal') === 'create') data-sales-after-save-url="{{ $nextTransactionUrl }}" @endif
                   class="space-y-6">
                 @csrf
                 @if(request('modal') === 'edit')
@@ -122,6 +124,7 @@
                     <label class="block text-sm font-medium text-gray-700">
                         Sales Details <span class="text-red-500">*</span>
                     </label>
+                    <p class="text-xs text-gray-500">Price per box auto-fills from your current broker fish price list when available.</p>
 
                     <div class="space-y-4" id="sales-details-container">
                         @foreach($salesDetails as $index => $detail)
@@ -165,7 +168,7 @@
                                                     <select name="sales_details[{{ $index }}][box_id][]"
                                                             class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500"
                                                             disabled>
-                                                            <option value="">Auto-select</option>
+                                                            <option value="">Auto-assign available box</option>
                                                     </select>
                                                     <input type="hidden" name="sales_details[{{ $index }}][box_id][]" class="fish-box-hidden-input">
                                                 </div>

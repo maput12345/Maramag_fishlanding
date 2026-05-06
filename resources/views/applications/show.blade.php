@@ -1,46 +1,8 @@
-@extends('layouts.app')
-
-@php
-    $applicationStatusTone = match ($application->application_status) {
-        'Qualified', 'Winner' => 'portal-status-badge--success',
-        'Needs Revision' => 'portal-status-badge--warning',
-        'Rejected', 'Not Selected' => 'portal-status-badge--danger',
-        default => 'portal-status-badge--neutral',
-    };
-@endphp
-
-@section('body-class', 'portal-shell theme-admin')
+@extends('layouts.applicant')
 
 @section('content')
 <div class="portal-page">
     <div class="portal-stage portal-stage--form">
-        <div class="portal-topbar">
-            <div class="portal-topbar__brand">
-                <span class="portal-brand-pill">LEEO Digital Services</span>
-                <div>
-                    <p class="portal-topbar__title">Broker Application Portal</p>
-                    <p class="portal-topbar__meta">A consistent record view for your submitted stall application.</p>
-                </div>
-            </div>
-
-            <div class="portal-topbar__controls">
-                <a href="{{ route('applications.index') }}" class="portal-button portal-button--secondary">
-                    <span>Back to Portal</span>
-                </a>
-
-                <a href="{{ route('logout') }}"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                   class="portal-button portal-button--ghost">
-                    <x-heroicon-o-arrow-right-on-rectangle class="portal-button__icon" />
-                    <span>Logout</span>
-                </a>
-            </div>
-
-            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
-                @csrf
-            </form>
-        </div>
-
         @if(session('success') || session('error') || session('info'))
             <div class="portal-alert-stack">
                 @if(session('success'))
@@ -64,7 +26,7 @@
                     <h1 class="portal-section-card__title">{{ $application->selectedStall?->display_name ?? 'Open Stall Application' }}</h1>
                     <p class="portal-section-card__description">Review the submitted details, document records, and current LEEO status for this application.</p>
                 </div>
-                <span class="portal-status-badge {{ $applicationStatusTone }}">{{ $application->application_status }}</span>
+                <x-status-badge :status="$application->application_status" />
             </div>
 
             <div class="portal-application-card__meta">
@@ -208,19 +170,11 @@
 
             <div class="portal-requirement-grid">
                 @forelse($application->requirements as $requirement)
-                    @php
-                        $verificationTone = match ($requirement->verification_status) {
-                            'Verified' => 'portal-status-badge--success',
-                            'Rejected' => 'portal-status-badge--danger',
-                            default => 'portal-status-badge--neutral',
-                        };
-                    @endphp
-
                     <article class="portal-requirement-card">
                         <div class="portal-requirement-card__header">
                             <div>
                                 <div class="portal-requirement-card__badges">
-                                    <span class="portal-status-badge {{ $verificationTone }}">{{ $requirement->verification_status }}</span>
+                                    <x-status-badge :status="$requirement->verification_status" />
                                 </div>
                                 <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
                                 <p class="portal-requirement-card__description">

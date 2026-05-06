@@ -214,7 +214,8 @@
                 window.toastr.success(payload.message || 'Sales data saved successfully.');
             }
 
-            await refreshSalesFragment(getSalesBaseUrl(), 'replace');
+            const afterSaveUrl = form.dataset.salesAfterSaveUrl || getSalesBaseUrl();
+            await refreshSalesFragment(afterSaveUrl, 'replace');
         } catch (error) {
             if (window.toastr) {
                 window.toastr.error(error.message || 'Something went wrong while saving the form.');

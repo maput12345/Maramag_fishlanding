@@ -14,22 +14,47 @@ class StoreBrokerApplicationRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('applicant_type') !== RequirementType::APPLICANT_TYPE_JURIDICAL) {
+            return;
+        }
+
+        $representativeContactNumber = $this->input('representative_contact_number');
+
+        if (!$representativeContactNumber && $this->filled('contact_number')) {
+            $this->merge([
+                'representative_contact_number' => $this->input('contact_number'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
+        $naturalPerson = RequirementType::APPLICANT_TYPE_NATURAL;
+        $juridicalPerson = RequirementType::APPLICANT_TYPE_JURIDICAL;
+
         return [
             'applicant_type' => ['required', 'string', Rule::in(array_keys(RequirementType::applicantTypeOptions()))],
-            'first_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['nullable', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
             'suffix' => ['nullable', 'string', 'max:50'],
+            'civil_status' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', Rule::in(['Single', 'Married', 'Widowed', 'Separated'])],
+            'spouse_name' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required_if:civil_status,Married', 'nullable', 'string', 'max:255'],
+            'spouse_contact_number' => ['exclude_unless:applicant_type,' . $naturalPerson, 'nullable', 'string', 'max:50'],
             'business_name' => [
-                'nullable',
+                'exclude_unless:applicant_type,' . $juridicalPerson,
+                'required',
                 'string',
                 'max:255',
-                Rule::requiredIf(fn () => $this->input('applicant_type') === RequirementType::APPLICANT_TYPE_JURIDICAL),
             ],
-            'address' => ['required', 'string', 'max:1000'],
-            'contact_number' => ['required', 'string', 'max:50'],
+            'business_address' => ['exclude_unless:applicant_type,' . $juridicalPerson, 'required', 'string', 'max:1000'],
+            'representative_name' => ['exclude_unless:applicant_type,' . $juridicalPerson, 'required', 'string', 'max:255'],
+            'representative_position' => ['exclude_unless:applicant_type,' . $juridicalPerson, 'required', 'string', 'max:255'],
+            'representative_contact_number' => ['exclude_unless:applicant_type,' . $juridicalPerson, 'required', 'string', 'max:50'],
+            'address' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', 'max:1000'],
+            'contact_number' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', 'max:50'],
             'requirements' => ['nullable', 'array'],
             'requirements.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'requirements.*.document_number' => ['nullable', 'string', 'max:255'],

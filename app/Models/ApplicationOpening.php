@@ -23,10 +23,12 @@ class ApplicationOpening extends Model
 
     protected $fillable = [
         'stall_id',
+        'opening_batch_id',
         'opened_by_employee_id',
         'start_date',
         'end_date',
         'bidding_date',
+        'bidding_time',
         'bidding_location',
         'opening_status',
     ];
@@ -35,6 +37,7 @@ class ApplicationOpening extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'bidding_date' => 'date',
+        'bidding_time' => 'datetime:H:i',
     ];
 
     /**
@@ -43,6 +46,11 @@ class ApplicationOpening extends Model
     public function stall(): BelongsTo
     {
         return $this->belongsTo(Stall::class, 'stall_id');
+    }
+
+    public function openingBatch(): BelongsTo
+    {
+        return $this->belongsTo(OpeningBatch::class, 'opening_batch_id');
     }
 
     /**

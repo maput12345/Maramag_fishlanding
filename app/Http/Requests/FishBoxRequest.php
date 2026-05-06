@@ -51,8 +51,8 @@ class FishBoxRequest extends FormRequest
                 'cost_price' => 'nullable|numeric|min:0',
             ];
 
-            // For updates, include status validation but no quantity
-            $rules['status'] = 'required|in:' . implode(',', FishBoxStatusConstant::getEditableStatuses());
+            // Status changes must use the dedicated sales, return, and missing workflows.
+            $rules['status'] = 'nullable|in:' . implode(',', FishBoxStatusConstant::getEditableStatuses());
         } else {
             $rules = [
                 'quantity' => 'required|integer|min:1|max:999999',

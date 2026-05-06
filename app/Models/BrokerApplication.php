@@ -18,6 +18,8 @@ class BrokerApplication extends Model
     protected $fillable = [
         'user_id',
         'application_opening_id',
+        'opening_batch_id',
+        'applicant_type',
         'selected_stall_id',
         'reviewed_by_employee_id',
         'selected_by_employee_id',
@@ -25,11 +27,19 @@ class BrokerApplication extends Model
         'middle_name',
         'last_name',
         'suffix',
+        'civil_status',
+        'spouse_name',
+        'spouse_contact_number',
         'business_name',
+        'business_address',
+        'representative_name',
+        'representative_position',
         'address',
         'contact_number',
         'application_status',
         'submitted_at',
+        'revision_resubmitted_at',
+        'revision_count',
         'review_date',
         'selected_at',
         'remarks',
@@ -37,6 +47,8 @@ class BrokerApplication extends Model
 
     protected $casts = [
         'submitted_at' => 'datetime',
+        'revision_resubmitted_at' => 'datetime',
+        'revision_count' => 'integer',
         'review_date' => 'datetime',
         'selected_at' => 'datetime',
     ];
@@ -57,6 +69,11 @@ class BrokerApplication extends Model
     public function applicationOpening(): BelongsTo
     {
         return $this->belongsTo(ApplicationOpening::class, 'application_opening_id');
+    }
+
+    public function openingBatch(): BelongsTo
+    {
+        return $this->belongsTo(OpeningBatch::class, 'opening_batch_id');
     }
 
     /**
@@ -118,6 +135,11 @@ class BrokerApplication extends Model
             $this->last_name,
             $this->suffix,
         ])->filter()->implode(' ');
+    }
+
+    public function isRevisionResubmission(): bool
+    {
+        return (int) $this->revision_count > 0 && $this->revision_resubmitted_at !== null;
     }
 
     /**

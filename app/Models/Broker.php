@@ -108,7 +108,9 @@ class Broker extends Model
      */
     public function fishTypes(): BelongsToMany
     {
-        return $this->belongsToMany(FishType::class, 'BrokerFishTypeAssignment')->withTimestamps();
+        return $this->belongsToMany(FishType::class, 'BrokerFishTypeAssignment')
+            ->withPivot(['display_name', 'display_description'])
+            ->withTimestamps();
     }
 
     /**

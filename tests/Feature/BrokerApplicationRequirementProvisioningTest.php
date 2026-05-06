@@ -8,7 +8,6 @@ use App\Http\Requests\StoreBrokerApplicationRequest;
 use App\Models\ApplicationOpening;
 use App\Models\BrokerApplication;
 use App\Models\RequirementType;
-use App\Models\Role;
 use App\Models\Stall;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Tests\TestCase;
@@ -74,6 +74,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
             'first_name' => 'Second',
             'last_name' => 'Applicant',
+            'civil_status' => 'Single',
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09170000000',
             'requirements' => [],
@@ -120,7 +121,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'uploaded_at' => now()->subDay(),
         ]);
 
-        $indexResponse = $this->actingAs($applicant)->get('/applications');
+        $indexResponse = $this->actingAs($applicant)->get('/applications/my-applications');
 
         $indexResponse->assertOk();
         $indexResponse->assertSee('Edit Application');
@@ -133,10 +134,6 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
 
         $response = $this->actingAs($applicant)->post('/applications/' . $application->getRouteKey(), [
             '_method' => 'PATCH',
-            'first_name' => 'Revised',
-            'middle_name' => null,
-            'last_name' => 'Applicant',
-            'suffix' => null,
             'business_name' => null,
             'address' => 'New Address',
             'contact_number' => '09170000000',
@@ -158,8 +155,11 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $requirement->refresh();
 
         $this->assertSame('Submitted', $application->application_status);
-        $this->assertSame('Revised', $application->first_name);
+        $this->assertSame('Portal', $application->first_name);
+        $this->assertSame('Applicant', $application->last_name);
         $this->assertSame('New Address', $application->address);
+        $this->assertNotNull($application->revision_resubmitted_at);
+        $this->assertSame(1, $application->revision_count);
         $this->assertNull($application->review_date);
         $this->assertSame('Pending', $requirement->verification_status);
         $this->assertNull($requirement->remarks);
@@ -167,6 +167,68 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $this->assertNotSame($oldPath, $requirement->file_path);
         Storage::disk('public')->assertExists($oldPath);
         Storage::disk('public')->assertExists($requirement->file_path);
+    }
+
+    public function test_applicant_cannot_resubmit_revision_without_replacement_file(): void
+    {
+        Storage::fake('public');
+
+        $applicant = $this->createApplicant();
+        $opening = $this->createOpenOpening('12');
+
+        $application = BrokerApplication::create([
+            'user_id' => $applicant->id,
+            'application_opening_id' => $opening->id,
+            'first_name' => 'Needs',
+            'last_name' => 'Revision',
+            'address' => 'Old Address',
+            'contact_number' => '09171234567',
+            'application_status' => 'Needs Revision',
+            'remarks' => 'Please upload a clearer letter of intent.',
+            'submitted_at' => now()->subDay(),
+            'review_date' => now(),
+        ]);
+
+        $requirementType = RequirementType::create([
+            'requirement_name' => 'Letter of Intent',
+            'is_required' => true,
+        ]);
+
+        $oldPath = 'broker-applications/' . $application->id . '/old-letter.pdf';
+        Storage::disk('public')->put($oldPath, 'old file');
+
+        $requirement = $application->requirements()->create([
+            'requirement_type_id' => $requirementType->id,
+            'file_path' => $oldPath,
+            'document_number' => 'OLD-001',
+            'verification_status' => 'Rejected',
+            'remarks' => 'Document is blurry.',
+            'uploaded_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($applicant)->post('/applications/' . $application->getRouteKey(), [
+            '_method' => 'PATCH',
+            'business_name' => null,
+            'address' => 'New Address',
+            'contact_number' => '09170000000',
+            'requirements' => [
+                $requirement->id => [
+                    'id' => $requirement->id,
+                    'document_number' => 'NEW-001',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('requirements');
+
+        $application->refresh();
+        $requirement->refresh();
+
+        $this->assertSame('Needs Revision', $application->application_status);
+        $this->assertNull($application->revision_resubmitted_at);
+        $this->assertSame(0, $application->revision_count);
+        $this->assertSame($oldPath, $requirement->file_path);
+        $this->assertSame('Rejected', $requirement->verification_status);
     }
 
     public function test_applicant_cannot_resubmit_application_that_is_not_marked_needs_revision(): void
@@ -258,6 +320,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'middle_name' => 'N',
             'last_name' => 'Applicant',
             'suffix' => null,
+            'civil_status' => 'Single',
             'business_name' => null,
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09171234567',
@@ -291,21 +354,139 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         }
     }
 
+    public function test_natural_person_validation_does_not_require_juridical_fields(): void
+    {
+        $validator = $this->validatorForApplicationPayload([
+            'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'civil_status' => 'Single',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09171234567',
+        ]);
+
+        $this->assertFalse($validator->fails());
+        $this->assertFalse($validator->errors()->has('business_name'));
+        $this->assertFalse($validator->errors()->has('business_address'));
+        $this->assertFalse($validator->errors()->has('representative_name'));
+        $this->assertFalse($validator->errors()->has('representative_position'));
+        $this->assertFalse($validator->errors()->has('representative_contact_number'));
+    }
+
+    public function test_married_natural_person_requires_spouse_name_but_not_spouse_contact_number(): void
+    {
+        $validMarriedPayload = $this->validatorForApplicationPayload([
+            'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'civil_status' => 'Married',
+            'spouse_name' => 'Maria Applicant',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09171234567',
+        ]);
+
+        $this->assertFalse($validMarriedPayload->fails());
+
+        $missingSpouseName = $this->validatorForApplicationPayload([
+            'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'civil_status' => 'Married',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09171234567',
+        ]);
+
+        $this->assertTrue($missingSpouseName->fails());
+        $this->assertTrue($missingSpouseName->errors()->has('spouse_name'));
+        $this->assertFalse($missingSpouseName->errors()->has('spouse_contact_number'));
+    }
+
+    public function test_juridical_person_validation_does_not_require_natural_person_fields(): void
+    {
+        $validator = $this->validatorForApplicationPayload([
+            'applicant_type' => RequirementType::APPLICANT_TYPE_JURIDICAL,
+            'business_name' => 'Maramag Fresh Fish Cooperative',
+            'business_address' => 'Market Road, Maramag, Bukidnon',
+            'representative_name' => 'Rosa Santos',
+            'representative_position' => 'General Manager',
+            'representative_contact_number' => '09170000022',
+        ]);
+
+        $this->assertFalse($validator->fails());
+        $this->assertFalse($validator->errors()->has('civil_status'));
+        $this->assertFalse($validator->errors()->has('spouse_name'));
+        $this->assertFalse($validator->errors()->has('spouse_contact_number'));
+        $this->assertFalse($validator->errors()->has('address'));
+        $this->assertFalse($validator->errors()->has('contact_number'));
+    }
+
+    public function test_juridical_application_requires_and_stores_business_representative_details(): void
+    {
+        Storage::fake('public');
+
+        $applicant = $this->createApplicant();
+        $opening = $this->createOpenOpening('14');
+
+        $this->actingAs($applicant);
+
+        app(ApplicationPortalController::class)->create($opening);
+
+        $requiredDefinitions = collect(RequirementType::officialChecklistDefinitionsFor(RequirementType::APPLICANT_TYPE_JURIDICAL))
+            ->where('is_required', true)
+            ->keyBy('requirement_name');
+
+        $requirementTypes = RequirementType::query()
+            ->whereIn('requirement_name', $requiredDefinitions->keys()->all())
+            ->get();
+
+        $payload = [
+            'applicant_type' => RequirementType::APPLICANT_TYPE_JURIDICAL,
+            'business_name' => 'Maramag Fresh Fish Cooperative',
+            'business_address' => 'Market Road, Maramag, Bukidnon',
+            'representative_name' => 'Rosa Santos',
+            'representative_position' => 'General Manager',
+            'contact_number' => '09170000022',
+            'requirements' => [],
+        ];
+
+        foreach ($requirementTypes as $requirementType) {
+            $payload['requirements'][$requirementType->id] = [
+                'file' => UploadedFile::fake()->create(
+                    Str::slug($requirementType->requirement_name) . '.pdf',
+                    100,
+                    'application/pdf'
+                ),
+            ];
+        }
+
+        $request = $this->makeStoreRequest($opening, $payload, $applicant);
+        $response = app(ApplicationPortalController::class)->store($request, $opening);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(route('applications.index'), $response->getTargetUrl());
+
+        $application = BrokerApplication::first();
+
+        $this->assertNotNull($application);
+        $this->assertSame(RequirementType::APPLICANT_TYPE_JURIDICAL, $application->applicant_type);
+        $this->assertSame('Maramag Fresh Fish Cooperative', $application->business_name);
+        $this->assertSame('Market Road, Maramag, Bukidnon', $application->business_address);
+        $this->assertSame('Rosa Santos', $application->representative_name);
+        $this->assertSame('General Manager', $application->representative_position);
+        $this->assertSame('Market Road, Maramag, Bukidnon', $application->address);
+        $this->assertNull($application->civil_status);
+        $this->assertSame($requiredDefinitions->count(), $application->requirements()->count());
+    }
+
     private function createApplicant(): User
     {
-        $user = User::create([
-            'email' => 'applicant@example.com',
-            'password' => 'password',
-            'status' => 'active',
-        ]);
-
-        $applicantRole = Role::firstOrCreate([
-            'role_name' => RoleStatusConstant::APPLICANT,
-        ]);
-
-        $user->roles()->syncWithoutDetaching([$applicantRole->id]);
-
-        return $user;
+        return User::createUserWithRole(
+            [
+                'email' => 'applicant-' . Str::random(8) . '@example.com',
+                'password' => 'password',
+                'role' => RoleStatusConstant::APPLICANT,
+            ],
+            [
+                'first_name' => 'Portal',
+                'last_name' => 'Applicant',
+                'contact_number' => '09171234567',
+                'address' => 'Maramag, Bukidnon',
+            ]
+        );
     }
 
     private function createOpenOpening(string $stallNumber = '12'): ApplicationOpening
@@ -333,6 +514,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);
@@ -365,5 +547,18 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $request->validateResolved();
 
         return $request;
+    }
+
+    private function validatorForApplicationPayload(array $payload)
+    {
+        $request = StoreBrokerApplicationRequest::create(
+            '/applications/openings/1',
+            'POST',
+            $payload
+        );
+
+        $request->setContainer($this->app);
+
+        return Validator::make($payload, $request->rules());
     }
 }

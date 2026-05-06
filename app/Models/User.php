@@ -25,6 +25,12 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'contact_number',
+        'address',
     ];
 
     protected $hidden = [
@@ -105,6 +111,15 @@ class User extends Authenticatable
             return $this->broker->name;
         }
 
+        if ($this->first_name || $this->last_name) {
+            return collect([
+                $this->first_name,
+                $this->middle_name,
+                $this->last_name,
+                $this->suffix,
+            ])->filter()->implode(' ');
+        }
+
         return Str::of(Str::before($this->email ?? ('user-' . $this->id), '@'))
             ->replace(['.', '_'], ' ')
             ->title()
@@ -128,7 +143,7 @@ class User extends Authenticatable
      */
     public function getAddressAttribute(): ?string
     {
-        return $this->broker?->address;
+        return $this->broker?->address ?? ($this->attributes['address'] ?? null);
     }
 
     /**
@@ -261,11 +276,18 @@ class User extends Authenticatable
     public static function createUserWithRole(array $userData, array $profileData = []): self
     {
         $nameParts = static::extractNameParts($profileData + $userData);
+        $isApplicant = ($userData['role'] ?? null) === RoleStatusConstant::APPLICANT;
 
         $user = static::create([
             'email' => $userData['email'],
             'password' => Hash::make($userData['password']),
             'status' => UserStatusConstant::ACTIVE,
+            'first_name' => $isApplicant ? $nameParts['first_name'] : null,
+            'middle_name' => $isApplicant ? $nameParts['middle_name'] : null,
+            'last_name' => $isApplicant ? $nameParts['last_name'] : null,
+            'suffix' => $isApplicant ? static::normalizeNullableName($profileData['suffix'] ?? $userData['suffix'] ?? null) : null,
+            'contact_number' => $isApplicant ? static::normalizeNullableName($profileData['contact_number'] ?? $userData['contact_number'] ?? null) : null,
+            'address' => $isApplicant ? static::normalizeNullableName($profileData['address'] ?? $userData['address'] ?? null) : null,
         ]);
 
         $role = Role::firstOrCreate(
@@ -327,7 +349,14 @@ class User extends Authenticatable
             return $this->employee->updateProfile($profileData);
         }
 
-        return true;
+        return $this->update([
+            'first_name' => trim((string) ($profileData['first_name'] ?? $this->first_name)),
+            'middle_name' => static::normalizeNullableName($profileData['middle_name'] ?? $this->middle_name),
+            'last_name' => static::normalizeNullableName($profileData['last_name'] ?? $this->last_name),
+            'suffix' => static::normalizeNullableName($profileData['suffix'] ?? $this->suffix),
+            'contact_number' => static::normalizeNullableName($profileData['contact_number'] ?? $this->contact_number),
+            'address' => static::normalizeNullableName($profileData['address'] ?? $this->address),
+        ]);
     }
 
     /**

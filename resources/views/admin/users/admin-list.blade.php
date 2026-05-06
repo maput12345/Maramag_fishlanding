@@ -80,9 +80,7 @@
                                 <div class="text-sm text-gray-900">{{ $admin->created_at->format('M d, Y') }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="app-status-badge {{ $admin->status === 'active' ? 'app-status-badge--active' : 'app-status-badge--inactive' }}">
-                                    {{ ucfirst($admin->status) }}
-                                </span>
+                                <x-status-badge :status="$admin->status" />
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><div class="flex items-center gap-2">
                                 <span class="relative group inline-block">

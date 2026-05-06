@@ -3,11 +3,6 @@
         ['title' => 'Sales']
     ];
 
-    $topbarAction = [
-        'label' => 'Transaction',
-        'url' => route('broker.sales.sales', ['modal' => 'create']),
-    ];
-
     $salesModalBreadcrumbs = [
         'create' => 'Transaction',
         'edit' => 'Edit Sale',
@@ -80,7 +75,7 @@
                             <!-- Status Filter -->
                             <div class="status-field">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                <select name="status" x-model="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="status" x-model="status" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">All Status</option>
                                     @foreach($salesStatusesWithDisplayNames as $status => $displayName)
                                         <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
@@ -111,11 +106,11 @@
                             <!-- Action Buttons -->
                             <div class="buttons-field flex justify-end space-x-2">
                                 <a href="{{ route('broker.sales.sales') }}"
-                                class="px-3 lg:px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                class="app-button app-button--secondary px-3 py-2 text-sm lg:px-4">
                                     Clear
                                 </a>
                                 <button type="submit"
-                                        class="px-3 lg:px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                                        class="app-button app-button--primary px-3 py-2 text-sm lg:px-4">
                                     Search
                                 </button>
                             </div>
@@ -170,9 +165,7 @@
                                             ₱{{ number_format($sale->paid_amount, 2) }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $salesStatusesWithColorClasses[$sale->status] }}">
-                                                {{ $salesStatusesWithDisplayNames[$sale->status] }}
-                                            </span>
+                                            <x-status-badge :status="$salesStatusesWithDisplayNames[$sale->status]" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex items-center space-x-2">
@@ -217,7 +210,7 @@
                                                 <x-heroicon-o-shopping-cart class="w-16 h-16 text-gray-400 mb-4" />
                                                 <h3 class="text-lg font-medium text-gray-900 mb-2">No sales found</h3>
                                                 <p class="text-gray-500 mb-6">Get started by creating your first sale.</p>
-                                                <a href="{{ route('broker.sales.sales', ['modal' => 'create']) }}"
+                                                <a href="{{ route('broker.transaction') }}"
                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center space-x-2">
                                                     <x-heroicon-o-plus class="w-5 h-5" />
                                                     <span>Transaction</span>
@@ -267,7 +260,7 @@
                 <div class="fish-boxes-container space-y-1 max-h-32 overflow-y-auto">
                     <div class="fish-box-item mb-1">
                         <select class="fish-box-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 cursor-not-allowed" disabled>
-                            <option value="">Auto-select</option>
+                            <option value="">Auto-assign available box</option>
                         </select>
                         <input type="hidden" name="sales_details[INDEX][box_id][]" class="fish-box-hidden-input">
                     </div>

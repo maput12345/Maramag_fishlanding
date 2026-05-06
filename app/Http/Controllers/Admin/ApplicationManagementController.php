@@ -18,6 +18,7 @@ use App\Models\Broker;
 use App\Models\BrokerApplication;
 use App\Models\ApplicationReviewDraft;
 use App\Models\Employee;
+use App\Models\OpeningBatch;
 use App\Models\RequirementType;
 use App\Models\Role;
 use App\Models\Stall;
@@ -41,12 +42,109 @@ class ApplicationManagementController extends Controller
     public function index(Request $request): View
     {
         $status = $request->get('status');
+        $openingBatchId = $request->integer('opening_batch_id') ?: null;
+        $stallId = $request->integer('stall_id') ?: null;
+        $applicationDate = $request->get('application_date');
+        $submissionType = $request->get('submission_type');
+        $applicationStatusTabs = [
+            'ongoing_review' => [
+                'label' => 'Ongoing Review',
+                'statuses' => ['Pending', 'For Review', 'Submitted', 'Under Review', 'Needs Revision', 'Qualified'],
+            ],
+            'winners' => [
+                'label' => 'Winners',
+                'statuses' => ['Winner', 'Approved'],
+            ],
+            'not_selected' => [
+                'label' => 'Not Selected',
+                'statuses' => ['Not Selected', 'Rejected'],
+            ],
+        ];
+        $activeApplicationTab = $request->get('tab', 'ongoing_review');
 
-        $applications = BrokerApplication::query()
+        if (!array_key_exists($activeApplicationTab, $applicationStatusTabs)) {
+            $activeApplicationTab = 'ongoing_review';
+        }
+
+        $filteredApplicationsQuery = BrokerApplication::query()
+            ->when($openingBatchId, function ($query) use ($openingBatchId) {
+                $query->where(function ($batchQuery) use ($openingBatchId) {
+                    $batchQuery
+                        ->where('opening_batch_id', $openingBatchId)
+                        ->orWhereHas('applicationOpening', function ($openingQuery) use ($openingBatchId) {
+                            $openingQuery->where('opening_batch_id', $openingBatchId);
+                        });
+                });
+            })
+            ->when($stallId, function ($query) use ($stallId) {
+                $query->where(function ($stallQuery) use ($stallId) {
+                    $stallQuery
+                        ->whereHas('openingBatch.applicationOpenings', function ($openingQuery) use ($stallId) {
+                            $openingQuery->where('stall_id', $stallId);
+                        })
+                        ->orWhereHas('applicationOpening', function ($openingQuery) use ($stallId) {
+                            $openingQuery->where('stall_id', $stallId);
+                        });
+                });
+            })
+            ->when($applicationDate, function ($query) use ($applicationDate) {
+                $query->whereDate('submitted_at', $applicationDate);
+            })
+            ->when($submissionType === 'new', function ($query) {
+                $query->where('application_status', 'Submitted')
+                    ->where(function ($newQuery) {
+                        $newQuery
+                            ->whereNull('revision_resubmitted_at')
+                            ->orWhere('revision_count', 0);
+                    });
+            })
+            ->when($submissionType === 'resubmitted', function ($query) {
+                $query->where('application_status', 'Submitted')
+                    ->whereNotNull('revision_resubmitted_at')
+                    ->where('revision_count', '>', 0);
+            });
+
+        $submissionSummary = [
+            'new' => (clone $filteredApplicationsQuery)
+                ->where('application_status', 'Submitted')
+                ->where(function ($query) {
+                    $query
+                        ->whereNull('revision_resubmitted_at')
+                        ->orWhere('revision_count', 0);
+                })
+                ->count(),
+            'resubmitted' => (clone $filteredApplicationsQuery)
+                ->where('application_status', 'Submitted')
+                ->whereNotNull('revision_resubmitted_at')
+                ->where('revision_count', '>', 0)
+                ->count(),
+            'needs_review' => (clone $filteredApplicationsQuery)
+                ->where('application_status', 'Submitted')
+                ->count(),
+            'qualified' => (clone $filteredApplicationsQuery)
+                ->where('application_status', 'Qualified')
+                ->count(),
+        ];
+
+        $applicationTabCounts = collect($applicationStatusTabs)
+            ->mapWithKeys(function (array $tab, string $tabKey) use ($filteredApplicationsQuery, $status) {
+                return [
+                    $tabKey => (clone $filteredApplicationsQuery)
+                        ->when($status, function ($query) use ($status) {
+                            $query->where('application_status', $status);
+                        })
+                        ->whereIn('application_status', $tab['statuses'])
+                        ->count(),
+                ];
+            })
+            ->all();
+
+        $applications = (clone $filteredApplicationsQuery)
             ->select([
                 'id',
                 'user_id',
                 'application_opening_id',
+                'opening_batch_id',
                 'selected_stall_id',
                 'first_name',
                 'middle_name',
@@ -54,20 +152,51 @@ class ApplicationManagementController extends Controller
                 'suffix',
                 'application_status',
                 'submitted_at',
+                'revision_resubmitted_at',
+                'revision_count',
             ])
             ->with([
                 'user:id,email',
-                'applicationOpening:id,stall_id',
+                'openingBatch:id,start_date,end_date',
+                'openingBatch.applicationOpenings:id,opening_batch_id,stall_id',
+                'openingBatch.applicationOpenings.stall:id,stall_number',
+                'applicationOpening:id,stall_id,opening_batch_id',
                 'applicationOpening.stall:id,stall_number',
+                'applicationOpening.openingBatch:id,start_date,end_date',
+                'applicationOpening.openingBatch.applicationOpenings:id,opening_batch_id,stall_id',
+                'applicationOpening.openingBatch.applicationOpenings.stall:id,stall_number',
                 'selectedStall:id,stall_number',
             ])
             ->when($status, function ($query) use ($status) {
                 $query->where('application_status', $status);
             })
+            ->whereIn('application_status', $applicationStatusTabs[$activeApplicationTab]['statuses'])
             ->latest('submitted_at')
             ->paginate(10);
 
-        return view('admin.applications.index', compact('applications', 'status'));
+        $openingBatches = OpeningBatch::query()
+            ->with('applicationOpenings.stall:id,stall_number')
+            ->latest()
+            ->get();
+        $stalls = Stall::query()
+            ->select(['id', 'stall_number'])
+            ->orderBy('stall_number')
+            ->get();
+
+        return view('admin.applications.index', compact(
+            'applications',
+            'status',
+            'submissionType',
+            'submissionSummary',
+            'openingBatchId',
+            'stallId',
+            'applicationDate',
+            'openingBatches',
+            'stalls',
+            'applicationStatusTabs',
+            'activeApplicationTab',
+            'applicationTabCounts'
+        ));
     }
 
     /**
@@ -75,30 +204,29 @@ class ApplicationManagementController extends Controller
      */
     public function stallsIndex(): View
     {
-        $stalls = Stall::query()
-            ->select(['id', 'stall_number', 'stall_status', 'remarks'])
-            ->orderBy('stall_number')
-            ->get();
+        $workspaceData = $this->stallWorkspaceData();
 
-        $openings = ApplicationOpening::query()
-            ->select([
-                'id',
-                'stall_id',
-                'start_date',
-                'end_date',
-                'bidding_date',
-                'bidding_location',
-                'opening_status',
-                'created_at',
-            ])
-            ->with(['stall:id,stall_number,stall_status'])
-            ->withCount('brokerApplications')
-            ->latest()
-            ->get();
+        return view('admin.stalls.index', $workspaceData);
+    }
 
-        $requirementTypes = RequirementType::selectableChecklistTypes();
+    /**
+     * Show the requirement checklist manager.
+     */
+    public function stallsRequirements(): View
+    {
+        $workspaceData = $this->stallWorkspaceData();
 
-        return view('admin.stalls.index', compact('stalls', 'openings', 'requirementTypes'));
+        return view('admin.stalls.requirements', $workspaceData);
+    }
+
+    /**
+     * Show stall occupancy and bidding overview.
+     */
+    public function stallsOverview(): View
+    {
+        $workspaceData = $this->stallWorkspaceData();
+
+        return view('admin.stalls.overview', $workspaceData);
     }
 
     /**
@@ -108,7 +236,10 @@ class ApplicationManagementController extends Controller
     {
         $application->load([
             'user:id,email',
-            'applicationOpening:id,stall_id,start_date,end_date,bidding_date,bidding_location',
+            'openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location',
+            'openingBatch.applicationOpenings:id,opening_batch_id,stall_id',
+            'openingBatch.applicationOpenings.stall:id,stall_number',
+            'applicationOpening:id,stall_id,opening_batch_id,start_date,end_date,bidding_date,bidding_time,bidding_location',
             'applicationOpening.stall:id,stall_number',
             'requirements:id,application_id,requirement_type_id,file_path,document_number,issuing_office,verification_status,remarks,uploaded_at',
             'requirements.requirementType:id,requirement_name',
@@ -141,11 +272,23 @@ class ApplicationManagementController extends Controller
             ->filter()
             ->map(fn ($uploadedImage) => $uploadedImage->store('stalls', 'public'))
             ->values();
+        $createdStallNumber = null;
 
-        DB::transaction(function () use ($validated, $storedImagePaths) {
+        DB::transaction(function () use ($validated, $storedImagePaths, &$createdStallNumber) {
+            $nextStallNumber = Stall::nextStallNumberFrom(
+                Stall::query()
+                    ->lockForUpdate()
+                    ->pluck('stall_number')
+            );
+            $createdStallNumber = $nextStallNumber;
+
             $stall = Stall::create([
-                'stall_number' => $validated['stall_number'],
+                'stall_number' => $nextStallNumber,
                 'stall_status' => 'Vacant',
+                'length_meters' => $validated['length_meters'],
+                'width_meters' => $validated['width_meters'],
+                'area_sqm' => round((float) $validated['length_meters'] * (float) $validated['width_meters'], 2),
+                'address' => $validated['address'],
                 'remarks' => $validated['remarks'] ?? null,
                 'stall_image_path' => $storedImagePaths->first(),
             ]);
@@ -163,7 +306,7 @@ class ApplicationManagementController extends Controller
         });
 
         return redirect()->route('admin.stalls.index')
-            ->with('success', 'Stall created successfully.');
+            ->with('success', 'Stall ' . $createdStallNumber . ' created successfully.');
     }
 
     /**
@@ -182,7 +325,7 @@ class ApplicationManagementController extends Controller
             'sort_order' => $nextSortOrder,
         ]);
 
-        return redirect()->route('admin.stalls.index')
+        return redirect()->route('admin.stalls.requirements.index')
             ->with('success', 'Requirement added to the master list.');
     }
 
@@ -196,31 +339,25 @@ class ApplicationManagementController extends Controller
         abort_if(!$employee, 403, 'Only LEEO employee accounts can open applications.');
 
         $validated = $request->validated();
+        $selectedStallIds = collect($validated['stall_ids'])
+            ->map(fn ($stallId) => (int) $stallId)
+            ->unique()
+            ->values();
         $selectedRequirementIds = collect($validated['requirement_type_ids'])
             ->map(fn ($requirementId) => (int) $requirementId)
             ->unique()
             ->values();
 
-        DB::transaction(function () use ($validated, $employee, $selectedRequirementIds) {
-            $opening = ApplicationOpening::create([
-                'stall_id' => $validated['stall_id'],
-                'opened_by_employee_id' => $employee->id,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'bidding_date' => $validated['bidding_date'],
-                'bidding_location' => $validated['bidding_location'],
-                'opening_status' => 'Open',
-            ]);
+        try {
+            DB::transaction(function () use ($validated, $employee, $selectedStallIds, $selectedRequirementIds) {
+                $requirementTypes = RequirementType::query()
+                    ->whereIn('id', $selectedRequirementIds)
+                    ->orderByRaw('CASE WHEN sort_order = 0 THEN 1 ELSE 0 END')
+                    ->orderBy('sort_order')
+                    ->orderBy('requirement_name')
+                    ->get();
 
-            $requirementTypes = RequirementType::query()
-                ->whereIn('id', $selectedRequirementIds)
-                ->orderByRaw('CASE WHEN sort_order = 0 THEN 1 ELSE 0 END')
-                ->orderBy('sort_order')
-                ->orderBy('requirement_name')
-                ->get();
-
-            $opening->requirementTypes()->sync(
-                $requirementTypes->mapWithKeys(function (RequirementType $requirementType, int $index) {
+                $requirementSyncPayload = $requirementTypes->mapWithKeys(function (RequirementType $requirementType, int $index) {
                     return [
                         $requirementType->id => [
                             'is_required' => $requirementType->is_required,
@@ -228,14 +365,52 @@ class ApplicationManagementController extends Controller
                             'sort_order' => $requirementType->sort_order ?: (($index + 1) * 10),
                         ],
                     ];
-                })->all()
-            );
+                })->all();
 
-            $opening->stall()->update(['stall_status' => 'Open for Application']);
-        });
+                $stalls = Stall::query()
+                    ->whereIn('id', $selectedStallIds)
+                    ->where('stall_status', 'Vacant')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($stalls->count() !== $selectedStallIds->count()) {
+                    throw new \RuntimeException('One or more selected stalls are no longer vacant.');
+                }
+
+                $openingBatch = OpeningBatch::create([
+                    'opened_by_employee_id' => $employee->id,
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                    'bidding_date' => $validated['bidding_date'],
+                    'bidding_time' => $validated['bidding_time'],
+                    'bidding_location' => $validated['bidding_location'],
+                ]);
+
+                foreach ($stalls as $stall) {
+                    $opening = ApplicationOpening::create([
+                        'stall_id' => $stall->id,
+                        'opening_batch_id' => $openingBatch->id,
+                        'opened_by_employee_id' => $employee->id,
+                        'start_date' => $validated['start_date'],
+                        'end_date' => $validated['end_date'],
+                        'bidding_date' => $validated['bidding_date'],
+                        'bidding_time' => $validated['bidding_time'],
+                        'bidding_location' => $validated['bidding_location'],
+                        'opening_status' => 'Open',
+                    ]);
+
+                    $opening->requirementTypes()->sync($requirementSyncPayload);
+                    $stall->update(['stall_status' => 'Open for Application']);
+                }
+            });
+        } catch (\RuntimeException $exception) {
+            return redirect()->route('admin.stalls.index')
+                ->withInput()
+                ->with('error', $exception->getMessage());
+        }
 
         return redirect()->route('admin.stalls.index')
-            ->with('success', 'Application opening created successfully.');
+            ->with('success', 'Application opening created for ' . $selectedStallIds->count() . ' stall' . ($selectedStallIds->count() === 1 ? '' : 's') . '.');
     }
 
     /**
@@ -260,7 +435,7 @@ class ApplicationManagementController extends Controller
             $opening->stall()->update(['stall_status' => 'Open for Application']);
         }
 
-        return redirect()->route('admin.stalls.index')
+        return redirect()->route('admin.stalls.overview')
             ->with('success', 'Application opening updated successfully.');
     }
 
@@ -270,23 +445,26 @@ class ApplicationManagementController extends Controller
     public function updateOpening(UpdateApplicationOpeningRequest $request, ApplicationOpening $opening): RedirectResponse
     {
         $originalBiddingDate = optional($opening->bidding_date)->toDateString();
+        $originalBiddingTime = optional($opening->bidding_time)->format('H:i');
         $originalBiddingLocation = $opening->bidding_location;
 
         $opening->update([
             'bidding_date' => $request->input('bidding_date'),
+            'bidding_time' => $request->input('bidding_time'),
             'bidding_location' => $request->input('bidding_location'),
         ]);
 
         $updatedBiddingDate = optional($opening->fresh()->bidding_date)->toDateString();
+        $updatedBiddingTime = optional($opening->bidding_time)->format('H:i');
         $updatedBiddingLocation = $opening->bidding_location;
         $qualifiedApplicantsNotified = 0;
 
-        if ($originalBiddingDate !== $updatedBiddingDate || $originalBiddingLocation !== $updatedBiddingLocation) {
+        if ($originalBiddingDate !== $updatedBiddingDate || $originalBiddingTime !== $updatedBiddingTime || $originalBiddingLocation !== $updatedBiddingLocation) {
             $qualifiedApplications = $opening->brokerApplications()
                 ->where('application_status', 'Qualified')
                 ->with([
                     'user:id,email',
-                    'applicationOpening:id,stall_id,start_date,bidding_date,bidding_location',
+                    'applicationOpening:id,stall_id,start_date,bidding_date,bidding_time,bidding_location',
                     'applicationOpening.stall:id,stall_number',
                 ])
                 ->get();
@@ -304,7 +482,7 @@ class ApplicationManagementController extends Controller
                 . ($qualifiedApplicantsNotified === 1 ? '' : 's') . '.';
         }
 
-        return redirect()->route('admin.stalls.index')
+        return redirect()->route('admin.stalls.overview')
             ->with('success', $message);
     }
 
@@ -418,7 +596,7 @@ class ApplicationManagementController extends Controller
         if ($shouldSendQualifiedEmail) {
             $application->refresh()->load([
                 'user:id,email',
-                'applicationOpening:id,stall_id,start_date,bidding_date,bidding_location',
+                'applicationOpening:id,stall_id,start_date,bidding_date,bidding_time,bidding_location',
                 'applicationOpening.stall:id,stall_number',
             ]);
 
@@ -618,6 +796,66 @@ class ApplicationManagementController extends Controller
             ->unique('id')
             ->sortBy('stall_number', SORT_NATURAL)
             ->values();
+    }
+
+    /**
+     * Shared data used by the separated stall management pages.
+     */
+    private function stallWorkspaceData(): array
+    {
+        $stalls = Stall::query()
+            ->select(['id', 'stall_number', 'stall_status', 'length_meters', 'width_meters', 'area_sqm', 'address', 'remarks', 'stall_image_path'])
+            ->with([
+                'stallImages',
+                'applicationOpenings' => function ($query) {
+                    $query
+                        ->select([
+                            'id',
+                            'stall_id',
+                            'opening_batch_id',
+                            'start_date',
+                            'end_date',
+                            'bidding_date',
+                            'bidding_time',
+                            'bidding_location',
+                            'opening_status',
+                            'created_at',
+                        ])
+                        ->withCount(['brokerApplications', 'requirementTypes'])
+                        ->latest();
+                },
+            ])
+            ->orderBy('stall_number')
+            ->get();
+
+        $vacantStalls = $stalls
+            ->filter(fn (Stall $stall) => $stall->stall_status === 'Vacant')
+            ->values();
+
+        $openings = ApplicationOpening::query()
+            ->select([
+                'id',
+                'stall_id',
+                'start_date',
+                'end_date',
+                'bidding_date',
+                'bidding_time',
+                'bidding_location',
+                'opening_status',
+                'created_at',
+            ])
+            ->with(['stall:id,stall_number,stall_status'])
+            ->withCount('brokerApplications')
+            ->latest()
+            ->get();
+
+        return [
+            'stalls' => $stalls,
+            'vacantStalls' => $vacantStalls,
+            'openings' => $openings,
+            'requirementTypes' => RequirementType::selectableChecklistTypes(),
+            'nextStallNumber' => Stall::nextStallNumber(),
+        ];
     }
 
     /**

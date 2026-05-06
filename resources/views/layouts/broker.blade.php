@@ -14,20 +14,11 @@
 
     <title>{{ config('app.name', 'POS System') }} - Broker</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
     <!-- Compiled CSS -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     <link rel="stylesheet" href="{{ asset('css/filter-layout.css') }}">
     <link rel="stylesheet" href="{{ asset('css/next-gen-ui.css') }}">
-
-
-    <!-- Alpine.js for interactive components -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- POS System Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>

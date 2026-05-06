@@ -1,7 +1,7 @@
 @php
     $resolvedTopbarAction = $topbarAction ?? [
-        'label' => 'Transaction',
-        'url' => route('broker.sales.sales', ['modal' => 'create']),
+        'label' => null,
+        'url' => null,
         'modal' => false,
     ];
 
@@ -91,23 +91,24 @@
                 </a>
             @endif
             <!-- User Dropdown -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="app-user-trigger flex items-center space-x-2 text-sm text-gray-700 transition-colors hover:text-gray-900">
+            <div class="relative" data-profile-menu>
+                <button
+                    type="button"
+                    data-profile-menu-button
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    class="app-user-trigger flex items-center space-x-2 text-sm text-gray-700 transition-colors hover:text-gray-900"
+                >
                     <div class="app-avatar-badge w-8 h-8 rounded-full flex items-center justify-center">
                         <span class="text-sm font-medium text-white">{{ substr(auth()->user()->name, 0, 1) }}</span>
                     </div>
                     <span class="hidden lg:inline">{{ auth()->user()->name }}</span>
-                    <x-heroicon-o-chevron-down class="w-4 h-4" />
+                    <x-heroicon-o-chevron-down class="w-4 h-4 transition-transform duration-200" data-profile-menu-icon />
                 </button>
 
                 <!-- Dropdown Menu -->
-                <div x-show="open" @click.away="open = false"
-                     x-transition:enter="transition ease-out duration-100"
-                     x-transition:enter-start="transform opacity-0 scale-95"
-                     x-transition:enter-end="transform opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-75"
-                     x-transition:leave-start="transform opacity-100 scale-100"
-                     x-transition:leave-end="transform opacity-0 scale-95"
+                <div hidden
+                     data-profile-menu-panel
                      class="app-dropdown-panel absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
                     <div class="py-1">
                         <div class="px-4 py-2 text-sm text-gray-700 border-b">

@@ -22,9 +22,43 @@ All applications are subject to review and approval by the LEEO administrator.</
             <form class="space-y-5" method="POST" action="{{ route('register') }}">
                 @csrf
 
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="first_name" class="login-label">First Name</label>
+                        <input id="first_name" type="text" class="login-input @error('first_name') border-red-300 @enderror" name="first_name" value="{{ old('first_name') }}" required autocomplete="given-name" autofocus>
+                        @error('first_name')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="middle_name" class="login-label">Middle Name</label>
+                        <input id="middle_name" type="text" class="login-input @error('middle_name') border-red-300 @enderror" name="middle_name" value="{{ old('middle_name') }}" autocomplete="additional-name">
+                        @error('middle_name')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="last_name" class="login-label">Last Name</label>
+                        <input id="last_name" type="text" class="login-input @error('last_name') border-red-300 @enderror" name="last_name" value="{{ old('last_name') }}" required autocomplete="family-name">
+                        @error('last_name')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="suffix" class="login-label">Suffix</label>
+                        <input id="suffix" type="text" class="login-input @error('suffix') border-red-300 @enderror" name="suffix" value="{{ old('suffix') }}" autocomplete="honorific-suffix" placeholder="Optional">
+                        @error('suffix')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
                 <div>
                     <label for="email" class="login-label">Email Address</label>
-                    <input id="email" type="email" class="login-input @error('email') border-red-300 @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+                    <input id="email" type="email" class="login-input @error('email') border-red-300 @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
                     @error('email')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror

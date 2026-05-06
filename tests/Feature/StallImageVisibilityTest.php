@@ -32,8 +32,9 @@ class StallImageVisibilityTest extends TestCase
         $admin = $this->createAdmin();
 
         $response = $this->actingAs($admin)->post('/admin/stalls', [
-            'stall_number' => 'B-2',
-            'remarks' => 'Near the main gate beside the ice plant.',
+            'length_meters' => 3.5,
+            'width_meters' => 2,
+            'address' => 'Near the main gate beside the ice plant.',
             'stall_images' => [
                 $this->fakePngImage('stall-b2-front.png'),
                 $this->fakePngImage('stall-b2-side.png'),
@@ -42,10 +43,11 @@ class StallImageVisibilityTest extends TestCase
 
         $response->assertRedirect(route('admin.stalls.index'));
 
-        $stall = Stall::query()->where('stall_number', 'B-2')->first();
+        $stall = Stall::query()->where('stall_number', '1')->first();
 
         $this->assertNotNull($stall);
-        $this->assertSame('Near the main gate beside the ice plant.', $stall->remarks);
+        $this->assertSame('Near the main gate beside the ice plant.', $stall->address);
+        $this->assertSame('7.00', $stall->area_sqm);
         $this->assertNotNull($stall->stall_image_path);
         $stall->load('stallImages');
         $this->assertCount(2, $stall->stallImages);
@@ -64,7 +66,10 @@ class StallImageVisibilityTest extends TestCase
 
         $opening = $this->createAvailableOpening([
             'stall_number' => 'A-1',
-            'remarks' => 'Front row near the fish weighing area.',
+            'address' => 'Front row near the fish weighing area.',
+            'length_meters' => 4,
+            'width_meters' => 3,
+            'area_sqm' => 12,
             'stall_image_path' => $stallImagePaths[0],
             'stall_gallery_paths' => $stallImagePaths,
         ]);
@@ -144,6 +149,7 @@ class StallImageVisibilityTest extends TestCase
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
             'bidding_date' => now()->addDays(3)->toDateString(),
+            'bidding_time' => '09:30',
             'bidding_location' => 'LEEO Office, Maramag Fish Landing',
             'opening_status' => 'Open',
         ]);

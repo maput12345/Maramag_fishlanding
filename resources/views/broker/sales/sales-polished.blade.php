@@ -12,12 +12,6 @@
     );
 
     $salesBaseUrl = route('broker.sales.sales', $salesBaseQuery);
-    $topbarAction = [
-        'label' => $brokerViewReadOnly ? null : 'Transaction',
-        'url' => $brokerViewReadOnly ? null : route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])),
-        'modal' => true,
-    ];
-
     $salesModalBreadcrumbs = [
         'create' => 'Transaction',
         'edit' => 'Edit Sale',
@@ -99,7 +93,7 @@
 
                     <div class="status-field">
                         <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                        <select name="status" x-model="status" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <select name="status" x-model="status" class="app-select w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                             <option value="">All Status</option>
                             @foreach($salesStatusesWithDisplayNames as $status => $displayName)
                                 <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
@@ -127,11 +121,11 @@
 
                     <div class="buttons-field flex justify-end space-x-2">
                         <a href="{{ route('broker.sales.sales') }}"
-                           class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 lg:px-4">
+                           class="app-button app-button--secondary px-3 py-2 text-sm lg:px-4">
                             Clear
                         </a>
                         <button type="submit"
-                                class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 lg:px-4">
+                                class="app-button app-button--primary px-3 py-2 text-sm lg:px-4">
                             Search
                         </button>
                     </div>
@@ -184,9 +178,7 @@
                                     PHP {{ number_format($sale->paid_amount, 2) }}
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4">
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $salesStatusesWithColorClasses[$sale->status] }}">
-                                        {{ $salesStatusesWithDisplayNames[$sale->status] }}
-                                    </span>
+                                    <x-status-badge :status="$salesStatusesWithDisplayNames[$sale->status]" />
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
                                     <div class="flex items-center space-x-2">
@@ -240,8 +232,7 @@
                                             {{ $brokerViewReadOnly ? 'No sales matched the current filters for this broker.' : 'Get started by creating your first sale.' }}
                                         </p>
                                         @unless($brokerViewReadOnly)
-                                            <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'create'])) }}"
-                                               data-sales-modal-link
+                                            <a href="{{ route('broker.transaction') }}"
                                                class="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition-colors hover:bg-green-700">
                                                 <x-heroicon-o-plus class="h-5 w-5" />
                                                 <span>Transaction</span>
@@ -294,7 +285,7 @@
                     <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
                         <div class="fish-box-item">
                             <select class="fish-box-select h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-500" disabled>
-                                <option value="">Auto-select</option>
+                                <option value="">Auto-assign available box</option>
                             </select>
                             <input type="hidden" name="sales_details[INDEX][box_id][]" class="fish-box-hidden-input">
                         </div>

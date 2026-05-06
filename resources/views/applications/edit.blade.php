@@ -1,37 +1,12 @@
-@extends('layouts.app')
-
-@section('body-class', 'portal-shell theme-admin')
+@extends('layouts.applicant')
 
 @section('content')
+@php
+    $applicant = auth()->user();
+@endphp
+
 <div class="portal-page">
     <div class="portal-stage portal-stage--form">
-        <div class="portal-topbar">
-            <div class="portal-topbar__brand">
-                <span class="portal-brand-pill">LEEO Digital Services</span>
-                <div>
-                    <p class="portal-topbar__title">Broker Application Portal</p>
-                    <p class="portal-topbar__meta">Revise the details or documents requested by LEEO.</p>
-                </div>
-            </div>
-
-            <div class="portal-topbar__controls">
-                <a href="{{ route('applications.show', $application) }}" class="portal-button portal-button--secondary">
-                    <span>Back to Details</span>
-                </a>
-
-                <a href="{{ route('logout') }}"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                   class="portal-button portal-button--ghost">
-                    <x-heroicon-o-arrow-right-on-rectangle class="portal-button__icon" />
-                    <span>Logout</span>
-                </a>
-            </div>
-
-            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
-                @csrf
-            </form>
-        </div>
-
         <form method="POST"
               action="{{ route('applications.update', $application) }}"
               enctype="multipart/form-data"
@@ -56,10 +31,10 @@
                         <p class="portal-section-card__eyebrow">Revision Form</p>
                         <h1 class="portal-section-card__title">Resubmit Application</h1>
                         <p class="portal-section-card__description">
-                            Update only what LEEO requested. After resubmission, the application returns to Submitted for another review.
+                            Update only what LEEO requested. Your saved account profile will be used as the applicant name on this resubmission.
                         </p>
                     </div>
-                    <span class="portal-status-badge portal-status-badge--warning">Needs Revision</span>
+                    <x-status-badge status="Needs Revision" />
                 </div>
 
                 @if($application->remarks)
@@ -69,36 +44,12 @@
                 @endif
 
                 <div class="portal-form-grid">
-                    <div class="portal-field">
-                        <label for="first_name" class="portal-field__label">First Name</label>
-                        <input id="first_name" name="first_name" type="text" value="{{ old('first_name', $application->first_name) }}" class="portal-input @error('first_name') portal-input--error @enderror">
-                        @error('first_name')
-                            <p class="portal-field__error">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="portal-field">
-                        <label for="middle_name" class="portal-field__label">Middle Name</label>
-                        <input id="middle_name" name="middle_name" type="text" value="{{ old('middle_name', $application->middle_name) }}" class="portal-input @error('middle_name') portal-input--error @enderror">
-                        @error('middle_name')
-                            <p class="portal-field__error">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="portal-field">
-                        <label for="last_name" class="portal-field__label">Last Name</label>
-                        <input id="last_name" name="last_name" type="text" value="{{ old('last_name', $application->last_name) }}" class="portal-input @error('last_name') portal-input--error @enderror">
-                        @error('last_name')
-                            <p class="portal-field__error">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="portal-field">
-                        <label for="suffix" class="portal-field__label">Suffix</label>
-                        <input id="suffix" name="suffix" type="text" value="{{ old('suffix', $application->suffix) }}" class="portal-input @error('suffix') portal-input--error @enderror">
-                        @error('suffix')
-                            <p class="portal-field__error">{{ $message }}</p>
-                        @enderror
+                    <div class="portal-field portal-field--wide">
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Applicant Name</p>
+                            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $applicant->name }}</p>
+                            <p class="mt-1 text-xs text-slate-500">This comes from your account profile. Use the Profile button above if it needs correction before resubmitting.</p>
+                        </div>
                     </div>
 
                     <div class="portal-field portal-field--wide">
@@ -133,33 +84,33 @@
                         <p class="portal-section-card__eyebrow">Document Revision</p>
                         <h2 class="portal-section-card__title">Submitted Requirements</h2>
                         <p class="portal-section-card__description">
-                            Upload a replacement file only when LEEO requested a correction. Existing files remain attached if no replacement is selected.
+                            Upload at least one replacement file before resubmitting. Verified requirements stay locked.
                         </p>
                     </div>
                     <span class="portal-count-pill">{{ $application->requirements->count() }} records</span>
                 </div>
 
+                <div class="portal-inline-alert portal-inline-alert--warning">
+                    A revision must include a new replacement file for a requirement marked Action Required.
+                </div>
+
                 <div class="portal-requirement-grid">
                     @foreach($application->requirements as $requirement)
                         @php
-                            $verificationTone = match ($requirement->verification_status) {
-                                'Verified' => 'portal-status-badge--success',
-                                'Rejected' => 'portal-status-badge--danger',
-                                default => 'portal-status-badge--neutral',
-                            };
                             $requirementKey = 'requirements.' . $requirement->id;
+                            $isVerified = strcasecmp((string) $requirement->verification_status, 'Verified') === 0;
                         @endphp
 
-                        <article class="portal-requirement-card">
+                        <article class="portal-requirement-card {{ $isVerified ? '' : 'border-orange-200 bg-orange-50/40' }}">
                             <div class="portal-requirement-card__header">
                                 <div>
                                     <div class="portal-requirement-card__badges">
-                                        <span class="portal-status-badge {{ $verificationTone }}">{{ $requirement->verification_status }}</span>
+                                        <x-status-badge :status="$requirement->verification_status" />
+                                        @unless($isVerified)
+                                            <span class="portal-status-badge portal-status-badge--warning">Action Required</span>
+                                        @endunless
                                     </div>
                                     <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
-                                    @if($requirement->remarks)
-                                        <p class="portal-requirement-card__description">LEEO note: {{ $requirement->remarks }}</p>
-                                    @endif
                                 </div>
 
                                 @if($requirement->file_url)
@@ -171,20 +122,34 @@
 
                             <input type="hidden" name="requirements[{{ $requirement->id }}][id]" value="{{ $requirement->id }}">
 
-                            <div class="portal-form-grid portal-form-grid--requirement">
-                                <div class="portal-field portal-field--wide">
-                                    <label for="requirements_{{ $requirement->id }}_file" class="portal-field__label">Replacement File</label>
-                                    <input id="requirements_{{ $requirement->id }}_file"
-                                           name="requirements[{{ $requirement->id }}][file]"
-                                           type="file"
-                                           accept=".pdf,.jpg,.jpeg,.png"
-                                           class="portal-input portal-input--file @error($requirementKey . '.file') portal-input--error @enderror">
-                                    <p class="portal-field__hint">Leave blank to keep the current uploaded file.</p>
-                                    @error($requirementKey . '.file')
-                                        <p class="portal-field__error">{{ $message }}</p>
-                                    @enderror
+                            @unless($isVerified)
+                                @if($requirement->remarks)
+                                    <div class="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4 text-base text-orange-700">
+                                        <div class="flex items-start gap-3">
+                                            <x-heroicon-o-exclamation-triangle class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600" />
+                                            <div>
+                                                <p class="font-semibold text-orange-800">Admin Note</p>
+                                                <p class="mt-1">{{ $requirement->remarks }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <div class="portal-form-grid portal-form-grid--requirement mt-4">
+                                    <div class="portal-field portal-field--wide">
+                                        <label for="requirements_{{ $requirement->id }}_file" class="portal-field__label">Replacement File</label>
+                                        <input id="requirements_{{ $requirement->id }}_file"
+                                               name="requirements[{{ $requirement->id }}][file]"
+                                               type="file"
+                                               accept=".pdf,.jpg,.jpeg,.png"
+                                               class="portal-input portal-input--file @error($requirementKey . '.file') portal-input--error @enderror">
+                                        <p class="portal-field__hint">Upload a corrected PDF, JPG, or PNG file before resubmitting.</p>
+                                        @error($requirementKey . '.file')
+                                            <p class="portal-field__error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
-                            </div>
+                            @endunless
                         </article>
                     @endforeach
                 </div>
@@ -202,4 +167,5 @@
         </form>
     </div>
 </div>
+
 @endsection

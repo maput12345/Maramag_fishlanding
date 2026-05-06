@@ -81,7 +81,7 @@
                                 <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                 <select name="status"
                                         id="status"
-                                        class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                                        class="app-select block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                                     <option value="all" {{ $status === 'all' ? 'selected' : '' }}>All statuses</option>
                                     <option value="active" {{ $status === 'active' ? 'selected' : '' }}>Active</option>
                                     <option value="deactivated" {{ $status === 'deactivated' ? 'selected' : '' }}>Deactivated</option>
@@ -93,7 +93,7 @@
                                     <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
                                     <select name="role"
                                             id="role"
-                                            class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                                            class="app-select block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                                         <option value="all" {{ $role === 'all' ? 'selected' : '' }}>All roles</option>
                                         <option value="admin" {{ $role === 'admin' ? 'selected' : '' }}>Admin</option>
                                         <option value="staff" {{ $role === 'staff' ? 'selected' : '' }}>Staff</option>

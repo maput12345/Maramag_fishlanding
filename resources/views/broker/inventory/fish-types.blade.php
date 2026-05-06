@@ -94,7 +94,7 @@
                         <input type="text"
                                id="name"
                                name="name"
-                               value="{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->name : old('name') }}"
+                               value="{{ old('name', request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->display_name : '') }}"
                                placeholder="Enter fish, like Tilapia or Catfish"
                                class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors @error('name') border-red-500 @enderror"
                                required>
@@ -115,7 +115,7 @@
                               name="description"
                               rows="4"
                               placeholder="Add a short description to make the fish easier to recognize."
-                              class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none @error('description') border-red-500 @enderror">{{ request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->description : old('description') }}</textarea>
+                              class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none @error('description') border-red-500 @enderror">{{ old('description', request('modal') === 'edit' && isset($editingFishType) ? $editingFishType->display_description : '') }}</textarea>
                     @error('description')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -143,7 +143,7 @@
 
     <!-- Fish Search -->
     <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
-        <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{ search: '{{ request('search') }}' }">
+        <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{ search: @js((string) request('search', '')) }">
             <input type="hidden" name="tab" value="fishTypes">
             <div class="flex items-center space-x-4">
                 <div class="flex-1">
@@ -204,12 +204,12 @@
                                         <x-heroicon-o-tag class="w-5 h-5 text-white" />
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $fishType->name }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $fishType->display_name }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="text-sm text-gray-900">{{ $fishType->description ?: 'No description provided yet.' }}</span>
+                                <span class="text-sm text-gray-900">{{ $fishType->display_description ?: 'No description provided yet.' }}</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
@@ -218,12 +218,12 @@
                                            class="text-green-600 hover:text-green-900 transition-colors">
                                             <x-heroicon-o-pencil-square class="w-6 h-6" />
                                         </a>
-                                        @if($fishType->isUsed())
+                                        @if($fishType->isUsed($brokerId ?? null))
                                             <button type="button" class="text-gray-400 cursor-not-allowed" title="Cannot delete: Fish is in use">
                                                 <x-heroicon-o-trash class="w-6 h-6" />
                                             </button>
                                         @else
-                                            <form action="{{ route('broker.fish-types.destroy', $fishType->id) }}" method="POST" class="inline" data-swal="delete" data-record-name="{{ $fishType->name }}">
+                                            <form action="{{ route('broker.fish-types.destroy', $fishType->id) }}" method="POST" class="inline" data-swal="delete" data-record-name="{{ $fishType->display_name }}">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900 transition-colors">

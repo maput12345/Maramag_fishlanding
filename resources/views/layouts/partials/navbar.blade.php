@@ -2,7 +2,7 @@
 <header class="app-topbar">
     <div class="flex items-center justify-between px-6 py-4">
         <div class="flex items-center space-x-4">
-            <button @click="$dispatch('toggle-sidebar')" class="hidden md:block text-gray-500 hover:text-gray-700 transition-colors">
+            <button type="button" data-admin-sidebar-toggle class="hidden md:block text-gray-500 hover:text-gray-700 transition-colors" aria-label="Toggle sidebar">
                 <x-heroicon-o-bars-3 class="w-6 h-6" />
             </button>
 
@@ -41,24 +41,17 @@
 
         <div class="flex items-center space-x-4">
             <!-- User Dropdown -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="app-user-trigger flex items-center space-x-2 text-sm text-gray-700 transition-colors hover:text-gray-900">
+            <details class="relative">
+                <summary class="app-user-trigger flex cursor-pointer list-none items-center space-x-2 text-sm text-gray-700 transition-colors hover:text-gray-900">
                     <div class="app-avatar-badge w-8 h-8 rounded-full flex items-center justify-center">
                         <span class="text-sm font-medium text-white">{{ substr(auth()->user()->name, 0, 1) }}</span>
                     </div>
                     <span class="hidden sm:inline">{{ auth()->user()->name }}</span>
-                    <x-heroicon-o-chevron-down class="w-4 h-4" />
-                </button>
+                    <x-heroicon-o-chevron-down class="w-4 h-4 transition-transform duration-200" />
+                </summary>
 
                 <!-- Dropdown Menu -->
-                <div x-show="open" @click.away="open = false"
-                     x-transition:enter="transition ease-out duration-100"
-                     x-transition:enter-start="transform opacity-0 scale-95"
-                     x-transition:enter-end="transform opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-75"
-                     x-transition:leave-start="transform opacity-100 scale-100"
-                     x-transition:leave-end="transform opacity-0 scale-95"
-                     class="app-dropdown-panel absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+                <div class="app-dropdown-panel absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
                     <div class="py-1">
                         <div class="px-4 py-2 text-sm text-gray-700 border-b">
                             <div class="font-medium">{{ auth()->user()->name }}</div>
@@ -78,7 +71,7 @@
                         </form>
                     </div>
                 </div>
-            </div>
+            </details>
         </div>
     </div>
 </header>

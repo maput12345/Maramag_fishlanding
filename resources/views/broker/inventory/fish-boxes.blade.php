@@ -11,7 +11,7 @@
         $bulkQrFilterSummary = collect([
             request('search') ? 'Search: ' . request('search') : null,
             request('status') ? 'Status: ' . request('status') : null,
-            $selectedFishTypeForBulkQr ? 'Fish: ' . $selectedFishTypeForBulkQr->name : null,
+            $selectedFishTypeForBulkQr ? 'Fish: ' . $selectedFishTypeForBulkQr->display_name : null,
         ])->filter()->implode(' | ');
     @endphp
 
@@ -21,7 +21,7 @@
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <button type="button"
-                    class="bulk-qr-print-btn w-full sm:w-auto bg-slate-700 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2"
+                    class="bulk-qr-print-btn app-button app-button--dark w-full sm:w-auto px-4 py-2 text-sm"
                     title="Print all fish boxes that match the current filters"
                     data-bulk-qr-source="bulk-qr-boxes-data"
                     data-filter-summary="{{ $bulkQrFilterSummary }}"
@@ -37,18 +37,18 @@
                 <form method="POST"
                       action="{{ route('broker.fish-boxes.return-to-stock') }}"
                       data-inventory-async="return-to-stock"
-                      data-confirm-message="This will change all returned fish boxes back to stock. Continue?"
+                      data-confirm-message="This will clear returned boxes and mark them as unassigned. Continue?"
                       class="inline">
                     @csrf
-                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2">
+                    <button type="submit" class="app-button app-button--primary w-full sm:w-auto px-4 py-2 text-sm">
                         <x-heroicon-o-arrow-uturn-left class="w-4 h-4" />
-                        <span class="hidden sm:inline">Return to Stock</span>
-                        <span class="sm:hidden">Return to Stock</span>
+                        <span class="hidden sm:inline">Clear Returned Boxes</span>
+                        <span class="sm:hidden">Clear Returned</span>
                     </button>
                 </form>
                 @if(($bulkRestockEligibleCount ?? 0) > 0)
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'bulk-restock']) }}"
-                       class="w-full sm:w-auto bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2">
+                       class="app-button app-button--dark w-full sm:w-auto px-4 py-2 text-sm">
                         <x-heroicon-o-squares-2x2 class="w-4 h-4" />
                         <span class="hidden sm:inline">Daily Restock</span>
                         <span class="sm:hidden">Daily Restock</span>
@@ -59,7 +59,7 @@
                 @else
                     <button type="button"
                             disabled
-                            class="w-full sm:w-auto text-slate-500 px-4 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center justify-center space-x-2 cursor-not-allowed"
+                            class="app-button app-button--secondary w-full sm:w-auto px-4 py-2 text-sm"
                             style="background: #e5e7eb;">
                         <x-heroicon-o-squares-2x2 class="w-4 h-4" />
                         <span class="hidden sm:inline">Daily Restock</span>
@@ -68,7 +68,7 @@
                     </button>
                 @endif
                 <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'create']) }}"
-                   class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2">
+                   class="app-button app-button--success w-full sm:w-auto px-4 py-2 text-sm">
                     <x-heroicon-o-plus class="w-4 h-4" />
                     <span class="hidden sm:inline">Create Boxes</span>
                     <span class="sm:hidden">Create Boxes</span>
@@ -122,13 +122,13 @@
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                       class="app-button app-button--secondary w-full px-4 py-2.5 text-sm sm:w-auto">
                         Back
                     </a>
                     <form method="POST" action="{{ route('admin.broker-view.support.enable') }}" class="sm:w-auto">
                         @csrf
                         <button type="submit"
-                                class="inline-flex w-full justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 sm:w-auto">
+                                class="app-button app-button--warning w-full px-4 py-2.5 text-sm sm:w-auto">
                             Enable Support Actions
                         </button>
                     </form>
@@ -168,12 +168,12 @@
                                 name="fish_type_id"
                                 required
                                 data-fish-type-select
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                class="app-select w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                             <option value="">Select Fish</option>
                             @foreach($fishTypes as $fishType)
                                 <option value="{{ $fishType->id }}"
                                     {{ (string) old('fish_type_id') === (string) $fishType->id ? 'selected' : '' }}>
-                                    {{ $fishType->name }}
+                                    {{ $fishType->display_name }}
                                 </option>
                             @endforeach
                         </select>
@@ -242,12 +242,7 @@
                                             Current cost:
                                             {{ $restockFishBox->cost_price !== null ? 'PHP ' . number_format((float) $restockFishBox->cost_price, 2) : 'Not set' }}
                                         </span>
-                                        <span class="mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                                            {{ $restockFishBox->status === 'Unassigned' ? 'bg-slate-100 text-slate-700' : '' }}
-                                            {{ $restockFishBox->status === 'Returned' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                                            {{ $restockFishBox->status === 'In Stock' ? 'bg-green-100 text-green-800' : '' }}">
-                                            {{ $restockFishBox->status }}
-                                        </span>
+                                        <x-status-badge :status="$restockFishBox->status" size="sm" class="mt-2" />
                                     </span>
                                 </label>
                             @endforeach
@@ -264,12 +259,12 @@
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                       class="app-button app-button--secondary w-full px-4 py-2.5 text-sm sm:w-auto">
                         Cancel
                     </a>
                     <button type="submit"
                             {{ ($bulkRestockEligibleBoxes ?? collect())->isEmpty() ? 'disabled' : '' }}
-                            class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300 sm:w-auto">
+                            class="app-button app-button--success w-full px-4 py-2.5 text-sm sm:w-auto">
                         Apply Daily Restock
                     </button>
                 </div>
@@ -329,11 +324,11 @@
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                       class="app-button app-button--secondary w-full px-4 py-2.5 text-sm sm:w-auto">
                         Cancel
                     </a>
                     <button type="submit"
-                            class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                            class="app-button app-button--success w-full px-4 py-2.5 text-sm sm:w-auto">
                         Create Boxes
                     </button>
                 </div>
@@ -366,12 +361,12 @@
                             name="fish_type_id"
                             required
                             data-fish-type-select
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            class="app-select w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                         <option value="">Select Fish</option>
                         @foreach($fishTypes as $fishType)
                             <option value="{{ $fishType->id }}"
                                 {{ (string) old('fish_type_id', $editingFishBox?->fish_type_id) === (string) $fishType->id ? 'selected' : '' }}>
-                                {{ $fishType->name }}
+                                {{ $fishType->display_name }}
                             </option>
                         @endforeach
                     </select>
@@ -404,36 +399,111 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
-                        Status <span class="text-red-500">*</span>
-                    </label>
-                    <select id="status" name="status" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                        <option value="">Select Status</option>
-                        @foreach($fishBoxEditableStatuses as $status)
-                            <option value="{{ $status }}"
-                                {{ old('status', $editingFishBox?->status) === $status ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $status)) }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('status')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                       class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                       class="app-button app-button--secondary w-full px-4 py-2.5 text-sm sm:w-auto">
                         Cancel
                     </a>
                     <button type="submit"
-                            class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                            class="app-button app-button--success w-full px-4 py-2.5 text-sm sm:w-auto">
                         Update Fish Box
                     </button>
                 </div>
             </form>
+        </x-app-modal>
+    @endif
+
+    @if(request('modal') === 'history')
+        <x-app-modal
+            title="Fish Box History"
+            :subtitle="$historyFishBox ? 'Previous stock records for ' . $historyFishBox->name . '.' : 'No fish box history was found.'"
+            :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm"
+                     style="background: #2563eb; color: #ffffff;">
+                    <x-heroicon-o-clock class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            @if($historyFishBox)
+                <form method="GET" action="{{ route('broker.inventory.index') }}" class="mb-4">
+                    <input type="hidden" name="tab" value="fishBoxes">
+                    <input type="hidden" name="modal" value="history">
+                    <input type="hidden" name="history" value="{{ $historyFishBox->id }}">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <div class="flex-1">
+                            <input type="date"
+                                   name="box_history_date"
+                                   value="{{ request('box_history_date') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit"
+                                    class="inline-flex justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors"
+                                    style="background: #2563eb;">
+                                Search
+                            </button>
+                            @if(request()->filled('box_history_date'))
+                                <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'history', 'history' => $historyFishBox->id]) }}"
+                                   class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+
+                <div class="overflow-hidden rounded-xl border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                @forelse($historyFishBox->purchases as $stockCycle)
+                                    <tr>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                            {{ $stockCycle->purchase_date?->format('M d, Y') ?? 'Not set' }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
+                                            {{ \App\Models\BrokerFishTypeAssignment::resolveDisplayName($historyFishBox->broker_id, $stockCycle->fishType) ?? 'Unassigned' }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                            @if($stockCycle->cost_price !== null)
+                                                PHP {{ number_format((float) $stockCycle->cost_price, 2) }}
+                                            @else
+                                                <span class="text-gray-400">Not set</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                            {{ request()->filled('box_history_date') ? 'No fish box history matched that date.' : 'No fish box history yet.' }}
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @else
+                <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    The selected fish box history could not be found.
+                </div>
+            @endif
+
+            <div class="mt-6 flex justify-end border-t border-gray-100 pt-5">
+                <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
+                   class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    Close
+                </a>
+            </div>
         </x-app-modal>
     @endif
 
@@ -464,7 +534,7 @@
                 <!-- Status Filter -->
                 <div class="status-field">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select name="status" x-model="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <select name="status" x-model="status" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
                         <option value="">All Status</option>
                         @foreach($fishBoxStatuses as $status)
                             <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
@@ -477,11 +547,11 @@
                 <!-- Fish Type Filter -->
                 <div class="fish-type-field">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Fish</label>
-                    <select name="fish_type" x-model="fishType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <select name="fish_type" x-model="fishType" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
                         <option value="">All Fish</option>
                         @foreach($fishTypes as $fishType)
                             <option value="{{ $fishType->id }}" {{ request('fish_type') == $fishType->id ? 'selected' : '' }}>
-                                {{ $fishType->name }}
+                                {{ $fishType->display_name }}
                             </option>
                         @endforeach
                     </select>
@@ -490,11 +560,11 @@
                 <!-- Action Buttons -->
                 <div class="buttons-field flex justify-end space-x-2">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                    class="app-button app-button--secondary px-4 py-2 text-sm">
                         Clear
                     </a>
                     <button type="submit"
-                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                            class="app-button app-button--success px-4 py-2 text-sm">
                         Search
                     </button>
                 </div>
@@ -526,6 +596,18 @@
                         <x-heroicon-o-archive-box class="w-6 h-6 text-white" />
                     </div>
                     <div class="flex items-center space-x-2">
+                        @if($fishBox->currentPurchase)
+                            <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'history', 'history' => $fishBox->id]) }}"
+                               class="transition-colors"
+                               style="color: #2563eb;"
+                               title="View fish box history">
+                                <x-heroicon-o-clock class="w-6 h-6" />
+                            </a>
+                        @else
+                            <button type="button" class="text-gray-400 cursor-not-allowed" title="No fish box history yet">
+                                <x-heroicon-o-clock class="w-6 h-6" />
+                            </button>
+                        @endif
                         <button class="qr-code-btn text-gray-400 hover:text-green-600 transition-colors"
                                 title="View QR Code"
                                 data-qr-data="{{ $fishBox->qr_code }}"
@@ -591,18 +673,9 @@
                     </p>
                 </div>
                 <div class="mb-3">
-                    <span data-fish-box-status-badge
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        {{ $fishBox->status === 'Unassigned' ? 'bg-slate-100 text-slate-700' : '' }}
-                        {{ $fishBox->status === 'In Stock' ? 'bg-green-100 text-green-800' : '' }}
-                        {{ $fishBox->status === 'Sold' ? 'bg-blue-100 text-blue-800' : '' }}
-                        {{ $fishBox->status === 'Returned' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                        {{ $fishBox->status === 'Missing' ? 'bg-red-100 text-red-800' : '' }}">
-                        {{ $fishBox->status }}
-                    </span>
+                    <x-status-badge :status="$fishBox->status" size="sm" data-fish-box-status-badge />
                 </div>
                 @if($fishBox->status === 'Unassigned')
-                    <p class="mb-3 text-xs text-slate-600">Assign fish name and cost through Daily Restock when this box is ready to use.</p>
                 @endif
                 <div class="flex items-center justify-between text-sm text-gray-500">
                     <span class="font-mono text-xs">{{ Str::limit($fishBox->qr_code, 12) }}</span>
@@ -619,7 +692,7 @@
                     </p>
                     @unless($brokerViewReadOnly)
                         <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'create']) }}"
-                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center space-x-2">
+                            class="app-button app-button--success px-6 py-3">
                             <x-heroicon-o-plus class="w-5 h-5" />
                             <span>Create Boxes</span>
                         </a>

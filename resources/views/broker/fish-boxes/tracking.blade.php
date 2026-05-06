@@ -32,7 +32,7 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <form method="GET" action="{{ route('broker.fish-boxes.tracking') }}" x-data="{ search: '{{ request('search', '') }}' }">
+        <form method="GET" action="{{ route('broker.fish-boxes.tracking') }}" x-data="{ search: @js((string) request('search', '')) }">
             <div class="space-y-3">
                 <label class="block text-sm font-medium text-gray-700">Search</label>
 
@@ -52,11 +52,11 @@
 
                     <div class="flex justify-start gap-2 lg:flex-none lg:justify-end">
                         <a href="{{ route('broker.fish-boxes.tracking') }}"
-                           class="inline-flex h-10 min-w-[96px] items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">
+                           class="app-button app-button--secondary h-10 min-w-[96px] px-4 text-sm">
                             Clear
                         </a>
                         <button type="submit"
-                                class="inline-flex h-10 min-w-[108px] items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                                class="app-button app-button--primary h-10 min-w-[108px] px-4 text-sm">
                             Search
                         </button>
                     </div>
@@ -106,9 +106,7 @@
                                 {{ \Illuminate\Support\Str::limit($fishBox->qr_code ?? 'N/A', 18) }}
                             </td>
                             <td class="px-3 py-4 md:px-6 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    {{ $fishBox->status }}
-                                </span>
+                                <x-status-badge :status="$fishBox->status" size="sm" />
                             </td>
                         </tr>
                     @empty
