@@ -15,8 +15,6 @@ const path = require('path');
 
 const qrScannerLegacySource = 'node_modules/qr-scanner/qr-scanner.legacy.min.js';
 const qrScannerLegacyTarget = 'public/js/qr-scanner-legacy.min.js';
-const backgroundImageSource = 'resources/css/background.png';
-const backgroundImageTarget = 'public/css/background.png';
 
 mix.disableNotifications();
 
@@ -29,16 +27,13 @@ mix.js('resources/js/app.js', 'public/js')
   .js('resources/js/print-receipt.js', 'public/js')
   .js('resources/js/sales-qr-scanner.js', 'public/js')
   .js('resources/js/sales-form.js', 'public/js')
+  .js('resources/js/sales-page.js', 'public/js')
   .postCss('resources/css/app.css', 'public/css')
   .postCss('resources/css/admin.css', 'public/css')
   .postCss('resources/css/filter-layout.css', 'public/css');
 
 if (!fs.existsSync(path.resolve(__dirname, qrScannerLegacyTarget))) {
    mix.copy(qrScannerLegacySource, qrScannerLegacyTarget);
-}
-
-if (!fs.existsSync(path.resolve(__dirname, backgroundImageTarget))) {
-   mix.copy(backgroundImageSource, backgroundImageTarget);
 }
 
 if (mix.inProduction()) {

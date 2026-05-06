@@ -129,7 +129,11 @@ class SalesBoxAvailabilityProtectionTest extends TestCase
             ],
         ]);
 
-        $response->assertRedirect(route('broker.transaction', [], false));
+        $response->assertRedirect(route('broker.transaction', [
+            'modal' => 'print',
+            'print' => 1,
+            'auto_print' => 1,
+        ], false));
         $response->assertSessionHas('success');
 
         $this->assertSame(1, Sales::count());

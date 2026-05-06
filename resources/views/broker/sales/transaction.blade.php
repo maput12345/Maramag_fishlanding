@@ -6,6 +6,7 @@
         ['title' => 'Transaction'],
     ];
     $transactionUrl = route('broker.transaction');
+    $salesBaseUrl = $transactionUrl;
     $salesFormConfig = [
         'fishBoxes' => $fishBoxes ?? [],
         'fishTypes' => $fishTypes ?? [],
@@ -29,15 +30,17 @@
         data-sales-page
         data-sales-base-url="{{ $transactionUrl }}"
     >
-        <div id="sales-page-fragment">
-            <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div id="sales-page-fragment" data-sales-form-root>
+            <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Transaction</h1>
                 </div>
-                <a href="{{ route('broker.sales.sales') }}" class="app-button app-button--secondary px-4 py-2 text-sm">
-                    <x-heroicon-o-banknotes class="h-4 w-4" />
-                    <span>Sales Records</span>
-                </a>
+                <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-end">
+                    <a href="{{ route('broker.sales.sales') }}" class="app-button app-button--secondary h-12 w-full px-4 text-sm sm:w-auto">
+                        <x-heroicon-o-banknotes class="h-4 w-4" />
+                        <span>Sales Records</span>
+                    </a>
+                </div>
             </div>
 
             @if($brokerViewReadOnly)
@@ -45,7 +48,7 @@
                     Broker sales are read-only until an admin explicitly enables support actions.
                 </div>
             @else
-                <section class="rounded-xl bg-white p-6 shadow-lg" data-sales-form-root>
+                <section class="rounded-xl bg-white p-6 shadow-lg">
                     <script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 
                     <form action="{{ route('broker.sales.store') }}"
@@ -55,25 +58,30 @@
                           class="space-y-6">
                         @csrf
                         <input type="hidden" name="after_save" value="transaction">
-
-                        <div>
-                            <label for="sales_date" class="mb-2 block text-sm font-medium text-gray-700">
-                                Sales Date <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" id="sales_date" name="sales_date" required
-                                   value="{{ old('sales_date', date('Y-m-d')) }}"
-                                   class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                            <input type="hidden" id="total_amount" name="total_amount" value="{{ old('total_amount', '') }}">
-                            @error('sales_date')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <input type="hidden" id="sales_date" name="sales_date" value="{{ old('sales_date', date('Y-m-d')) }}">
+                        <input type="hidden" id="total_amount" name="total_amount" value="{{ old('total_amount', '') }}">
 
                         <div class="space-y-4">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Sales Details <span class="text-red-500">*</span>
-                            </label>
-                            <p class="text-xs text-gray-500">Price per box auto-fills from your current broker fish price list when available.</p>
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Sales Details <span class="text-red-500">*</span>
+                                    </label>
+                                    <p class="mt-1 text-xs text-gray-500">Price per box auto-fills from your current broker fish price list when available.</p>
+                                </div>
+                                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+                                    <button type="button" id="add-sales-detail-btn"
+                                            class="app-button app-button--dark h-12 w-full px-5 text-sm sm:w-auto">
+                                        <x-heroicon-o-plus class="h-4 w-4" />
+                                        <span>Add Sales Detail</span>
+                                    </button>
+                                    <button type="button" id="scan-qr-btn"
+                                            class="app-button app-button--dark h-12 w-full px-5 text-sm sm:w-auto">
+                                        <x-heroicon-o-qr-code class="h-4 w-4" />
+                                        <span>Scan QR Code</span>
+                                    </button>
+                                </div>
+                            </div>
 
                             <div class="space-y-4" id="sales-details-container">
                                 @foreach($salesDetails as $index => $detail)
@@ -114,10 +122,10 @@
 
                                             <div class="min-w-[150px] flex-1">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
-                                                <input type="number" name="sales_details[{{ $index }}][unit_price]"
-                                                       value="{{ $detail['unit_price'] ?? '' }}"
-                                                       step="0.01" min="0"
-                                                       class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               <input type="number" name="sales_details[{{ $index }}][unit_price]"
+                                                      value="{{ $detail['unit_price'] ?? '' }}"
+                                                      step="0.01" min="0"
+                                                       class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                                        placeholder="0.00">
                                             </div>
 
@@ -132,10 +140,10 @@
 
                                             <div class="min-w-[150px] flex-1">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
-                                                <input type="number" name="sales_details[{{ $index }}][sub_total]"
-                                                       value="{{ $detail['sub_total'] ?? '' }}"
-                                                       step="0.01" min="0"
-                                                       class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-500"
+                                               <input type="number" name="sales_details[{{ $index }}][sub_total]"
+                                                      value="{{ $detail['sub_total'] ?? '' }}"
+                                                      step="0.01" min="0"
+                                                       class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-500"
                                                        readonly>
                                             </div>
 
@@ -157,79 +165,64 @@
                             <div class="rounded-xl bg-blue-50 p-6">
                                 <div class="flex items-center justify-between">
                                     <span class="text-lg font-semibold text-gray-900">TOTAL:</span>
-                                    <span class="text-2xl font-bold text-gray-900" id="total-amount-display">PHP 0.00</span>
+                                    <span class="text-right text-2xl font-bold text-gray-900" id="total-amount-display">PHP 0.00</span>
                                 </div>
                             </div>
 
-                            <div class="flex flex-col gap-3 sm:flex-row">
-                                <button type="button" id="add-sales-detail-btn"
-                                        class="inline-flex h-12 w-full flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
-                                        style="min-width: 13rem;">
-                                    <x-heroicon-o-plus class="h-4 w-4" />
-                                    <span>Add Sales Detail</span>
-                                </button>
-                                <button type="button" id="scan-qr-btn"
-                                        class="inline-flex h-12 w-full flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-blue-700 sm:w-auto"
-                                        style="min-width: 13rem;">
-                                    <x-heroicon-o-qr-code class="h-4 w-4" />
-                                    <span>Scan QR Code</span>
-                                </button>
-                            </div>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div>
-                                <label for="buyer_name" class="mb-2 block text-sm font-medium text-gray-700">
-                                    Buyer Name <span class="text-red-500">*</span>
-                                </label>
-                                <input type="text" id="buyer_name" name="buyer_name"
-                                       value="{{ old('buyer_name', '') }}"
-                                       class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                       placeholder="Enter buyer name">
-                            </div>
-
-                            <div>
-                                <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">Buyer Contact</label>
-                                <input type="text" id="buyer_contact" name="buyer_contact"
-                                       value="{{ old('buyer_contact', '') }}"
-                                       class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                       placeholder="Enter buyer contact">
-                            </div>
-                        </div>
-
-                        <div class="space-y-6 rounded-2xl border border-gray-200 bg-white p-6">
-                            <div>
-                                <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">Paid Amount</label>
-                                <input type="number" id="initial_paid_amount" name="initial_paid_amount"
-                                       value="{{ old('initial_paid_amount', '') }}"
-                                       step="0.01" min="0.01"
-                                       data-currency-input="true"
-                                       class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                       placeholder="0.00">
-                                <div class="mt-2 text-xs text-gray-500">
-                                    Maximum payment: PHP <span id="initial-payment-max-amount">0.00</span>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-6">
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label for="buyer_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Buyer Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="buyer_name" name="buyer_name"
+                                           value="{{ old('buyer_name', '') }}"
+                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Enter buyer name">
                                 </div>
-                                <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
+
+                                <div>
+                                    <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">Buyer Contact Number</label>
+                                    <input type="text" id="buyer_contact" name="buyer_contact"
+                                           value="{{ old('buyer_contact', '') }}"
+                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Enter buyer contact">
+                                </div>
                             </div>
 
-                            <div>
-                                <label for="initial_payment_date" class="mb-2 block text-sm font-medium text-gray-700">Payment Date</label>
-                                <input type="date" id="initial_payment_date" name="initial_payment_date"
-                                       value="{{ old('initial_payment_date', '') }}"
-                                       class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                            </div>
 
-                            <div>
-                                <label for="initial_payment_method" class="mb-2 block text-sm font-medium text-gray-700">Payment Method</label>
-                                <select id="initial_payment_method" name="initial_payment_method"
-                                        class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Payment Method</option>
-                                    <option value="Cash" {{ old('initial_payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                                    <option value="GCash" {{ old('initial_payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                                    <option value="Bank Transfer" {{ old('initial_payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                    <option value="Check" {{ old('initial_payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
-                                    <option value="Other" {{ old('initial_payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
-                                </select>
+
+                            <input type="hidden" id="initial_payment_date" name="initial_payment_date" value="{{ old('initial_payment_date', date('Y-m-d')) }}">
+
+                            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">Paid Amount</label>
+                                   <input type="number" id="initial_paid_amount" name="initial_paid_amount"
+                                          value="{{ old('initial_paid_amount', '') }}"
+                                          step="0.01" min="0.01"
+                                          data-currency-input="true"
+                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="0.00">
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        Maximum payment: PHP <span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
+                                    </div>
+                                    <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
+                                </div>
+
+                                <div>
+                                    <label for="initial_payment_method" class="mb-2 block text-sm font-medium text-gray-700">Payment Method</label>
+                                    <select id="initial_payment_method" name="initial_payment_method"
+                                            class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Payment Method</option>
+                                        <option value="Cash" {{ old('initial_payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                                        <option value="GCash" {{ old('initial_payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
+                                        <option value="Bank Transfer" {{ old('initial_payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                                        <option value="Check" {{ old('initial_payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
+                                        <option value="Other" {{ old('initial_payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -242,6 +235,10 @@
                         </div>
                     </form>
                 </section>
+            @endif
+            @include('broker.sales.partials.print-modal')
+            @if(request('auto_print') && $printingSales)
+                <div data-auto-print-receipt="true" data-receipt-id="{{ $printingSales->id }}" hidden></div>
             @endif
         </div>
     </div>
@@ -279,7 +276,7 @@
                 <div class="min-w-[150px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
                     <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="0.00">
                 </div>
                 <div class="min-w-[120px] flex-1">
@@ -291,7 +288,7 @@
                 <div class="min-w-[150px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
                     <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
-                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-500"
+                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-500"
                            readonly>
                 </div>
                 <div class="flex items-end">
@@ -372,7 +369,29 @@
             }
 
             initializeSalesFormWhenReady();
+            maybeAutoPrintReceipt();
         };
+
+        function printReceiptBroker() {
+            const receiptId = document.querySelector('[data-auto-print-receipt]')?.dataset.receiptId || '';
+            const receiptTitle = receiptId ? `Receipt #${receiptId}` : 'Receipt';
+            window.printReceipt('receipt-content', receiptTitle);
+        }
+
+        function maybeAutoPrintReceipt() {
+            const marker = document.querySelector('[data-auto-print-receipt="true"]');
+
+            if (!marker || marker.dataset.printStarted === 'true') {
+                return;
+            }
+
+            marker.dataset.printStarted = 'true';
+            window.setTimeout(function() {
+                if (typeof printReceiptBroker === 'function') {
+                    printReceiptBroker();
+                }
+            }, 450);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             window.initializeBrokerSalesPage();

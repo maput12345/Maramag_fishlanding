@@ -18,6 +18,32 @@ window.toastr = toastr;
 window.Alpine = Alpine;
 Alpine.start();
 
+const moneyTextPattern = /^(PHP|₱)\s*-?[\d,]+(?:\.\d{1,2})?$/i;
+let moneyAlignmentTimer = null;
+
+function alignMoneyValues(root = document) {
+    const elements = root.querySelectorAll
+        ? root.querySelectorAll('td, th, span, p, div, strong, output')
+        : [];
+
+    elements.forEach((element) => {
+        if (element.children.length > 0) {
+            return;
+        }
+
+        if (moneyTextPattern.test(element.textContent.trim())) {
+            element.dataset.money = 'true';
+        }
+    });
+}
+
+function scheduleMoneyAlignment() {
+    clearTimeout(moneyAlignmentTimer);
+    moneyAlignmentTimer = setTimeout(() => alignMoneyValues(), 75);
+}
+
+window.alignMoneyValues = alignMoneyValues;
+
 
 
 /**
@@ -54,6 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize SweetAlert form handlers
     initializeSweetAlert();
     initializeProfileDropdowns();
+    alignMoneyValues();
+
+    const observer = new MutationObserver(scheduleMoneyAlignment);
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
 
 });
 

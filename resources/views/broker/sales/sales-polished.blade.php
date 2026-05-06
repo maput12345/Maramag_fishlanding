@@ -57,15 +57,15 @@
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Sales Amount</p>
-                <p class="summary-stat-value text-blue-600">{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-blue-600">{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Total Collection</p>
-                <p class="summary-stat-value text-green-600">{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-green-600">{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
-                <p class="summary-stat-value text-orange-600">{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-orange-600">{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
             </div>
         </div>
 
@@ -150,8 +150,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Commodities</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Buyer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Paid Amount</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Total Amount</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Paid Amount</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
@@ -171,10 +171,10 @@
                                         <div class="text-sm text-gray-500">{{ $sale->buyer_contact }}</div>
                                     </div>
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
                                     PHP {{ number_format($sale->total_amount, 2) }}
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
                                     PHP {{ number_format($sale->paid_amount, 2) }}
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4">

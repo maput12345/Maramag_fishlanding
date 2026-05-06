@@ -107,7 +107,9 @@ class SalesManagementController extends Controller
 
     public function transaction(Request $request)
     {
-        $request->merge(['modal' => 'create']);
+        if ($request->get('modal') !== 'print') {
+            $request->merge(['modal' => 'create']);
+        }
 
         $salesController = new SalesController();
         $data = $salesController->getIndexData($request);

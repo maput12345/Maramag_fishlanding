@@ -200,14 +200,27 @@ class SalesController extends Controller
         $initialPayment = $this->extractInitialPaymentData($validated);
 
         // Create sales with details using the model method
-        SalesTransaction::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
+        $sale = SalesTransaction::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
 
         if ($this->shouldReturnJson($request)) {
-            return $this->jsonSuccessResponse('Sale created successfully!');
+            return $this->jsonSuccessResponse('Sale created successfully!', [
+                'sale_id' => $sale->id,
+                'redirect_url' => $request->input('after_save') === 'transaction'
+                    ? route('broker.transaction', [
+                        'modal' => 'print',
+                        'print' => $sale->id,
+                        'auto_print' => 1,
+                    ])
+                    : route('broker.sales.sales'),
+            ]);
         }
 
         if ($request->input('after_save') === 'transaction') {
-            return redirect()->route('broker.transaction')
+            return redirect()->route('broker.transaction', [
+                    'modal' => 'print',
+                    'print' => $sale->id,
+                    'auto_print' => 1,
+                ])
                 ->with('success', 'Sale created successfully!');
         }
 
@@ -617,12 +630,12 @@ class SalesController extends Controller
         ];
     }
 
-    private function jsonSuccessResponse(string $message): JsonResponse
+    private function jsonSuccessResponse(string $message, array $data = []): JsonResponse
     {
-        return response()->json([
+        return response()->json(array_merge([
             'success' => true,
             'message' => $message,
-        ]);
+        ], $data));
     }
 
     private function jsonErrorResponse(string $message, int $status = 400): JsonResponse

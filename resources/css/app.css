@@ -66,11 +66,21 @@
     border: 1px solid #e5e7eb !important; /* ring-1 ring-gray-200 */
     background-color: #ffffff !important;
 }
-.login-background {
-    background-image: url('background.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+/* Monetary alignment */
+input[name*="amount" i],
+input[name*="price" i],
+input[name*="cost" i],
+input[name*="total" i],
+input[name*="balance" i],
+.unit-price-input,
+.sub-total-input,
+#total-amount-display,
+#initial-payment-max-amount,
+[data-money],
+.money-value,
+.money-cell {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Theme accents (left bar) and text */

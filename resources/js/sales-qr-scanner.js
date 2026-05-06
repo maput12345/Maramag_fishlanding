@@ -5,6 +5,7 @@ class SalesQRScanner {
         this.isModalCreated = false;
         this.isProcessing = false;
         this.onScanSuccess = null;
+        this.restartTimeout = null;
         this.lookupUrlTemplate = window.salesQrScannerConfig?.lookupUrlTemplate || null;
         this.handleEscape = this.handleEscape.bind(this);
     }
@@ -33,6 +34,7 @@ class SalesQRScanner {
 
     async closeModal() {
         this.isProcessing = false;
+        this.clearRestartTimeout();
         document.removeEventListener('keydown', this.handleEscape);
         await this.stopScanner();
 
@@ -131,6 +133,13 @@ class SalesQRScanner {
         document.addEventListener('keydown', this.handleEscape);
     }
 
+    clearRestartTimeout() {
+        if (this.restartTimeout) {
+            clearTimeout(this.restartTimeout);
+            this.restartTimeout = null;
+        }
+    }
+
     updateStatus(html) {
         const statusElement = document.getElementById('salesQrStatus');
         if (statusElement) {
@@ -155,6 +164,15 @@ class SalesQRScanner {
             <div class="text-center">
                 <p class="text-[1.35rem] font-semibold text-emerald-600">Camera active</p>
                 <p class="mt-1 text-base text-slate-500">Point your camera at a fish box QR code.</p>
+            </div>
+        `);
+    }
+
+    showSuccessState(message) {
+        this.updateStatus(`
+            <div class="text-center">
+                <p class="text-lg font-semibold text-emerald-600">${message}</p>
+                <p class="mt-1 text-sm text-slate-500">Ready for the next fish box scan.</p>
             </div>
         `);
     }
@@ -266,20 +284,50 @@ class SalesQRScanner {
         }
 
         this.isProcessing = true;
+        this.clearRestartTimeout();
         await this.stopScanner();
 
         this.showLoadingState(`Processing ${qrCode}...`);
 
         try {
             const fishBox = await this.getFishBoxByQRCode(qrCode);
-            this.handleSalesQRScanSuccess(fishBox);
-            await this.closeModal();
+            const fishBoxData = fishBox.data || fishBox;
+
+            if (this.isFishBoxAlreadySelected(fishBoxData.id)) {
+                const message = 'This fish box is already in the current transaction.';
+                if (window.toastr) {
+                    window.toastr.warning(message);
+                }
+                this.restartScannerAfterSuccess(message);
+                return;
+            }
+
+            this.handleSalesQRScanSuccess(fishBoxData);
+            this.restartScannerAfterSuccess('Fish box added.');
         } catch (error) {
             console.error('Sales QR processing failed.', error);
             this.showErrorState(error?.message || 'Error processing QR code. Please try again.');
         } finally {
             this.isProcessing = false;
         }
+    }
+
+    restartScannerAfterSuccess(message) {
+        this.showSuccessState(message);
+        this.clearRestartTimeout();
+
+        this.restartTimeout = setTimeout(() => {
+            this.restartTimeout = null;
+
+            if (!this.modal || this.modal.classList.contains('hidden')) {
+                return;
+            }
+
+            this.startScanner().catch((error) => {
+                console.error('Unable to restart sales QR scanner.', error);
+                this.showErrorState(this.getCameraErrorMessage(error));
+            });
+        }, 700);
     }
 
     async getFishBoxByQRCode(qrCode) {
@@ -339,11 +387,26 @@ class SalesQRScanner {
     }
 
     getActiveSalesFormRoot() {
+        const fullPageRoot = document.querySelector('[data-sales-form-root]');
+        if (fullPageRoot) {
+            return fullPageRoot;
+        }
+
         const modalRoots = Array.from(document.querySelectorAll('[data-app-modal-root]'));
 
         return modalRoots.reverse().find((modalRoot) => modalRoot.offsetParent !== null)
             || modalRoots.at(-1)
             || document;
+    }
+
+    isFishBoxAlreadySelected(fishBoxId) {
+        if (!fishBoxId) {
+            return false;
+        }
+
+        const salesFormRoot = this.getActiveSalesFormRoot();
+        return Array.from(salesFormRoot.querySelectorAll('.fish-box-hidden-input'))
+            .some((input) => String(input.value) === String(fishBoxId));
     }
 
     addFishBoxToSalesDetails(fishBox) {

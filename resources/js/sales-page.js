@@ -4,7 +4,7 @@
  */
 
 (function () {
-    const MODAL_QUERY_KEYS = ['modal', 'edit', 'show', 'sale', 'print'];
+    const MODAL_QUERY_KEYS = ['modal', 'edit', 'show', 'sale', 'print', 'auto_print'];
 
     function getSalesRoot() {
         return document.querySelector('[data-sales-page]');
@@ -214,7 +214,7 @@
                 window.toastr.success(payload.message || 'Sales data saved successfully.');
             }
 
-            const afterSaveUrl = form.dataset.salesAfterSaveUrl || getSalesBaseUrl();
+            const afterSaveUrl = payload.redirect_url || form.dataset.salesAfterSaveUrl || getSalesBaseUrl();
             await refreshSalesFragment(afterSaveUrl, 'replace');
         } catch (error) {
             if (window.toastr) {
