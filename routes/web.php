@@ -9,6 +9,7 @@ use App\Http\Controllers\Broker\FishBoxController;
 use App\Http\Controllers\Broker\FishPricesController;
 use App\Http\Controllers\Admin\FishManagementController;
 use App\Http\Controllers\Broker\SalesController;
+use App\Http\Controllers\Broker\SalesScanSessionController;
 use App\Http\Controllers\Broker\FishboxManagementController;
 use App\Http\Controllers\BrokerDashboardController;
 use App\Http\Controllers\SalesManagementController;
@@ -173,6 +174,14 @@ Route::middleware(['auth', 'broker'])->group(function () {
         Route::post('/sales-payments', 'storePayment')->name('sales-payments.store');
         Route::delete('/sales-payments/{id}', 'destroyPayment')->name('sales-payments.destroy');
         Route::get('/sales/fish-boxes/{qrCode}', 'getFishBoxByQRCode')->name('fish-boxes.qr');
+    });
+
+    Route::controller(SalesScanSessionController::class)->prefix('broker/sales/scan-sessions')->name('broker.sales.scan-sessions.')->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::get('/{token}/scanner', 'scanner')->name('scanner');
+        Route::post('/{token}/scan', 'scan')->name('scan');
+        Route::get('/{token}/items', 'items')->name('items');
+        Route::post('/{token}/close', 'close')->name('close');
     });
 
 });

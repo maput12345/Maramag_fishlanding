@@ -134,7 +134,7 @@
             @elseif($canConfirmWinner)
                 <p class="mt-4 text-sm text-slate-600">Once the offline bidding decision is final, record the winner here and the system will activate the broker account automatically.</p>
                 @if($availableWinnerStalls->isNotEmpty())
-                    <form action="{{ route('admin.applications.winner', $application) }}" method="POST" class="mt-6 space-y-4">
+                    <form action="{{ route('admin.applications.winner', $application) }}" method="POST" class="mt-6 space-y-4" data-swal="winner" data-record-name="{{ $application->name }}">
                         @csrf
                         <div>
                             <label for="selected_stall_id" class="block text-sm font-medium text-slate-700">Awarded Stall</label>

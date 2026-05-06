@@ -28,6 +28,8 @@ mix.js('resources/js/app.js', 'public/js')
   .js('resources/js/sales-qr-scanner.js', 'public/js')
   .js('resources/js/sales-form.js', 'public/js')
   .js('resources/js/sales-page.js', 'public/js')
+  .js('resources/js/remote-sales-scanner.js', 'public/js')
+  .js('resources/js/remote-sales-phone-scanner.js', 'public/js')
   .postCss('resources/css/app.css', 'public/css')
   .postCss('resources/css/admin.css', 'public/css')
   .postCss('resources/css/filter-layout.css', 'public/css');

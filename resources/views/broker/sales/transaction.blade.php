@@ -19,6 +19,7 @@
     $salesQrScannerScriptUrl = asset('js/sales-qr-scanner.js') . '?v=' . filemtime(public_path('js/sales-qr-scanner.js'));
     $salesFormScriptUrl = asset('js/sales-form.js') . '?v=' . filemtime(public_path('js/sales-form.js'));
     $salesPageScriptUrl = asset('js/sales-page.js') . '?v=' . filemtime(public_path('js/sales-page.js'));
+    $remoteSalesScannerScriptUrl = asset('js/remote-sales-scanner.js') . '?v=' . filemtime(public_path('js/remote-sales-scanner.js'));
 @endphp
 
 @extends('layouts.broker')
@@ -79,6 +80,11 @@
                                             class="app-button app-button--dark h-12 w-full px-5 text-sm sm:w-auto">
                                         <x-heroicon-o-qr-code class="h-4 w-4" />
                                         <span>Scan QR Code</span>
+                                    </button>
+                                    <button type="button" data-remote-sales-scanner-open
+                                            class="app-button app-button--secondary h-12 w-full px-5 text-sm sm:w-auto">
+                                        <x-heroicon-o-device-phone-mobile class="h-4 w-4" />
+                                        <span>Phone Scanner</span>
                                     </button>
                                 </div>
                             </div>
@@ -306,12 +312,17 @@
         window.salesQrScannerConfig = {
             lookupUrlTemplate: @json(route('broker.fish-boxes.qr', ['qrCode' => '__QR_CODE__']))
         };
+        window.remoteSalesScannerConfig = {
+            createUrl: @json(route('broker.sales.scan-sessions.store', [], false)),
+            closeUrlTemplate: @json(route('broker.sales.scan-sessions.close', ['token' => '__TOKEN__'], false))
+        };
     </script>
     <script src="{{ $printReceiptScriptUrl }}" defer></script>
     <script src="{{ $qrScannerLegacyScriptUrl }}" defer></script>
     <script src="{{ $salesQrScannerScriptUrl }}" defer></script>
     <script src="{{ $salesFormScriptUrl }}" defer></script>
     <script src="{{ $salesPageScriptUrl }}" defer></script>
+    <script src="{{ $remoteSalesScannerScriptUrl }}" defer></script>
     <script>
         function getActiveSalesFormRoot() {
             return document.querySelector('[data-sales-form-root]') || document;
@@ -369,6 +380,9 @@
             }
 
             initializeSalesFormWhenReady();
+            if (typeof window.bindRemoteSalesScannerButtons === 'function') {
+                window.bindRemoteSalesScannerButtons();
+            }
             maybeAutoPrintReceipt();
         };
 

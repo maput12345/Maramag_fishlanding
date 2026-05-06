@@ -1,2 +1,341 @@
-/*! For license information please see sales-page.js.LICENSE.txt */
-(()=>{function e(){var r,n,o="function"==typeof Symbol?Symbol:{},a=o.iterator||"@@iterator",i=o.toStringTag||"@@toStringTag";function c(e,o,a,i){var c=o&&o.prototype instanceof u?o:u,l=Object.create(c.prototype);return t(l,"_invoke",function(e,t,o){var a,i,c,u=0,l=o||[],f=!1,d={p:0,n:0,v:r,a:p,f:p.bind(r,4),d:function(e,t){return a=e,i=0,c=r,d.n=t,s}};function p(e,t){for(i=e,c=t,n=0;!f&&u&&!o&&n<l.length;n++){var o,a=l[n],p=d.p,m=a[2];e>3?(o=m===t)&&(c=a[(i=a[4])?5:(i=3,3)],a[4]=a[5]=r):a[0]<=p&&((o=e<2&&p<a[1])?(i=0,d.v=t,d.n=a[1]):p<m&&(o=e<3||a[0]>t||t>m)&&(a[4]=e,a[5]=t,d.n=m,i=0))}if(o||e>1)return s;throw f=!0,t}return function(o,l,m){if(u>1)throw TypeError("Generator is already running");for(f&&1===l&&p(l,m),i=l,c=m;(n=i<2?r:c)||!f;){a||(i?i<3?(i>1&&(d.n=-1),p(i,c)):d.n=c:d.v=c);try{if(u=2,a){if(i||(o="next"),n=a[o]){if(!(n=n.call(a,c)))throw TypeError("iterator result is not an object");if(!n.done)return n;c=n.value,i<2&&(i=0)}else 1===i&&(n=a.return)&&n.call(a),i<2&&(c=TypeError("The iterator does not provide a '"+o+"' method"),i=1);a=r}else if((n=(f=d.n<0)?c:e.call(t,d))!==s)break}catch(e){a=r,i=1,c=e}finally{u=1}}return{value:n,done:f}}}(e,a,i),!0),l}var s={};function u(){}function l(){}function f(){}n=Object.getPrototypeOf;var d=[][a]?n(n([][a]())):(t(n={},a,function(){return this}),n),p=f.prototype=u.prototype=Object.create(d);function m(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,f):(e.__proto__=f,t(e,i,"GeneratorFunction")),e.prototype=Object.create(p),e}return l.prototype=f,t(p,"constructor",f),t(f,"constructor",l),l.displayName="GeneratorFunction",t(f,i,"GeneratorFunction"),t(p),t(p,i,"Generator"),t(p,a,function(){return this}),t(p,"toString",function(){return"[object Generator]"}),(e=function(){return{w:c,m}})()}function t(e,r,n,o){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}t=function(e,r,n,o){function i(r,n){t(e,r,function(e){return this._invoke(r,n,e)})}r?a?a(e,r,{value:n,enumerable:!o,configurable:!o,writable:!o}):e[r]=n:(i("next",0),i("throw",1),i("return",2))},t(e,r,n,o)}function r(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var r=null==e?null:"undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=r){var n,o,a,i,c=[],s=!0,u=!1;try{if(a=(r=r.call(e)).next,0===t){if(Object(r)!==r)return;s=!1}else for(;!(s=(n=a.call(r)).done)&&(c.push(n.value),c.length!==t);s=!0);}catch(e){u=!0,o=e}finally{try{if(!s&&null!=r.return&&(i=r.return(),Object(i)!==i))return}finally{if(u)throw o}}return c}}(e,t)||function(e,t){if(e){if("string"==typeof e)return n(e,t);var r={}.toString.call(e).slice(8,-1);return"Object"===r&&e.constructor&&(r=e.constructor.name),"Map"===r||"Set"===r?Array.from(e):"Arguments"===r||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r)?n(e,t):void 0}}(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function n(e,t){(null==t||t>e.length)&&(t=e.length);for(var r=0,n=Array(t);r<t;r++)n[r]=e[r];return n}function o(e,t,r,n,o,a,i){try{var c=e[a](i),s=c.value}catch(e){return void r(e)}c.done?t(s):Promise.resolve(s).then(n,o)}function a(e){return function(){var t=this,r=arguments;return new Promise(function(n,a){var i=e.apply(t,r);function c(e){o(i,n,a,c,s,"next",e)}function s(e){o(i,n,a,c,s,"throw",e)}c(void 0)})}}!function(){var t=["modal","edit","show","sale","print","auto_print"];function n(){return document.querySelector("[data-sales-page]")}function o(){return Boolean(n())}function i(){var e=function(e){return new URL(e,window.location.origin)}(arguments.length>0&&void 0!==arguments[0]?arguments[0]:window.location.href);return t.forEach(function(t){return e.searchParams.delete(t)}),"".concat(e.pathname).concat(e.search).concat(e.hash)}function c(){var e;return(null===(e=n())||void 0===e?void 0:e.dataset.salesBaseUrl)||i()}function s(e){return(new DOMParser).parseFromString(e,"text/html")}function u(){document.querySelectorAll("[data-app-modal-root]").forEach(function(e){return e.remove()}),document.documentElement.classList.remove("modal-scroll-lock"),document.body.classList.remove("modal-scroll-lock")}function l(e){window.history.pushState({salesPage:!0},"",e)}function f(e){window.history.replaceState({salesPage:!0},"",e)}function d(e){window.Alpine&&"function"==typeof window.Alpine.initTree&&window.Alpine.initTree(e),"function"==typeof window.initializeBrokerSalesPage&&window.initializeBrokerSalesPage(e)}function p(e){return m.apply(this,arguments)}function m(){return m=a(e().m(function t(r){var n,o,a,i,c,p,m=arguments;return e().w(function(e){for(;;)switch(e.n){case 0:return n=m.length>1&&void 0!==m[1]?m[1]:"replace",e.n=1,fetch(r,{headers:{"X-Requested-With":"XMLHttpRequest"},credentials:"same-origin"});case 1:if((o=e.v).ok){e.n=2;break}throw new Error("Unable to refresh sales view (".concat(o.status,")."));case 2:return e.n=3,o.text();case 3:if(a=e.v,i=s(a),c=i.querySelector("#sales-page-fragment"),p=document.querySelector("#sales-page-fragment"),c&&p){e.n=4;break}throw new Error("Sales page fragment could not be resolved.");case 4:u(),p.replaceWith(c),"push"===n?l(r):"replace"===n&&f(r),d(c);case 5:return e.a(2)}},t)})),m.apply(this,arguments)}function h(e){return window.CSS&&"function"==typeof window.CSS.escape?window.CSS.escape(e):e.replace(/["\\]/g,"\\$&")}function v(e){e.querySelectorAll(".sales-form-error").forEach(function(e){return e.remove()}),e.querySelectorAll(".sales-form-error-field").forEach(function(e){e.classList.remove("sales-form-error-field","border-red-500","focus:border-red-500","focus:ring-red-500")})}function w(e,t){var n=[];if(Object.entries(t||{}).forEach(function(t){var o=r(t,2),a=o[0],i=o[1],c=Array.isArray(i)?i[0]:i;if(c){n.push(c);var s=function(e){return e.split(".").reduce(function(e,t,r){return 0===r?t:"".concat(e,"[").concat(t,"]")},"")}(a),u='[name="'.concat(h(s),'"]'),l='[name="'.concat(h(a),'"]'),f=e.querySelector(u)||e.querySelector(l);if(f){f.classList.add("sales-form-error-field","border-red-500","focus:border-red-500","focus:ring-red-500");var d=document.createElement("p");d.className="sales-form-error mt-1 text-sm text-red-600",d.textContent=c,f.insertAdjacentElement("afterend",d)}}}),n.length>0){var o=function(e){var t=e.querySelector("[data-sales-form-errors]");return t||((t=document.createElement("div")).setAttribute("data-sales-form-errors","true"),t.className="sales-form-error mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700",e.prepend(t)),t}(e);o.textContent=n[0]}}function y(e,t){e.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(e){e.disabled=t})}function b(e){return g.apply(this,arguments)}function g(){return(g=a(e().m(function t(r){return e().w(function(e){for(;;)switch(e.n){case 0:if(!(r.headers.get("content-type")||"").includes("application/json")){e.n=1;break}return e.a(2,r.json());case 1:return e.a(2,{message:r.ok?"Saved successfully.":"Request failed."})}},t)}))).apply(this,arguments)}function S(){return(S=a(e().m(function t(r){var n,o,a,i;return e().w(function(e){for(;;)switch(e.p=e.n){case 0:return v(r),y(r,!0),e.p=1,e.n=2,fetch(r.action,{method:(r.getAttribute("method")||"POST").toUpperCase(),headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest"},credentials:"same-origin",body:new FormData(r)});case 2:return n=e.v,e.n=3,b(n);case 3:if(o=e.v,422!==n.status){e.n=4;break}return w(r,o.errors||{}),window.toastr&&window.toastr.error(o.message||"Please review the highlighted fields."),e.a(2);case 4:if(n.ok){e.n=5;break}throw new Error(o.message||"Unable to save the sales record.");case 5:return window.toastr&&window.toastr.success(o.message||"Sales data saved successfully."),a=o.redirect_url||r.dataset.salesAfterSaveUrl||c(),e.n=6,p(a,"replace");case 6:e.n=8;break;case 7:e.p=7,i=e.v,window.toastr&&window.toastr.error(i.message||"Something went wrong while saving the form.");case 8:return e.p=8,y(r,!1),e.f(8);case 9:return e.a(2)}},t,null,[[1,7,8,9]])}))).apply(this,arguments)}document.addEventListener("click",function(e){if(o()){var t=e.target.closest("[data-sales-modal-link]");if(t)return e.preventDefault(),void p(t.href,"push").catch(function(e){window.toastr&&window.toastr.error(e.message||"Unable to open the requested form.")});var r,n,a,i=e.target.closest("[data-sales-modal-close]");i&&(e.preventDefault(),r=i.dataset.closeUrl||c(),n=document.querySelector("[data-app-modal-root]"),(a=null==n?void 0:n.querySelector("[data-app-modal-close]"))?a.click():(u(),f(r||c())))}}),document.addEventListener("submit",function(e){if(o()){var t=e.target.closest("form[data-sales-async-form]");t&&(e.preventDefault(),function(e){S.apply(this,arguments)}(t))}}),window.addEventListener("popstate",function(){o()&&p(window.location.href,"silent").catch(function(){})})}()})();
+/******/ (() => { // webpackBootstrap
+/*!************************************!*\
+  !*** ./resources/js/sales-page.js ***!
+  \************************************/
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * Sales page modal and async form workflow
+ * Keeps modal navigation and form submissions inside the current page.
+ */
+
+(function () {
+  var MODAL_QUERY_KEYS = ['modal', 'edit', 'show', 'sale', 'print', 'auto_print'];
+  function getSalesRoot() {
+    return document.querySelector('[data-sales-page]');
+  }
+  function isSalesPageActive() {
+    return Boolean(getSalesRoot());
+  }
+  function toAbsoluteUrl(url) {
+    return new URL(url, window.location.origin);
+  }
+  function getCleanSalesUrl() {
+    var url = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : window.location.href;
+    var parsedUrl = toAbsoluteUrl(url);
+    MODAL_QUERY_KEYS.forEach(function (key) {
+      return parsedUrl.searchParams["delete"](key);
+    });
+    return "".concat(parsedUrl.pathname).concat(parsedUrl.search).concat(parsedUrl.hash);
+  }
+  function getSalesBaseUrl() {
+    var _getSalesRoot;
+    return ((_getSalesRoot = getSalesRoot()) === null || _getSalesRoot === void 0 ? void 0 : _getSalesRoot.dataset.salesBaseUrl) || getCleanSalesUrl();
+  }
+  function parseHtml(html) {
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+  function clearTeleportedModals() {
+    document.querySelectorAll('[data-app-modal-root]').forEach(function (modal) {
+      return modal.remove();
+    });
+    document.documentElement.classList.remove('modal-scroll-lock');
+    document.body.classList.remove('modal-scroll-lock');
+  }
+  function pushHistory(url) {
+    window.history.pushState({
+      salesPage: true
+    }, '', url);
+  }
+  function replaceHistory(url) {
+    window.history.replaceState({
+      salesPage: true
+    }, '', url);
+  }
+  function reinitializeSalesFragment(fragment) {
+    if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+      window.Alpine.initTree(fragment);
+    }
+    if (typeof window.initializeBrokerSalesPage === 'function') {
+      window.initializeBrokerSalesPage(fragment);
+    }
+  }
+  function refreshSalesFragment(_x) {
+    return _refreshSalesFragment.apply(this, arguments);
+  }
+  function _refreshSalesFragment() {
+    _refreshSalesFragment = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(url) {
+      var historyMode,
+        response,
+        html,
+        parsedDocument,
+        incomingFragment,
+        currentFragment,
+        _args = arguments;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.n) {
+          case 0:
+            historyMode = _args.length > 1 && _args[1] !== undefined ? _args[1] : 'replace';
+            _context.n = 1;
+            return fetch(url, {
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              credentials: 'same-origin'
+            });
+          case 1:
+            response = _context.v;
+            if (response.ok) {
+              _context.n = 2;
+              break;
+            }
+            throw new Error("Unable to refresh sales view (".concat(response.status, ")."));
+          case 2:
+            _context.n = 3;
+            return response.text();
+          case 3:
+            html = _context.v;
+            parsedDocument = parseHtml(html);
+            incomingFragment = parsedDocument.querySelector('#sales-page-fragment');
+            currentFragment = document.querySelector('#sales-page-fragment');
+            if (!(!incomingFragment || !currentFragment)) {
+              _context.n = 4;
+              break;
+            }
+            throw new Error('Sales page fragment could not be resolved.');
+          case 4:
+            clearTeleportedModals();
+            currentFragment.replaceWith(incomingFragment);
+            if (historyMode === 'push') {
+              pushHistory(url);
+            } else if (historyMode === 'replace') {
+              replaceHistory(url);
+            }
+            reinitializeSalesFragment(incomingFragment);
+          case 5:
+            return _context.a(2);
+        }
+      }, _callee);
+    }));
+    return _refreshSalesFragment.apply(this, arguments);
+  }
+  function escapeSelectorValue(value) {
+    if (window.CSS && typeof window.CSS.escape === 'function') {
+      return window.CSS.escape(value);
+    }
+    return value.replace(/["\\]/g, '\\$&');
+  }
+  function dotKeyToBracketName(key) {
+    return key.split('.').reduce(function (result, segment, index) {
+      if (index === 0) {
+        return segment;
+      }
+      return "".concat(result, "[").concat(segment, "]");
+    }, '');
+  }
+  function clearFormErrors(form) {
+    form.querySelectorAll('.sales-form-error').forEach(function (errorNode) {
+      return errorNode.remove();
+    });
+    form.querySelectorAll('.sales-form-error-field').forEach(function (field) {
+      field.classList.remove('sales-form-error-field', 'border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+    });
+  }
+  function ensureErrorSummary(form) {
+    var summary = form.querySelector('[data-sales-form-errors]');
+    if (!summary) {
+      summary = document.createElement('div');
+      summary.setAttribute('data-sales-form-errors', 'true');
+      summary.className = 'sales-form-error mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+      form.prepend(summary);
+    }
+    return summary;
+  }
+  function renderFormErrors(form, errors) {
+    var collectedMessages = [];
+    Object.entries(errors || {}).forEach(function (_ref) {
+      var _ref2 = _slicedToArray(_ref, 2),
+        key = _ref2[0],
+        messages = _ref2[1];
+      var message = Array.isArray(messages) ? messages[0] : messages;
+      if (!message) {
+        return;
+      }
+      collectedMessages.push(message);
+      var fieldName = dotKeyToBracketName(key);
+      var selector = "[name=\"".concat(escapeSelectorValue(fieldName), "\"]");
+      var fallbackSelector = "[name=\"".concat(escapeSelectorValue(key), "\"]");
+      var field = form.querySelector(selector) || form.querySelector(fallbackSelector);
+      if (!field) {
+        return;
+      }
+      field.classList.add('sales-form-error-field', 'border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+      var messageNode = document.createElement('p');
+      messageNode.className = 'sales-form-error mt-1 text-sm text-red-600';
+      messageNode.textContent = message;
+      field.insertAdjacentElement('afterend', messageNode);
+    });
+    if (collectedMessages.length > 0) {
+      var summary = ensureErrorSummary(form);
+      summary.textContent = collectedMessages[0];
+    }
+  }
+  function setFormSubmitting(form, isSubmitting) {
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (submitControl) {
+      submitControl.disabled = isSubmitting;
+    });
+  }
+  function parseJsonResponse(_x2) {
+    return _parseJsonResponse.apply(this, arguments);
+  }
+  function _parseJsonResponse() {
+    _parseJsonResponse = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(response) {
+      var contentType;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.n) {
+          case 0:
+            contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+              _context2.n = 1;
+              break;
+            }
+            return _context2.a(2, response.json());
+          case 1:
+            return _context2.a(2, {
+              message: response.ok ? 'Saved successfully.' : 'Request failed.'
+            });
+        }
+      }, _callee2);
+    }));
+    return _parseJsonResponse.apply(this, arguments);
+  }
+  function handleAsyncFormSubmit(_x3) {
+    return _handleAsyncFormSubmit.apply(this, arguments);
+  }
+  function _handleAsyncFormSubmit() {
+    _handleAsyncFormSubmit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(form) {
+      var response, payload, afterSaveUrl, _t;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
+          case 0:
+            clearFormErrors(form);
+            setFormSubmitting(form, true);
+            _context3.p = 1;
+            _context3.n = 2;
+            return fetch(form.action, {
+              method: (form.getAttribute('method') || 'POST').toUpperCase(),
+              headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              credentials: 'same-origin',
+              body: new FormData(form)
+            });
+          case 2:
+            response = _context3.v;
+            _context3.n = 3;
+            return parseJsonResponse(response);
+          case 3:
+            payload = _context3.v;
+            if (!(response.status === 422)) {
+              _context3.n = 4;
+              break;
+            }
+            renderFormErrors(form, payload.errors || {});
+            if (window.toastr) {
+              window.toastr.error(payload.message || 'Please review the highlighted fields.');
+            }
+            return _context3.a(2);
+          case 4:
+            if (response.ok) {
+              _context3.n = 5;
+              break;
+            }
+            throw new Error(payload.message || 'Unable to save the sales record.');
+          case 5:
+            if (window.toastr) {
+              window.toastr.success(payload.message || 'Sales data saved successfully.');
+            }
+            afterSaveUrl = payload.redirect_url || form.dataset.salesAfterSaveUrl || getSalesBaseUrl();
+            _context3.n = 6;
+            return refreshSalesFragment(afterSaveUrl, 'replace');
+          case 6:
+            _context3.n = 8;
+            break;
+          case 7:
+            _context3.p = 7;
+            _t = _context3.v;
+            if (window.toastr) {
+              window.toastr.error(_t.message || 'Something went wrong while saving the form.');
+            }
+          case 8:
+            _context3.p = 8;
+            setFormSubmitting(form, false);
+            return _context3.f(8);
+          case 9:
+            return _context3.a(2);
+        }
+      }, _callee3, null, [[1, 7, 8, 9]]);
+    }));
+    return _handleAsyncFormSubmit.apply(this, arguments);
+  }
+  function closeCurrentModal(closeUrl) {
+    var modalRoot = document.querySelector('[data-app-modal-root]');
+    var closeButton = modalRoot === null || modalRoot === void 0 ? void 0 : modalRoot.querySelector('[data-app-modal-close]');
+    if (closeButton) {
+      closeButton.click();
+      return;
+    }
+    clearTeleportedModals();
+    replaceHistory(closeUrl || getSalesBaseUrl());
+  }
+  document.addEventListener('click', function (event) {
+    if (!isSalesPageActive()) {
+      return;
+    }
+    var modalLink = event.target.closest('[data-sales-modal-link]');
+    if (modalLink) {
+      event.preventDefault();
+      refreshSalesFragment(modalLink.href, 'push')["catch"](function (error) {
+        if (window.toastr) {
+          window.toastr.error(error.message || 'Unable to open the requested form.');
+        }
+      });
+      return;
+    }
+    var modalCloseTrigger = event.target.closest('[data-sales-modal-close]');
+    if (modalCloseTrigger) {
+      event.preventDefault();
+      closeCurrentModal(modalCloseTrigger.dataset.closeUrl || getSalesBaseUrl());
+    }
+  });
+  document.addEventListener('submit', function (event) {
+    if (!isSalesPageActive()) {
+      return;
+    }
+    var asyncForm = event.target.closest('form[data-sales-async-form]');
+    if (!asyncForm) {
+      return;
+    }
+    event.preventDefault();
+    handleAsyncFormSubmit(asyncForm);
+  });
+  window.addEventListener('popstate', function () {
+    if (!isSalesPageActive()) {
+      return;
+    }
+    refreshSalesFragment(window.location.href, 'silent')["catch"](function () {
+      // Keep popstate failures quiet to avoid trapping navigation.
+    });
+  });
+})();
+/******/ })()
+;

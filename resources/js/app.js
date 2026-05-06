@@ -195,6 +195,12 @@ function initializeSweetAlert() {
                     text = `This will activate the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''}.`;
                     confirmText = `Yes, activate`;
                     break;
+                case 'winner':
+                    title = `Confirm ${recordName || 'this applicant'} as winner?`;
+                    text = `Are you sure ${recordName || 'this applicant'} is the winner? This will activate the broker account automatically.`;
+                    confirmText = `Yes, confirm winner`;
+                    icon = 'question';
+                    break;
                 case 'mark-missing':
                     title = `Mark Fish Box as Missing?`;
                     text = `Are you sure you want to mark this fish box${recordName ? ` "${recordName}"` : ''} as missing? This action cannot be undone.`;

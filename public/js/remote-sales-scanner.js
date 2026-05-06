@@ -2168,9 +2168,9 @@ var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
 (() => {
 "use strict";
-/*!*********************************!*\
-  !*** ./resources/js/qr-code.js ***!
-  \*********************************/
+/*!**********************************************!*\
+  !*** ./resources/js/remote-sales-scanner.js ***!
+  \**********************************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! qr-code-styling */ "./node_modules/qr-code-styling/lib/qr-code-styling.js");
 /* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(qr_code_styling__WEBPACK_IMPORTED_MODULE_0__);
@@ -2185,285 +2185,331 @@ function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { 
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
-
-// QR Code modal and bulk-print functionality
-window.QRCodeModal = {
-  init: function init() {
-    this.bindEvents();
-  },
-  bindEvents: function bindEvents() {
-    var _this = this;
-    document.addEventListener('click', /*#__PURE__*/function () {
-      var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(e) {
-        var qrButton, qrData, fishBoxName, bulkPrintButton;
-        return _regenerator().w(function (_context) {
-          while (1) switch (_context.n) {
-            case 0:
-              qrButton = e.target.closest('.qr-code-btn');
-              if (!qrButton) {
-                _context.n = 1;
-                break;
-              }
-              e.preventDefault();
-              qrData = qrButton.dataset.qrData;
-              fishBoxName = qrButton.dataset.fishBoxName;
-              _this.showQRModal(qrData, fishBoxName);
-              return _context.a(2);
-            case 1:
-              bulkPrintButton = e.target.closest('.bulk-qr-print-btn');
-              if (!bulkPrintButton) {
-                _context.n = 3;
-                break;
-              }
-              e.preventDefault();
-              _context.n = 2;
-              return _this.printBulkQRCodes(bulkPrintButton);
-            case 2:
-              return _context.a(2);
-            case 3:
-              if (e.target.classList.contains('qr-modal-overlay') || e.target.closest('.qr-modal-close')) {
-                _this.hideQRModal();
-              }
-            case 4:
-              return _context.a(2);
-          }
-        }, _callee);
-      }));
-      return function (_x) {
-        return _ref.apply(this, arguments);
-      };
-    }());
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        _this.hideQRModal();
-      }
-    });
-  },
-  getQRCodeOptions: function getQRCodeOptions(data) {
-    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
-    return {
-      width: size,
-      height: size,
-      type: 'svg',
-      data: data,
-      dotsOptions: {
-        color: '#2563eb',
-        type: 'rounded'
-      },
-      backgroundOptions: {
-        color: '#ffffff'
-      },
-      cornersSquareOptions: {
-        color: '#1d4ed8',
-        type: 'extra-rounded'
-      },
-      cornersDotOptions: {
-        color: '#1e40af',
-        type: 'dot'
-      },
-      qrOptions: {
-        errorCorrectionLevel: 'M'
-      }
-    };
-  },
-  createQRCode: function createQRCode(data) {
-    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
-    return new (qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default())(this.getQRCodeOptions(data, size));
-  },
-  showQRModal: function showQRModal(qrData, fishBoxName) {
-    this.hideQRModal();
-    var modalHTML = "\n            <div id=\"qr-modal\" class=\"fixed inset-0 z-50 overflow-y-auto qr-modal-overlay\" aria-labelledby=\"modal-title\" role=\"dialog\" aria-modal=\"true\">\n                <div class=\"flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\">\n                    <div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" aria-hidden=\"true\"></div>\n                    <span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span>\n\n                    <div class=\"relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full\">\n                        <div class=\"bg-white px-6 py-4 border-b border-gray-200\">\n                            <div class=\"flex items-center justify-between\">\n                                <h3 class=\"text-lg font-semibold text-gray-900\" id=\"modal-title\">\n                                    QR Code - ".concat(this.escapeHtml(fishBoxName), "\n                                </h3>\n                                <button class=\"qr-modal-close text-gray-400 hover:text-gray-600 transition-colors\" type=\"button\">\n                                    <svg class=\"w-6 h-6\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n                                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n\n                        <div class=\"bg-white px-6 py-6\">\n                            <div class=\"flex flex-col items-center\">\n                                <div id=\"qr-code-container\" class=\"mb-4\"></div>\n                                <p class=\"text-sm text-gray-600 text-center mb-4\">\n                                    Scan this QR code to view fish box details\n                                </p>\n                                <div class=\"flex space-x-3\">\n                                    <button id=\"download-png\" type=\"button\" class=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm\">\n                                        Download PNG\n                                    </button>\n                                    <button id=\"download-svg\" type=\"button\" class=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm\">\n                                        Download SVG\n                                    </button>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ");
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    this.generateQRCode(qrData);
-  },
-  generateQRCode: function generateQRCode(data) {
-    var qrCode = this.createQRCode(data, 256);
-    var container = document.getElementById('qr-code-container');
-    qrCode.append(container);
-    document.getElementById('download-png').addEventListener('click', function () {
-      qrCode.download({
-        name: "qr-code-".concat(Date.now()),
-        extension: 'png'
-      });
-    });
-    document.getElementById('download-svg').addEventListener('click', function () {
-      qrCode.download({
-        name: "qr-code-".concat(Date.now()),
-        extension: 'svg'
-      });
-    });
-    this.currentQRCode = qrCode;
-  },
-  getBulkPrintBoxes: function getBulkPrintBoxes(button) {
-    var sourceId = button.dataset.bulkQrSource;
-    var sourceElement = sourceId ? document.getElementById(sourceId) : null;
-    if (!sourceElement) {
-      return [];
+(function () {
+  var activeSession = null;
+  var pollTimer = null;
+  var modal = null;
+  var qrCode = null;
+  function getConfig() {
+    return window.remoteSalesScannerConfig || {};
+  }
+  function getCsrfToken() {
+    var _document$querySelect;
+    return ((_document$querySelect = document.querySelector('meta[name="csrf-token"]')) === null || _document$querySelect === void 0 ? void 0 : _document$querySelect.getAttribute('content')) || '';
+  }
+  function getAppBasePath() {
+    var brokerMarker = '/broker/';
+    var markerIndex = window.location.pathname.indexOf(brokerMarker);
+    if (markerIndex === -1) {
+      return '';
     }
-    try {
-      var parsedBoxes = JSON.parse(sourceElement.textContent || '[]');
-      return Array.isArray(parsedBoxes) ? parsedBoxes : [];
-    } catch (error) {
-      console.error('Unable to parse bulk QR data.', error);
-      return [];
+    return window.location.pathname.slice(0, markerIndex);
+  }
+  function withAppBasePath(url) {
+    if (!url || /^(https?:)?\/\//i.test(url)) {
+      return url;
     }
-  },
-  renderBulkQrMarkup: function renderBulkQrMarkup(qrData) {
-    var _this2 = this;
-    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-      var tempContainer, qrCode;
+    if (!url.startsWith('/')) {
+      return url;
+    }
+    var appBasePath = getAppBasePath();
+    if (!appBasePath || url.startsWith("".concat(appBasePath, "/"))) {
+      return url;
+    }
+    return "".concat(appBasePath).concat(url);
+  }
+  function toBrowserUrl(url) {
+    return new URL(withAppBasePath(url), window.location.href).href;
+  }
+  function fetchJson(_x) {
+    return _fetchJson.apply(this, arguments);
+  }
+  function _fetchJson() {
+    _fetchJson = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(url) {
+      var options,
+        response,
+        payload,
+        _args2 = arguments;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.n) {
           case 0:
-            tempContainer = document.createElement('div');
-            qrCode = _this2.createQRCode(qrData, 180);
-            qrCode.append(tempContainer);
+            options = _args2.length > 1 && _args2[1] !== undefined ? _args2[1] : {};
             _context2.n = 1;
-            return new Promise(function (resolve) {
-              window.requestAnimationFrame(function () {
-                return resolve();
-              });
-            });
+            return fetch(url, _objectSpread({
+              credentials: 'same-origin',
+              headers: _objectSpread({
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              }, options.headers || {})
+            }, options));
           case 1:
-            return _context2.a(2, tempContainer.innerHTML);
+            response = _context2.v;
+            _context2.n = 2;
+            return response.json()["catch"](function () {
+              return {};
+            });
+          case 2:
+            payload = _context2.v;
+            if (response.ok) {
+              _context2.n = 3;
+              break;
+            }
+            throw new Error(payload.message || 'Request failed.');
+          case 3:
+            return _context2.a(2, payload);
         }
       }, _callee2);
-    }))();
-  },
-  printBulkQRCodes: function printBulkQRCodes(button) {
-    var _this3 = this;
-    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-      var fishBoxes, originalContent, qrCards, _t6;
-      return _regenerator().w(function (_context4) {
-        while (1) switch (_context4.p = _context4.n) {
-          case 0:
-            if (!button.disabled) {
-              _context4.n = 1;
-              break;
-            }
-            return _context4.a(2);
-          case 1:
-            fishBoxes = _this3.getBulkPrintBoxes(button);
-            if (!(fishBoxes.length === 0)) {
-              _context4.n = 2;
-              break;
-            }
-            _this3.notify('No fish boxes match the current filters for bulk QR printing.', 'info');
-            return _context4.a(2);
-          case 2:
-            originalContent = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = "\n            <svg class=\"w-4 h-4 animate-spin\" fill=\"none\" viewBox=\"0 0 24 24\">\n                <circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle>\n                <path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z\"></path>\n            </svg>\n            <span>Preparing QR...</span>\n        ";
-            _context4.p = 3;
-            _context4.n = 4;
-            return Promise.all(fishBoxes.map(/*#__PURE__*/function () {
-              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(fishBox) {
-                var _t, _t2, _t3, _t4, _t5;
-                return _regenerator().w(function (_context3) {
-                  while (1) switch (_context3.n) {
-                    case 0:
-                      _t = _objectSpread;
-                      _t2 = _objectSpread({}, fishBox);
-                      _t3 = {};
-                      _context3.n = 1;
-                      return _this3.renderBulkQrMarkup(fishBox.qr_code);
-                    case 1:
-                      _t4 = _context3.v;
-                      _t5 = {
-                        qrMarkup: _t4
-                      };
-                      return _context3.a(2, _t(_t2, _t3, _t5));
-                  }
-                }, _callee3);
-              }));
-              return function (_x2) {
-                return _ref2.apply(this, arguments);
-              };
-            }()));
-          case 4:
-            qrCards = _context4.v;
-            _this3.printDocument(_this3.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || ''));
-            _context4.n = 6;
-            break;
-          case 5:
-            _context4.p = 5;
-            _t6 = _context4.v;
-            console.error('Bulk QR print failed.', _t6);
-            _this3.notify('Bulk QR print could not be prepared. Please try again.', 'error');
-          case 6:
-            _context4.p = 6;
-            button.disabled = false;
-            button.innerHTML = originalContent;
-            return _context4.f(6);
-          case 7:
-            return _context4.a(2);
-        }
-      }, _callee4, null, [[3, 5, 6, 7]]);
-    }))();
-  },
-  printDocument: function printDocument(printMarkup) {
-    var iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(iframe);
-    var iframeWindow = iframe.contentWindow;
-    var iframeDocument = iframeWindow === null || iframeWindow === void 0 ? void 0 : iframeWindow.document;
-    if (!iframeWindow || !iframeDocument) {
-      iframe.remove();
-      throw new Error('Print frame could not be created.');
-    }
-    iframe.onload = function () {
-      window.setTimeout(function () {
-        iframeWindow.focus();
-        iframeWindow.print();
-        window.setTimeout(function () {
-          iframe.remove();
-        }, 1000);
-      }, 250);
-    };
-    iframeDocument.open();
-    iframeDocument.write(printMarkup);
-    iframeDocument.close();
-  },
-  buildBulkPrintDocument: function buildBulkPrintDocument(fishBoxes, filterSummary) {
-    var _this4 = this;
-    var generatedAt = new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(new Date());
-    var filterLine = filterSummary ? "<p class=\"subtitle\">".concat(this.escapeHtml(filterSummary), "</p>") : "<p class=\"subtitle\">All fish boxes matching the current filters are included in this printout.</p>";
-    var cardsMarkup = fishBoxes.map(function (fishBox) {
-      return "\n            <article class=\"qr-card\">\n                <div class=\"qr-card__code\">\n                    ".concat(fishBox.qrMarkup, "\n                </div>\n                <div class=\"qr-card__meta\">\n                    <h2>").concat(_this4.escapeHtml(fishBox.name), "</h2>\n                    <p>").concat(_this4.escapeHtml(fishBox.fish_name || 'Unassigned'), "</p>\n                    <span class=\"status\">").concat(_this4.escapeHtml(fishBox.status), "</span>\n                    <div class=\"qr-value\">").concat(_this4.escapeHtml(fishBox.qr_code), "</div>\n                </div>\n            </article>\n        ");
-    }).join('');
-    return "\n            <!DOCTYPE html>\n            <html lang=\"en\">\n                <head>\n                    <meta charset=\"utf-8\">\n                    <title>Broker Fish Box QR Codes</title>\n                    <style>\n                        * {\n                            box-sizing: border-box;\n                        }\n\n                        body {\n                            margin: 0;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n\n                        .sheet {\n                            padding: 28px 30px 36px;\n                        }\n\n                        .sheet-header {\n                            border-bottom: 2px solid #0f172a;\n                            margin-bottom: 24px;\n                            padding-bottom: 14px;\n                        }\n\n                        .sheet-header h1 {\n                            margin: 0 0 8px;\n                            font-size: 24px;\n                        }\n\n                        .sheet-header p {\n                            margin: 4px 0;\n                            color: #475569;\n                            font-size: 13px;\n                        }\n\n                        .summary-row {\n                            display: flex;\n                            justify-content: space-between;\n                            align-items: baseline;\n                            gap: 16px;\n                            margin-top: 10px;\n                        }\n\n                        .summary-row strong {\n                            font-size: 14px;\n                        }\n\n                        .qr-grid {\n                            display: grid;\n                            grid-template-columns: repeat(3, minmax(0, 1fr));\n                            gap: 16px;\n                        }\n\n                        .qr-card {\n                            border: 1px solid #cbd5e1;\n                            border-radius: 18px;\n                            padding: 18px;\n                            min-height: 290px;\n                            display: flex;\n                            flex-direction: column;\n                            align-items: center;\n                            justify-content: space-between;\n                            page-break-inside: avoid;\n                        }\n\n                        .qr-card__code {\n                            width: 180px;\n                            height: 180px;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                        }\n\n                        .qr-card__code svg {\n                            width: 180px;\n                            height: 180px;\n                        }\n\n                        .qr-card__meta {\n                            width: 100%;\n                            text-align: center;\n                        }\n\n                        .qr-card__meta h2 {\n                            margin: 0;\n                            font-size: 18px;\n                            line-height: 1.2;\n                        }\n\n                        .qr-card__meta p {\n                            margin: 6px 0 10px;\n                            color: #475569;\n                            font-size: 13px;\n                        }\n\n                        .status {\n                            display: inline-flex;\n                            align-items: center;\n                            justify-content: center;\n                            border-radius: 999px;\n                            background: #dbeafe;\n                            color: #1d4ed8;\n                            font-size: 11px;\n                            font-weight: 700;\n                            letter-spacing: 0.08em;\n                            padding: 5px 10px;\n                            text-transform: uppercase;\n                        }\n\n                        .qr-value {\n                            margin-top: 12px;\n                            color: #64748b;\n                            font-family: \"Courier New\", monospace;\n                            font-size: 11px;\n                            word-break: break-all;\n                        }\n\n                        @page {\n                            margin: 12mm;\n                        }\n\n                        @media print {\n                            .sheet {\n                                padding: 0;\n                            }\n                        }\n                    </style>\n                </head>\n                <body>\n                    <main class=\"sheet\">\n                        <header class=\"sheet-header\">\n                            <h1>Fish Box QR Codes</h1>\n                            ".concat(filterLine, "\n                            <div class=\"summary-row\">\n                                <strong>Total Boxes: ").concat(fishBoxes.length, "</strong>\n                                <span>Generated: ").concat(this.escapeHtml(generatedAt), "</span>\n                            </div>\n                        </header>\n\n                        <section class=\"qr-grid\">\n                            ").concat(cardsMarkup, "\n                        </section>\n                    </main>\n\n                </body>\n            </html>\n        ");
-  },
-  escapeHtml: function escapeHtml(value) {
-    return String(value !== null && value !== void 0 ? value : '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-  },
-  notify: function notify(message) {
+    }));
+    return _fetchJson.apply(this, arguments);
+  }
+  function notify(message) {
     var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'info';
     if (window.toastr && typeof window.toastr[type] === 'function') {
       window.toastr[type](message);
       return;
     }
-    window.alert(message);
-  },
-  hideQRModal: function hideQRModal() {
-    var modal = document.getElementById('qr-modal');
-    if (modal) {
-      modal.remove();
-    }
-    this.currentQRCode = null;
+    console[type === 'error' ? 'error' : 'log'](message);
   }
-};
-document.addEventListener('DOMContentLoaded', function () {
-  window.QRCodeModal.init();
-});
+  function ensureModal() {
+    var _modal$querySelector;
+    if (modal) {
+      return modal;
+    }
+    document.body.insertAdjacentHTML('beforeend', "\n            <div id=\"remoteSalesScannerModal\" class=\"fixed inset-0 hidden overflow-y-auto\" style=\"z-index: 135;\">\n                <div class=\"flex min-h-screen items-center justify-center px-4 py-6 sm:px-6\">\n                    <button type=\"button\" data-remote-scanner-close class=\"fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]\" aria-label=\"Close phone scanner session\"></button>\n                    <div class=\"relative z-10 w-full max-w-lg overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl\">\n                        <div class=\"bg-slate-900 px-6 py-5 text-white\">\n                            <div class=\"flex items-start justify-between gap-4\">\n                                <div>\n                                    <h3 class=\"text-2xl font-semibold leading-none\">Phone Scanner</h3>\n                                    <p class=\"mt-2 text-sm text-white/75\">Open this scanner on your phone. Every fish box scan will appear here.</p>\n                                </div>\n                                <button type=\"button\" data-remote-scanner-close class=\"rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white\" aria-label=\"Close\">\n                                    <svg class=\"h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n                                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n                        <div class=\"space-y-5 px-6 py-6\">\n                            <div class=\"rounded-2xl border border-slate-200 bg-slate-50 p-4\">\n                                <div id=\"remoteScannerQr\" class=\"mx-auto flex min-h-[220px] items-center justify-center\"></div>\n                            </div>\n                            <div>\n                                <label class=\"mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500\">Phone link</label>\n                                <div class=\"flex gap-2\">\n                                    <input id=\"remoteScannerUrl\" type=\"text\" readonly class=\"h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700\">\n                                    <button type=\"button\" id=\"remoteScannerCopy\" class=\"rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white\">Copy</button>\n                                </div>\n                            </div>\n                            <div id=\"remoteScannerStatus\" class=\"rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700\">\n                                Waiting for phone scans...\n                            </div>\n                            <button type=\"button\" data-remote-scanner-close class=\"w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50\">\n                                Hide Phone Scanner\n                            </button>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ");
+    modal = document.getElementById('remoteSalesScannerModal');
+    modal.querySelectorAll('[data-remote-scanner-close]').forEach(function (button) {
+      button.addEventListener('click', closeSession);
+    });
+    (_modal$querySelector = modal.querySelector('#remoteScannerCopy')) === null || _modal$querySelector === void 0 || _modal$querySelector.addEventListener('click', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+      var urlInput, _t;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.p = _context.n) {
+          case 0:
+            urlInput = modal.querySelector('#remoteScannerUrl');
+            _context.p = 1;
+            _context.n = 2;
+            return navigator.clipboard.writeText(urlInput.value);
+          case 2:
+            notify('Phone scanner link copied.', 'success');
+            _context.n = 4;
+            break;
+          case 3:
+            _context.p = 3;
+            _t = _context.v;
+            urlInput.select();
+            notify('Copy failed. You can manually copy the selected link.', 'info');
+          case 4:
+            return _context.a(2);
+        }
+      }, _callee, null, [[1, 3]]);
+    })));
+    return modal;
+  }
+  function setStatus(message) {
+    var _modal;
+    var tone = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'blue';
+    var status = (_modal = modal) === null || _modal === void 0 ? void 0 : _modal.querySelector('#remoteScannerStatus');
+    if (!status) {
+      return;
+    }
+    var toneClass = tone === 'green' ? 'border-green-100 bg-green-50 text-green-700' : tone === 'red' ? 'border-red-100 bg-red-50 text-red-700' : 'border-blue-100 bg-blue-50 text-blue-700';
+    status.className = "rounded-2xl border px-4 py-3 text-sm ".concat(toneClass);
+    status.textContent = message;
+  }
+  function renderQr(scannerUrl) {
+    var target = modal.querySelector('#remoteScannerQr');
+    target.innerHTML = '';
+    qrCode = new (qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default())({
+      width: 220,
+      height: 220,
+      type: 'svg',
+      data: scannerUrl,
+      dotsOptions: {
+        color: '#0f172a',
+        type: 'rounded'
+      },
+      cornersSquareOptions: {
+        color: '#2563eb',
+        type: 'extra-rounded'
+      },
+      backgroundOptions: {
+        color: '#f8fafc'
+      }
+    });
+    qrCode.append(target);
+  }
+  function addRemoteScanToTransaction(fishBox) {
+    if (!window.salesQrScanner && typeof window.SalesQRScanner === 'function') {
+      window.salesQrScanner = new window.SalesQRScanner();
+    }
+    if (!window.salesQrScanner || typeof window.salesQrScanner.handleSalesQRScanSuccess !== 'function') {
+      notify('Transaction scanner is not ready. Refresh the page and try again.', 'error');
+      return false;
+    }
+    if (isFishBoxAlreadyInTransaction(fishBox.id)) {
+      notify("".concat(fishBox.name || 'Fish box', " is already in this transaction."), 'info');
+      return false;
+    }
+    window.salesQrScanner.handleSalesQRScanSuccess(fishBox);
+    return true;
+  }
+  function isFishBoxAlreadyInTransaction(fishBoxId) {
+    if (!fishBoxId) {
+      return false;
+    }
+    var root = document.querySelector('[data-sales-form-root]') || document;
+    var selectors = ['.fish-box-hidden-input', 'input[type="hidden"][name*="[box_id]"]'];
+    return Array.from(root.querySelectorAll(selectors.join(','))).some(function (input) {
+      return String(input.value) === String(fishBoxId);
+    });
+  }
+  function pollItems() {
+    return _pollItems.apply(this, arguments);
+  }
+  function _pollItems() {
+    _pollItems = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var payload, acceptedCount, _t2;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
+          case 0:
+            if (activeSession) {
+              _context3.n = 1;
+              break;
+            }
+            return _context3.a(2);
+          case 1:
+            _context3.p = 1;
+            _context3.n = 2;
+            return fetchJson(activeSession.poll_url);
+          case 2:
+            payload = _context3.v;
+            acceptedCount = 0;
+            (payload.items || []).forEach(function (item) {
+              if (item.status === 'accepted' && item.data) {
+                if (addRemoteScanToTransaction(item.data)) {
+                  acceptedCount += 1;
+                }
+                return;
+              }
+              if (item.message) {
+                notify(item.message, item.status === 'error' ? 'error' : 'info');
+              }
+            });
+            if (acceptedCount > 0) {
+              setStatus("".concat(acceptedCount, " fish box scan").concat(acceptedCount === 1 ? '' : 's', " added to this transaction."), 'green');
+            }
+            _context3.n = 4;
+            break;
+          case 3:
+            _context3.p = 3;
+            _t2 = _context3.v;
+            setStatus(_t2.message || 'Phone scanner session stopped.', 'red');
+            stopPolling();
+          case 4:
+            return _context3.a(2);
+        }
+      }, _callee3, null, [[1, 3]]);
+    }));
+    return _pollItems.apply(this, arguments);
+  }
+  function startPolling() {
+    stopPolling();
+    pollItems();
+    pollTimer = setInterval(pollItems, 1500);
+  }
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+  function openSession() {
+    return _openSession.apply(this, arguments);
+  }
+  function _openSession() {
+    _openSession = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var config, scannerUrl, _t3;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.p = _context4.n) {
+          case 0:
+            config = getConfig();
+            if (config.createUrl) {
+              _context4.n = 1;
+              break;
+            }
+            notify('Phone scanner is not configured.', 'error');
+            return _context4.a(2);
+          case 1:
+            ensureModal();
+            modal.classList.remove('hidden');
+            if (!activeSession) {
+              _context4.n = 2;
+              break;
+            }
+            setStatus('Waiting for phone scans...');
+            startPolling();
+            return _context4.a(2);
+          case 2:
+            setStatus('Creating phone scanner session...');
+            _context4.p = 3;
+            _context4.n = 4;
+            return fetchJson(withAppBasePath(config.createUrl), {
+              method: 'POST',
+              headers: {
+                'X-CSRF-TOKEN': getCsrfToken()
+              }
+            });
+          case 4:
+            activeSession = _context4.v;
+            scannerUrl = toBrowserUrl(activeSession.scanner_url);
+            activeSession.poll_url = toBrowserUrl(activeSession.poll_url);
+            modal.querySelector('#remoteScannerUrl').value = scannerUrl;
+            renderQr(scannerUrl);
+            setStatus('Waiting for phone scans...');
+            startPolling();
+            _context4.n = 6;
+            break;
+          case 5:
+            _context4.p = 5;
+            _t3 = _context4.v;
+            setStatus(_t3.message || 'Unable to create phone scanner session.', 'red');
+          case 6:
+            return _context4.a(2);
+        }
+      }, _callee4, null, [[3, 5]]);
+    }));
+    return _openSession.apply(this, arguments);
+  }
+  function closeSession() {
+    return _closeSession.apply(this, arguments);
+  }
+  function _closeSession() {
+    _closeSession = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.n) {
+          case 0:
+            if (modal) {
+              modal.classList.add('hidden');
+            }
+          case 1:
+            return _context5.a(2);
+        }
+      }, _callee5);
+    }));
+    return _closeSession.apply(this, arguments);
+  }
+  function bindButtons() {
+    document.querySelectorAll('[data-remote-sales-scanner-open]').forEach(function (button) {
+      if (button.dataset.remoteScannerBound === 'true') {
+        return;
+      }
+      button.dataset.remoteScannerBound = 'true';
+      button.addEventListener('click', openSession);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', bindButtons);
+  window.bindRemoteSalesScannerButtons = bindButtons;
+})();
 })();
 
 /******/ })()

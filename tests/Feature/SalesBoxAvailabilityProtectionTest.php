@@ -142,6 +142,69 @@ class SalesBoxAvailabilityProtectionTest extends TestCase
         $this->assertSame(FishBoxStatusConstant::SOLD, $fishBox->fresh()->status);
     }
 
+    public function test_phone_scan_session_returns_scanned_box_to_laptop_polling(): void
+    {
+        [$user, $broker] = $this->createBrokerUser('phone-scan@example.com');
+        $fishType = FishType::create([
+            'name' => 'lapulapu',
+            'description' => 'Grouper',
+        ]);
+        $fishBox = $this->createAvailableFishBox($broker, $user, $fishType, 'phone-scan-box', 2100.00);
+
+        $this->actingAs($user);
+
+        $sessionResponse = $this->postJson(route('broker.sales.scan-sessions.store', [], false));
+        $sessionResponse->assertOk()
+            ->assertJsonPath('success', true);
+
+        $token = $sessionResponse->json('token');
+
+        $scanResponse = $this->postJson(route('broker.sales.scan-sessions.scan', $token, false), [
+            'qr_code' => $fishBox->qr_code,
+        ]);
+
+        $scanResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $fishBox->id);
+
+        $this->postJson(route('broker.sales.scan-sessions.scan', $token, false), [
+            'qr_code' => $fishBox->qr_code,
+        ])->assertStatus(409);
+
+        $pollResponse = $this->getJson(route('broker.sales.scan-sessions.items', $token, false));
+        $pollResponse->assertOk()
+            ->assertJsonPath('items.0.status', 'accepted')
+            ->assertJsonPath('items.0.data.id', $fishBox->id);
+
+        $rescanResponse = $this->postJson(route('broker.sales.scan-sessions.scan', $token, false), [
+            'qr_code' => $fishBox->qr_code,
+        ]);
+
+        $rescanResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $fishBox->id);
+
+        $this->getJson(route('broker.sales.scan-sessions.items', $token, false))
+            ->assertOk()
+            ->assertJsonPath('items.0.status', 'accepted')
+            ->assertJsonPath('items.0.data.id', $fishBox->id);
+    }
+
+    public function test_phone_scan_session_reuses_active_link_after_laptop_refresh(): void
+    {
+        [$user] = $this->createBrokerUser('phone-link-reuse@example.com');
+
+        $this->actingAs($user);
+
+        $firstSession = $this->postJson(route('broker.sales.scan-sessions.store', [], false));
+        $firstSession->assertOk();
+
+        $secondSession = $this->postJson(route('broker.sales.scan-sessions.store', [], false));
+        $secondSession->assertOk()
+            ->assertJsonPath('token', $firstSession->json('token'))
+            ->assertJsonPath('scanner_url', $firstSession->json('scanner_url'));
+    }
+
     /**
      * @return array{0: User, 1: Broker}
      */
