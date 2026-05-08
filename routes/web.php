@@ -117,6 +117,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/requirements', 'stallsRequirements')->name('requirements.index');
         Route::get('/overview', 'stallsOverview')->name('overview');
         Route::post('/', 'storeStall')->name('store');
+        Route::post('/{stall}/photos', 'storeStallPhotos')->name('photos.store');
+        Route::delete('/{stall}/photos/{stallImage}', 'destroyStallPhoto')->name('photos.destroy');
         Route::post('/requirements', 'storeRequirementType')->name('requirements.store');
         Route::post('/openings', 'storeOpening')->name('openings.store');
         Route::patch('/openings/{opening}', 'updateOpening')->name('openings.update');

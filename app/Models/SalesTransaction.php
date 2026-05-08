@@ -165,7 +165,12 @@ class SalesTransaction extends Model
     {
         return DB::transaction(function () use ($salesData, $salesDetails, $brokerId, $initialPayment) {
             $userId = Auth::id();
-            $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
+            $buyer = Buyer::resolveForSaleParts(
+                $salesData['buyer_first_name'],
+                $salesData['buyer_middle_name'] ?? null,
+                $salesData['buyer_last_name'],
+                $salesData['buyer_contact'] ?? null
+            );
             $salesDetails = static::assignAutomaticFishBoxes($salesDetails, $brokerId);
             $purchaseIdsByBoxId = static::resolveSellablePurchaseIds(
                 static::lockFishBoxesForUpdate($brokerId, static::extractRequestedBoxIds($salesDetails)),
@@ -212,7 +217,12 @@ class SalesTransaction extends Model
     {
         DB::transaction(function () use ($sale, $salesData, $salesDetails, $brokerId) {
             $userId = Auth::id();
-            $buyer = Buyer::resolveForSale($salesData['buyer_name'], $salesData['buyer_contact'] ?? null);
+            $buyer = Buyer::resolveForSaleParts(
+                $salesData['buyer_first_name'],
+                $salesData['buyer_middle_name'] ?? null,
+                $salesData['buyer_last_name'],
+                $salesData['buyer_contact'] ?? null
+            );
             $lockedSale = self::query()
                 ->with('salesDetails.fishBoxPurchase')
                 ->whereKey($sale->id)
@@ -494,7 +504,10 @@ class SalesTransaction extends Model
 
         if ($search) {
             $query->whereHas('buyer', function ($buyerQuery) use ($search) {
-                $buyerQuery->whereRaw("TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?", ["%{$search}%"])
+                $buyerQuery->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhereRaw("TRIM(CONCAT_WS(' ', first_name, middle_name, last_name)) like ?", ["%{$search}%"])
                     ->orWhere('contact', 'like', "%{$search}%");
             });
         }
@@ -750,6 +763,24 @@ class SalesTransaction extends Model
 
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * Count fish boxes sold today. Each transaction line item represents one sold box.
+     */
+    public static function getTotalSoldBoxesToday(?int $brokerId): int
+    {
+        $query = TransactionLineItem::query()
+            ->join('SalesTransaction', 'SalesTransaction.id', '=', 'TransactionLineItem.sale_id')
+            ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateConstraint($query, 'SalesTransaction.sales_date', '=', today()->toDateString());
+
+        if ($brokerId) {
+            $query->where('SalesTransaction.broker_id', $brokerId);
         }
 
         return $query->count();

@@ -37,7 +37,7 @@
 
         <!-- Main Content -->
         <div
-            class="app-main-shell admin-main-shell main-content min-h-screen min-w-0 flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-64"
+            class="app-main-shell admin-main-shell main-content min-h-screen min-w-0 flex-1 flex flex-col overflow-hidden md:ml-64"
             data-admin-main
         >
             <!-- Navbar Component -->

@@ -1,5 +1,5 @@
 @php
-    $breadcrumbs = [
+$breadcrumbs = [
         ['title' => 'Dashboard']
     ];
 
@@ -9,7 +9,6 @@
     $growthPercent = $lastWeekTotal > 0 ? (($thisWeekTotal - $lastWeekTotal) / $lastWeekTotal) * 100 : 0;
     $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -38,7 +37,7 @@
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Daily Collection</p>
-                    <p class="metric-card__value">PHP {{ number_format($salesToday, 2) }}</p>
+                    <p class="metric-card__value">₱{{ number_format($salesToday, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-chart-pie />
@@ -50,7 +49,7 @@
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Outstanding Balance</p>
-                    <p class="metric-card__value">PHP {{ number_format($salesBalance, 2) }}</p>
+                    <p class="metric-card__value">₱{{ number_format($salesBalance, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-currency-dollar />
@@ -61,8 +60,9 @@
         <a href="{{ route('broker.inventory.index') }}" class="metric-card metric-card--neutral">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Fish Boxes Sold</p>
+                    <p class="metric-card__eyebrow">Total Sold Boxes</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxes) }}</p>
+                    <p class="metric-card__meta">Boxes sold today</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-cube />
@@ -92,15 +92,15 @@
                                         <x-status-badge :status="$sale->status" label="Paid" />
                                     @elseif($sale->status === \App\Constants\SalesStatusConstant::PARTIALLY_PAID)
                                         <x-status-badge :status="$sale->status" label="Partially Paid" />
-                                        <span class="ml-2">Balance: PHP {{ number_format($sale->total_amount - $sale->paid_amount, 2) }}</span>
+                                        <span class="ml-2">Balance: ₱{{ number_format($sale->total_amount - $sale->paid_amount, 2) }}</span>
                                     @else
                                         <x-status-badge status="Pending Payment" />
-                                        <span class="ml-2">Balance: PHP {{ number_format($sale->total_amount, 2) }}</span>
+                                        <span class="ml-2">Balance: ₱{{ number_format($sale->total_amount, 2) }}</span>
                                     @endif
                                 </div>
                             </div>
                             <div class="activity-row__value">
-                                <p class="activity-row__amount">PHP {{ number_format($sale->paid_amount, 2) }}</p>
+                                <p class="activity-row__amount">₱{{ number_format($sale->paid_amount, 2) }}</p>
                             </div>
                         </div>
                     @empty
@@ -124,10 +124,10 @@
                 <div class="chart-grid" style="--chart-columns: {{ max(1, count($dailySalesData)) }};">
                     @foreach($dailySalesData as $dayData)
                         <div class="chart-column">
-                            <div class="chart-column__value">PHP {{ number_format($dayData['sales'], 0) }}</div>
+                            <div class="chart-column__value">₱{{ number_format($dayData['sales'], 0) }}</div>
                             <div class="chart-column__track">
                                 <div class="chart-column__bar" style="height: {{ ($dayData['sales'] / $maxDailySales) * 100 }}%;">
-                                    <div class="chart-column__tooltip">PHP {{ number_format($dayData['sales'], 2) }}</div>
+                                    <div class="chart-column__tooltip">₱{{ number_format($dayData['sales'], 2) }}</div>
                                 </div>
                             </div>
                             <span class="chart-column__label">{{ $dayData['day'] }}</span>
@@ -137,7 +137,7 @@
 
                 <div class="chart-summary-grid">
                     <div class="chart-summary-box">
-                        <p class="chart-summary-box__value">PHP {{ number_format($thisWeekTotal, 0) }}</p>
+                        <p class="chart-summary-box__value">₱{{ number_format($thisWeekTotal, 0) }}</p>
                         <p class="chart-summary-box__label">This Week</p>
                     </div>
                     <div class="chart-summary-box">
@@ -172,7 +172,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-semibold text-gray-900">PHP {{ number_format($item['revenue'], 2) }}</p>
+                                <p class="text-sm font-semibold text-gray-900">₱{{ number_format($item['revenue'], 2) }}</p>
                                 @if($topItems->count() > 0)
                                     <div class="progress-track">
                                         <div class="progress-bar" style="width: {{ $topItems->first()['revenue'] > 0 ? ($item['revenue'] / $topItems->first()['revenue']) * 100 : 0 }}%"></div>
@@ -201,10 +201,10 @@
                 <div class="chart-grid" style="--chart-columns: {{ max(1, count($weeklySalesData)) }};">
                     @foreach($weeklySalesData as $weekData)
                         <div class="chart-column">
-                            <div class="chart-column__value">PHP {{ number_format($weekData['sales'], 0) }}</div>
+                            <div class="chart-column__value">₱{{ number_format($weekData['sales'], 0) }}</div>
                             <div class="chart-column__track">
                                 <div class="chart-column__bar" style="height: {{ ($weekData['sales'] / $maxWeeklySales) * 100 }}%;">
-                                    <div class="chart-column__tooltip">PHP {{ number_format($weekData['sales'], 2) }}</div>
+                                    <div class="chart-column__tooltip">₱{{ number_format($weekData['sales'], 2) }}</div>
                                 </div>
                             </div>
                             <span class="chart-column__label">{{ $weekData['day'] }}</span>

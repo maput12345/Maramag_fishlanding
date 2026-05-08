@@ -38,7 +38,7 @@ class SalesController extends Controller
         $paidAmountToday = SalesTransaction::getTotalPaidAmountToday($brokerId);
         $paidAmountYesterday = SalesTransaction::getTotalPaidAmountYesterday($brokerId);
 
-        $totalFishBoxes = FishBox::getTotalFishBoxes($brokerId);
+        $totalFishBoxes = SalesTransaction::getTotalSoldBoxesToday($brokerId);
 
         if ($paidAmountYesterday > 0) {
             $growthPercent = (($paidAmountToday - $paidAmountYesterday) / $paidAmountYesterday) * 100;
@@ -192,8 +192,11 @@ class SalesController extends Controller
         $salesData = [
             'sales_date' => $validated['sales_date'],
             'total_amount' => $validated['total_amount'],
+            'buyer_first_name' => $validated['buyer_first_name'],
+            'buyer_middle_name' => $validated['buyer_middle_name'] ?? null,
+            'buyer_last_name' => $validated['buyer_last_name'],
             'buyer_name' => $validated['buyer_name'],
-            'buyer_contact' => $validated['buyer_contact'] ?? null,
+            'buyer_contact' => $validated['buyer_contact'],
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
@@ -256,8 +259,11 @@ class SalesController extends Controller
         $salesData = [
             'sales_date' => $validated['sales_date'],
             'total_amount' => $validated['total_amount'],
+            'buyer_first_name' => $validated['buyer_first_name'],
+            'buyer_middle_name' => $validated['buyer_middle_name'] ?? null,
+            'buyer_last_name' => $validated['buyer_last_name'],
             'buyer_name' => $validated['buyer_name'],
-            'buyer_contact' => $validated['buyer_contact'] ?? null,
+            'buyer_contact' => $validated['buyer_contact'],
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];

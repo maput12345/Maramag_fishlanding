@@ -158,13 +158,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex space-x-2">
+                <div class="filter-action-group">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes']) }}"
-                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                       class="btn-clear">
                         Clear
                     </a>
                     <button type="submit"
-                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                            class="btn-search">
                         Search
                     </button>
                 </div>

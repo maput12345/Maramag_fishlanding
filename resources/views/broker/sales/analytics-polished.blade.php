@@ -1,11 +1,10 @@
-@php
-    $breadcrumbs = [
+﻿@php
+$breadcrumbs = [
         ['title' => 'Sales & Analytics']
     ];
 
     $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -52,11 +51,11 @@
                         <input type="date" name="date_to" x-model="dateTo" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
-                    <div class="buttons-field flex justify-end space-x-2">
-                        <a href="{{ route('broker.sales.analytics') }}" class="app-button app-button--secondary px-4 py-2 text-sm">
+                    <div class="buttons-field filter-action-group justify-end">
+                        <a href="{{ route('broker.sales.analytics') }}" class="btn-clear">
                             Clear
                         </a>
-                        <button type="submit" class="app-button app-button--primary px-4 py-2 text-sm">
+                        <button type="submit" class="btn-search">
                             Search
                         </button>
                     </div>
@@ -82,7 +81,7 @@
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Total Sales</p>
-                    <p class="metric-card__value">PHP {{ number_format($totalRevenue, 2) }}</p>
+                    <p class="metric-card__value">₱{{ number_format($totalRevenue, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-chart-pie />
@@ -94,7 +93,7 @@
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Outstanding Receivable Balance</p>
-                    <p class="metric-card__value">PHP {{ number_format($totalBalance, 2) }}</p>
+                    <p class="metric-card__value">₱{{ number_format($totalBalance, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-currency-dollar />
@@ -127,10 +126,10 @@
                 <div class="chart-grid" style="--chart-columns: {{ max(1, count($weeklySalesData)) }};">
                     @foreach($weeklySalesData as $weekData)
                         <div class="chart-column">
-                            <div class="chart-column__value">PHP {{ number_format($weekData['sales'], 0) }}</div>
+                            <div class="chart-column__value">₱{{ number_format($weekData['sales'], 0) }}</div>
                             <div class="chart-column__track">
                                 <div class="chart-column__bar" style="height: {{ ($weekData['sales'] / $maxWeeklySales) * 100 }}%;">
-                                    <div class="chart-column__tooltip">PHP {{ number_format($weekData['sales'], 2) }}</div>
+                                    <div class="chart-column__tooltip">₱{{ number_format($weekData['sales'], 2) }}</div>
                                 </div>
                             </div>
                             <span class="chart-column__label">{{ $weekData['day'] }}</span>
@@ -156,11 +155,11 @@
                                 <div class="top-item-row__rank">{{ $index + 1 }}</div>
                                 <div>
                                     <p class="top-item-row__title">{{ $item['name'] }}</p>
-                                    <p class="top-item-row__meta">{{ $item['quantity'] }} sold</p>
+                                    <p class="top-item-row__meta tabular-nums">{{ $item['quantity'] }} sold</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-semibold text-gray-900">PHP {{ number_format($item['revenue'], 2) }}</p>
+                                <p class="text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format($item['revenue'], 2) }}</p>
                                 @if($topItems->count() > 0)
                                     <div class="progress-track">
                                         <div class="progress-bar" style="width: {{ $topItems->first()['revenue'] > 0 ? ($item['revenue'] / $topItems->first()['revenue']) * 100 : 0 }}%"></div>
@@ -196,8 +195,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales ID</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
@@ -213,8 +212,8 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $sale->formatted_items }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->total_amount, 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PHP {{ number_format($sale->paid_amount, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale->total_amount, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale->paid_amount, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <x-status-badge :status="\App\Constants\SalesStatusConstant::getDisplayName($sale->status)" />
                                 </td>

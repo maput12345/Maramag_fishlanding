@@ -3,6 +3,7 @@
 @php
     $openingsCount = $openings->count();
     $currentApplicationStatus = $currentApplication?->application_status ?? 'No submission yet';
+    $isApplyMode = request('focus') === 'apply' && !$currentApplication;
 @endphp
 
 @section('content')
@@ -10,8 +11,14 @@
     <div class="portal-stage portal-stage--broker-aligned dashboard-shell">
         <div class="applicant-dashboard-header">
             <div class="dashboard-header">
+                <span class="dashboard-kicker">Applicant Portal</span>
                 <div>
-                    <h1 class="dashboard-title">Applicant Dashboard</h1>
+                    <h1 class="dashboard-title">{{ $isApplyMode ? 'Apply for Stall' : 'Applicant Dashboard' }}</h1>
+                    <p class="dashboard-subtitle">
+                        {{ $isApplyMode
+                            ? 'View current stall openings and submit your application when LEEO opens a schedule.'
+                            : 'View open stall applications and track your current submission status.' }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -62,149 +69,171 @@
             </div>
         </div>
 
-        <section id="open-stalls" class="panel-card applicant-panel-card">
-            <div class="panel-card__inner">
-            <div class="panel-card__header applicant-panel-card__header">
-                <div>
-                    <h2 class="panel-card__title">Open Stall Applications</h2>
-                    <p class="panel-card__hint">Submit one application for the current vacant stalls. LEEO will assign the final stall after review and bidding.</p>
-                </div>
-                <span class="portal-count-pill">{{ $openingsCount }} {{ $openingsCount === 1 ? 'opening' : 'openings' }}</span>
-            </div>
-
-            @if($openingsCount > 0)
-                <div class="applicant-action-strip">
-                    @if($currentApplication)
-                        <div class="portal-inline-alert portal-inline-alert--success">
-                            You already submitted an application for the current open stalls.
+        @if($currentApplication)
+            <section class="panel-card applicant-panel-card">
+                <div class="panel-card__inner">
+                    <div class="panel-card__header applicant-panel-card__header">
+                        <div>
+                            <h2 class="panel-card__title">Current Application</h2>
+                            <p class="panel-card__hint">You already have an active application in the current process.</p>
                         </div>
-                    @elseif($primaryOpening)
+                        <x-status-badge :status="$currentApplication->application_status" />
+                    </div>
+
+                    <div class="portal-inline-alert portal-inline-alert--success">
+                        Your application is {{ $currentApplication->application_status }}. Please track the details under My Applications.
+                    </div>
+
+                    <div class="applicant-card-actions">
+                        <a href="{{ route('applications.my-applications') }}" class="portal-button portal-button--primary">
+                            <x-heroicon-o-document-text class="portal-button__icon" />
+                            <span>View My Application</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        @else
+            <section id="open-stalls" class="panel-card applicant-panel-card scroll-mt-24 {{ $isApplyMode ? 'ring-2 ring-blue-200' : '' }}">
+                <div class="panel-card__inner">
+                <div class="panel-card__header applicant-panel-card__header">
+                    <div>
+                        <h2 class="panel-card__title">Open Stall Applications</h2>
+                        <p class="panel-card__hint">Submit one application for the current vacant stalls. LEEO will assign the final stall after review and bidding.</p>
+                    </div>
+                    <span class="portal-count-pill">{{ $openingsCount }} {{ $openingsCount === 1 ? 'opening' : 'openings' }}</span>
+                </div>
+
+                @if($openingsCount > 0 && $primaryOpening)
+                    <div class="applicant-action-strip">
                         <a href="{{ route('applications.create', $primaryOpening) }}" class="portal-button portal-button--primary portal-button--cta">
                             <x-heroicon-o-paper-airplane class="portal-button__icon" />
                             <span>Apply Now</span>
                         </a>
-                    @endif
-                </div>
-            @endif
+                    </div>
+                @endif
 
-            <div class="portal-stall-grid">
-                @forelse($openings as $opening)
-                    @php
-                        $stallGallery = $opening->stall?->gallery_image_urls ?? [];
-                    @endphp
-                    <article class="portal-card portal-card--stall applicant-stall-card">
-                        <div class="portal-card__split">
-                            <div>
-                                <p class="portal-card__eyebrow">Vacant Stall</p>
-                                <h3 class="portal-card__title">{{ $opening->stall?->display_name ?? 'Unassigned Stall' }}</h3>
-                            </div>
-                            <x-status-badge :status="$opening->opening_status" />
-                        </div>
-
-                        <div class="portal-detail-list">
-                            <div class="portal-detail-item">
-                                <div class="portal-detail-item__icon">
-                                    <x-heroicon-o-calendar-days class="h-5 w-5" />
-                                </div>
+                <div class="portal-stall-grid">
+                    @forelse($openings as $opening)
+                        @php
+                            $stallGallery = $opening->stall?->gallery_image_urls ?? [];
+                        @endphp
+                        <article class="portal-card portal-card--stall applicant-stall-card">
+                            <div class="portal-card__split">
                                 <div>
-                                    <p class="portal-detail-item__label">Application Window</p>
-                                    <p class="portal-detail-item__value">
-                                        {{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}
-                                    </p>
+                                    <p class="portal-card__eyebrow">Vacant Stall</p>
+                                    <h3 class="portal-card__title">{{ $opening->stall?->display_name ?? 'Unassigned Stall' }}</h3>
                                 </div>
+                                <x-status-badge :status="$opening->opening_status" />
                             </div>
 
-                            <div class="portal-detail-item">
-                                <div class="portal-detail-item__icon portal-detail-item__icon--gold">
-                                    <x-heroicon-o-document-text class="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p class="portal-detail-item__label">Application Pool</p>
-                                    <p class="portal-detail-item__value">One shared form</p>
-                                </div>
-                            </div>
-
-                            @if($opening->stall?->address || $opening->stall?->area_sqm)
+                            <div class="portal-detail-list">
                                 <div class="portal-detail-item">
                                     <div class="portal-detail-item__icon">
-                                        <x-heroicon-o-document-text class="h-5 w-5" />
+                                        <x-heroicon-o-calendar-days class="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <p class="portal-detail-item__label">Location and Size</p>
+                                        <p class="portal-detail-item__label">Application Window</p>
                                         <p class="portal-detail-item__value">
-                                            {{ $opening->stall->address ?: 'No address recorded' }}
-                                            @if($opening->stall->area_sqm)
-                                                - {{ number_format((float) $opening->stall->area_sqm, 2) }} sqm
-                                            @endif
+                                            {{ optional($opening->start_date)->format('M d, Y') }} to {{ optional($opening->end_date)->format('M d, Y') }}
                                         </p>
                                     </div>
                                 </div>
-                            @endif
-                        </div>
 
-                        <div class="applicant-card-actions">
-                            @if(count($stallGallery) > 0)
-                                <button
-                                    type="button"
-                                    class="portal-button portal-button--secondary"
-                                    data-stall-gallery-open="{{ $opening->id }}"
-                                >
-                                    <x-heroicon-o-photo class="portal-button__icon" />
-                                    <span>View Photos</span>
-                                </button>
-                            @endif
-                        </div>
-
-                    </article>
-
-                    @if(count($stallGallery) > 0)
-                        <div
-                            class="stall-gallery-modal"
-                            data-stall-gallery-modal="{{ $opening->id }}"
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby="stall-gallery-title-{{ $opening->id }}"
-                            hidden
-                        >
-                            <div class="stall-gallery-modal__backdrop" data-stall-gallery-close></div>
-                            <div class="stall-gallery-modal__panel">
-                                <div class="stall-gallery-modal__header">
-                                    <div>
-                                        <p class="portal-section-card__eyebrow">Stall Photos</p>
-                                        <h3 id="stall-gallery-title-{{ $opening->id }}" class="stall-gallery-modal__title">
-                                            {{ $opening->stall?->display_name ?? 'Stall Gallery' }}
-                                        </h3>
+                                <div class="portal-detail-item">
+                                    <div class="portal-detail-item__icon portal-detail-item__icon--gold">
+                                        <x-heroicon-o-document-text class="h-5 w-5" />
                                     </div>
-                                    <button type="button" class="stall-gallery-modal__close" data-stall-gallery-close aria-label="Close stall photos">
-                                        &times;
-                                    </button>
+                                    <div>
+                                        <p class="portal-detail-item__label">Application Pool</p>
+                                        <p class="portal-detail-item__value">One shared form</p>
+                                    </div>
                                 </div>
 
-                                <div class="stall-gallery-modal__grid">
-                                    @foreach($stallGallery as $galleryImage)
-                                        <a href="{{ $galleryImage }}" target="_blank" rel="noopener" class="stall-gallery-modal__image-link">
-                                            <img
-                                                src="{{ $galleryImage }}"
-                                                alt="{{ $opening->stall?->display_name ?? 'Stall' }} photo {{ $loop->iteration }}"
-                                                class="stall-gallery-modal__image"
-                                            >
-                                        </a>
-                                    @endforeach
+                                @if($opening->stall?->address || $opening->stall?->area_sqm)
+                                    <div class="portal-detail-item">
+                                        <div class="portal-detail-item__icon">
+                                            <x-heroicon-o-document-text class="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p class="portal-detail-item__label">Location and Size</p>
+                                            <p class="portal-detail-item__value">
+                                                {{ $opening->stall->address ?: 'No address recorded' }}
+                                                @if($opening->stall->area_sqm)
+                                                    - {{ number_format((float) $opening->stall->area_sqm, 2) }} sqm
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="applicant-card-actions">
+                                @if(count($stallGallery) > 0)
+                                    <button
+                                        type="button"
+                                        class="portal-button portal-button--secondary"
+                                        data-stall-gallery-open="{{ $opening->id }}"
+                                    >
+                                        <x-heroicon-o-photo class="portal-button__icon" />
+                                        <span>View Photos</span>
+                                    </button>
+                                @endif
+                            </div>
+
+                        </article>
+
+                        @if(count($stallGallery) > 0)
+                            <div
+                                class="stall-gallery-modal"
+                                data-stall-gallery-modal="{{ $opening->id }}"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="stall-gallery-title-{{ $opening->id }}"
+                                hidden
+                            >
+                                <div class="stall-gallery-modal__backdrop" data-stall-gallery-close></div>
+                                <div class="stall-gallery-modal__panel">
+                                    <div class="stall-gallery-modal__header">
+                                        <div>
+                                            <p class="portal-section-card__eyebrow">Stall Photos</p>
+                                            <h3 id="stall-gallery-title-{{ $opening->id }}" class="stall-gallery-modal__title">
+                                                {{ $opening->stall?->display_name ?? 'Stall Gallery' }}
+                                            </h3>
+                                        </div>
+                                        <button type="button" class="stall-gallery-modal__close" data-stall-gallery-close aria-label="Close stall photos">
+                                            &times;
+                                        </button>
+                                    </div>
+
+                                    <div class="stall-gallery-modal__grid">
+                                        @foreach($stallGallery as $galleryImage)
+                                            <a href="{{ $galleryImage }}" target="_blank" rel="noopener" class="stall-gallery-modal__image-link">
+                                                <img
+                                                    src="{{ $galleryImage }}"
+                                                    alt="{{ $opening->stall?->display_name ?? 'Stall' }} photo {{ $loop->iteration }}"
+                                                    class="stall-gallery-modal__image"
+                                                >
+                                            </a>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
+                        @endif
+                    @empty
+                        <div class="portal-empty portal-empty--wide">
+                            <div class="portal-empty__icon">
+                                <x-heroicon-o-building-storefront class="h-7 w-7" />
+                            </div>
+                            <h3 class="portal-empty__title">No stall is currently open for application</h3>
+                            <p class="mt-2 max-w-xl text-sm text-slate-500">
+                                Please wait for the next LEEO opening schedule. When a stall opens, the Apply Now button will appear here.
+                            </p>
                         </div>
-                    @endif
-                @empty
-                    <div class="portal-empty portal-empty--wide">
-                        <div class="portal-empty__icon">
-                            <x-heroicon-o-building-storefront class="h-7 w-7" />
-                        </div>
-                        <h3 class="portal-empty__title">No stall openings are available right now</h3>
-                    </div>
-                @endforelse
-            </div>
-            </div>
-        </section>
+                    @endforelse
+                </div>
+                </div>
+            </section>
+        @endif
 
     </div>
 </div>

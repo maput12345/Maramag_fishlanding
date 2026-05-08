@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Print broker sales report using the currently filtered range.
  */
 window.printBrokerSales = async function(brokerId, brokerName, stallName) {
@@ -33,7 +33,7 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
-    const formatCurrency = (amount) => `PHP ${Number(amount || 0).toLocaleString('en-US', {
+    const formatCurrency = (amount) => `₱${Number(amount || 0).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}`;

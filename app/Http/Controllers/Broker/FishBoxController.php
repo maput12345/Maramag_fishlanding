@@ -62,13 +62,7 @@ class FishBoxController extends Controller
         $bulkRestockEligibleCount = FishBox::countEligibleForBulkRestock($brokerId);
         $bulkRestockEligibleBoxes = collect();
 
-        $editingFishBox = null;
         $historyFishBox = null;
-
-        // Check if we're in edit mode
-        if ($request && $request->get('modal') === 'edit' && $request->has('edit')) {
-            $editingFishBox = FishBox::getFishBoxByIdAndBroker((int) $request->get('edit'), $brokerId);
-        }
 
         if ($request && $request->get('modal') === 'bulk-restock') {
             $bulkRestockEligibleBoxes = FishBox::getEligibleForBulkRestock($brokerId);
@@ -108,7 +102,6 @@ class FishBoxController extends Controller
             'fishBoxEditableStatuses',
             'fishTypes',
             'fishBoxes',
-            'editingFishBox',
             'fishBoxSummary',
             'bulkQrFishBoxes',
             'fishTypeDefaultCosts',

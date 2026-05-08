@@ -46,11 +46,11 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="buttons-field flex justify-end space-x-2">
-                    <a href="{{ route('admin.sales.index') }}" class="app-button app-button--secondary">
+                <div class="buttons-field filter-action-group justify-end">
+                    <a href="{{ route('admin.sales.index') }}" class="btn-clear">
                         Clear
                     </a>
-                    <button type="submit" class="app-button app-button--primary">
+                    <button type="submit" class="btn-search">
                         Search
                     </button>
                 </div>

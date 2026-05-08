@@ -101,13 +101,13 @@
                                 </div>
                             @endif
 
-                            <div class="buttons-field flex items-center justify-end gap-3">
+                            <div class="buttons-field filter-action-group justify-end">
                                 <a href="{{ route('admin.users.index', ['tab' => $tab]) }}"
-                                   class="app-button app-button--secondary">
+                                   class="btn-clear">
                                     Reset
                                 </a>
                                 <button type="submit"
-                                        class="app-button app-button--primary">
+                                        class="btn-search">
                                     Search
                                 </button>
                             </div>

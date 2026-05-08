@@ -1,8 +1,8 @@
-{{-- Print Receipt Modal --}}
+﻿{{-- Print Receipt Modal --}}
 @if(request('modal') === 'print')
     @if($printingSales)
         @php
-            $receiptLineItems = $printingSales->salesDetails
+$receiptLineItems = $printingSales->salesDetails
                 ->groupBy(function ($detail) {
                     return implode('|', [
                         trim(mb_strtolower($detail->item ?? '')),
@@ -27,7 +27,7 @@
                 })
                 ->values();
         @endphp
-        <x-app-modal
+<x-app-modal
             title="Print Receipt"
             subtitle="Review the final sale summary and print a clean receipt."
             :close-url="$salesBaseUrl"
@@ -86,8 +86,8 @@
                                             @endif
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">PHP {{ number_format($lineItem['sub_total'], 2) }}</div>
-                                            <div class="text-xs text-gray-500">{{ $lineItem['quantity'] }} x PHP {{ number_format($lineItem['unit_price'], 2) }}</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱{{ number_format($lineItem['sub_total'], 2) }}</div>
+                                            <div class="text-xs text-gray-500">{{ $lineItem['quantity'] }} x ₱{{ number_format($lineItem['unit_price'], 2) }}</div>
                                         </div>
                                     </div>
 
@@ -119,7 +119,7 @@
                                             <div class="font-medium">{{ $payment->payment_date->format('M d, Y') }}</div>
                                             <div class="text-gray-500">{{ $payment->payment_method }}</div>
                                         </div>
-                                        <div class="font-semibold text-green-600">PHP {{ number_format($payment->paid_amount, 2) }}</div>
+                                        <div class="font-semibold text-green-600">₱{{ number_format($payment->paid_amount, 2) }}</div>
                                     </div>
                                 @endforeach
                             </div>
@@ -131,15 +131,15 @@
                         <div class="space-y-2">
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-600">Total Amount:</span>
-                                <span class="font-semibold">PHP {{ number_format($printingSales->total_amount, 2) }}</span>
+                                <span class="font-semibold">₱{{ number_format($printingSales->total_amount, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-600">Paid Amount:</span>
-                                <span class="font-semibold text-green-600">PHP {{ number_format($printingSales->paid_amount, 2) }}</span>
+                                <span class="font-semibold text-green-600">₱{{ number_format($printingSales->paid_amount, 2) }}</span>
                             </div>
                             <div class="flex justify-between border-t pt-2 text-sm">
                                 <span class="font-semibold text-gray-600">Remaining Balance:</span>
-                                <span class="font-bold text-orange-600">PHP {{ number_format($printingSales->remaining_amount, 2) }}</span>
+                                <span class="font-bold text-orange-600">₱{{ number_format($printingSales->remaining_amount, 2) }}</span>
                             </div>
                         </div>
                     </div>

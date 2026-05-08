@@ -27,7 +27,6 @@
             'fishPrices' => 'Add Fish Price',
         ],
         'edit' => [
-            'fishBoxes' => 'Edit Fish Box',
             'fishTypes' => 'Edit Fish',
             'fishPrices' => 'Edit Fish Price',
         ],

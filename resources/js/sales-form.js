@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sales Form Functionality
  * Handles dynamic sales detail rows, fish box selection, and calculations
  */
@@ -404,7 +404,7 @@ function initializeSalesForm(config, scope = document) {
         const total = Array.from(root.querySelectorAll('.sub-total-input'))
             .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
 
-        totalAmountDisplay.textContent = `PHP ${total.toFixed(2)}`;
+        totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
         if (totalAmountInput) totalAmountInput.value = total.toFixed(2);
         validateInitialPayment();
     }
@@ -437,7 +437,7 @@ function initializeSalesForm(config, scope = document) {
         }
 
         if (currentAmount > maxPaymentAmount) {
-            setInitialPaymentError(`Payment amount cannot exceed the remaining balance of PHP ${maxPaymentAmount.toFixed(2)}`);
+            setInitialPaymentError(`Payment amount cannot exceed the remaining balance of ₱${maxPaymentAmount.toFixed(2)}`);
             return;
         }
 

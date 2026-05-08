@@ -1,6 +1,6 @@
-{{-- Show Sales Modal --}}
+﻿{{-- Show Sales Modal --}}
 @php
-    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+$brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
 @endphp
@@ -37,16 +37,15 @@
         </x-app-modal>
     @else
         @php
-            $buyerName = $viewingSales->buyer?->name ?: 'Walk-in Buyer';
+$buyerName = $viewingSales->buyer?->name ?: 'Walk-in Buyer';
             $buyerContact = $viewingSales->buyer?->contact ?: 'Not provided';
             $paymentProgress = $viewingSales->total_amount > 0
                 ? (($viewingSales->paid_amount / (float) $viewingSales->total_amount) * 100)
                 : 0;
         @endphp
-
-        <x-app-modal
+<x-app-modal
             title="Sale Details"
-            :subtitle="'Sale #' . $viewingSales->id . ' • ' . $viewingSales->sales_date->format('M d, Y')"
+            :subtitle="'Sale #' . $viewingSales->id . ' - ' . $viewingSales->sales_date->format('M d, Y')"
             :close-url="$salesBaseUrl"
             max-width="7xl"
             body-class="workspace-popup__body--soft"
@@ -111,22 +110,22 @@
                                             <x-heroicon-o-banknotes class="mr-2 h-4 w-4" />
                                             Total Amount
                                         </span>
-                                        <span class="text-lg font-bold text-gray-900">PHP {{ number_format((float) $viewingSales->total_amount, 2) }}</span>
+                                        <span class="text-right text-lg font-bold tabular-nums text-gray-900">₱{{ number_format((float) $viewingSales->total_amount, 2) }}</span>
                                     </div>
                                     <div class="flex items-center justify-between border-b border-gray-100 py-2">
                                         <span class="flex items-center text-sm text-gray-600">
                                             <x-heroicon-o-check-circle class="mr-2 h-4 w-4" />
                                             Paid Amount
                                         </span>
-                                        <span class="text-lg font-bold text-green-600">PHP {{ number_format($viewingSales->paid_amount, 2) }}</span>
+                                        <span class="text-right text-lg font-bold tabular-nums text-green-600">₱{{ number_format($viewingSales->paid_amount, 2) }}</span>
                                     </div>
                                     <div class="flex items-center justify-between py-2">
                                         <span class="flex items-center text-sm text-gray-600">
                                             <x-heroicon-o-clock class="mr-2 h-4 w-4" />
                                             Remaining
                                         </span>
-                                        <span class="text-lg font-bold {{ $viewingSales->remaining_amount > 0 ? 'text-orange-600' : 'text-green-600' }}">
-                                            PHP {{ number_format($viewingSales->remaining_amount, 2) }}
+                                        <span class="text-right text-lg font-bold tabular-nums {{ $viewingSales->remaining_amount > 0 ? 'text-orange-600' : 'text-green-600' }}">
+                                            ₱{{ number_format($viewingSales->remaining_amount, 2) }}
                                         </span>
                                     </div>
                                 </div>
@@ -142,7 +141,7 @@
                                 <div class="space-y-4">
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm text-gray-600">Payment Progress</span>
-                                        <span class="text-sm font-semibold text-gray-900">{{ number_format($paymentProgress, 1) }}%</span>
+                                        <span class="text-right text-sm font-semibold tabular-nums text-gray-900">{{ number_format($paymentProgress, 1) }}%</span>
                                     </div>
                                     <div class="h-3 w-full rounded-full bg-gray-200">
                                         <div class="h-3 rounded-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-300"
@@ -174,9 +173,9 @@
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish Box</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Purchase Date</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Price per Box</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sub Total</th>
+                                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price per Box</th>
+                                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
+                                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Sub Total</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-200 bg-white">
@@ -203,14 +202,14 @@
                                                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                                     {{ $detail->fishBoxPurchase?->purchase_date?->format('M d, Y') ?? '-' }}
                                                 </td>
-                                                <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                                                    PHP {{ number_format((float) $detail->unit_price, 2) }}
+                                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium tabular-nums text-gray-900">
+                                                    ₱{{ number_format((float) $detail->unit_price, 2) }}
                                                 </td>
-                                                <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                                                    PHP {{ number_format((float) $detail->discount, 2) }}
+                                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
+                                                    ₱{{ number_format((float) $detail->discount, 2) }}
                                                 </td>
-                                                <td class="whitespace-nowrap px-6 py-4 text-sm font-bold text-gray-900">
-                                                    PHP {{ number_format((float) $detail->sub_total, 2) }}
+                                                <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-bold tabular-nums text-gray-900">
+                                                    ₱{{ number_format((float) $detail->sub_total, 2) }}
                                                 </td>
                                             </tr>
                                         @empty
@@ -246,7 +245,7 @@
                                         <thead class="bg-gray-50">
                                             <tr>
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
+                                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Method</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                                                 @unless($brokerViewReadOnly)
@@ -265,8 +264,8 @@
                                                             <div class="text-sm font-medium text-gray-900">{{ $payment->payment_date->format('M d, Y') }}</div>
                                                         </div>
                                                     </td>
-                                                    <td class="whitespace-nowrap px-6 py-4">
-                                                        <div class="text-lg font-bold text-green-600">PHP {{ number_format((float) $payment->paid_amount, 2) }}</div>
+                                                    <td class="whitespace-nowrap px-6 py-4 text-right">
+                                                        <div class="text-lg font-bold tabular-nums text-green-600">₱{{ number_format((float) $payment->paid_amount, 2) }}</div>
                                                     </td>
                                                     <td class="whitespace-nowrap px-6 py-4">
                                                         <div class="flex items-center">
@@ -332,7 +331,7 @@
                             Add Payment
                         </a>
                         <span class="text-sm text-gray-500">
-                            Outstanding Balance: <span class="font-semibold text-orange-600">PHP {{ number_format($viewingSales->remaining_amount, 2) }}</span>
+                            Outstanding Balance: <span class="font-semibold tabular-nums text-orange-600">₱{{ number_format($viewingSales->remaining_amount, 2) }}</span>
                         </span>
                     @endif
                 </div>

@@ -19,7 +19,11 @@
 @section('content')
 <div class="space-y-8">
     <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <a href="{{ route('admin.applications.index') }}" class="app-back-link">&larr; Back to submitted applications</a>
+        <a href="{{ route('admin.applications.index') }}"
+           class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm">
+            <span aria-hidden="true">&larr;</span>
+            <span>Back to Submitted Applications</span>
+        </a>
         <div class="app-page-header mt-4">
             <div class="app-page-header__content">
                 <p class="app-page-kicker">Application Review</p>

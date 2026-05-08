@@ -4,12 +4,15 @@
 
 @section('content')
 <div class="login-stage">
-    <section class="login-hero">
-        <div class="brand-chip">Account Access</div>
-        <p class="login-kicker">New User Setup</p>
-        <h1>WELCOME TO MARAMAG FISH LANDING.</h1>
-        <p class="login-description">Once your account is created, you can submit your application when stalls become available. 
+    <section class="login-hero login-hero--watermark">
+        <img src="{{ asset('image/logo-small.png') }}" alt="" class="login-hero-watermark" aria-hidden="true">
+        <div class="login-hero-content">
+            <div class="brand-chip">Account Access</div>
+            <p class="login-kicker">New User Setup</p>
+            <h1>WELCOME TO MARAMAG FISH LANDING.</h1>
+            <p class="login-description">Once your account is created, you can submit your application when stalls become available.
 All applications are subject to review and approval by the LEEO administrator.</p>
+        </div>
     </section>
 
     <section class="login-panel-wrap">

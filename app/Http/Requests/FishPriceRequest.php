@@ -44,8 +44,8 @@ class FishPriceRequest extends FormRequest
             'price.required' => 'Please enter the fish price.',
             'price.numeric' => 'Fish price must be a valid number.',
             'price.min' => 'Fish price must be at least 0.',
-            'default_cost_price.numeric' => 'Default cost price must be a valid number.',
-            'default_cost_price.min' => 'Default cost price must be at least 0.',
+            'default_cost_price.numeric' => 'Cost price must be a valid number.',
+            'default_cost_price.min' => 'Cost price must be at least 0.',
             'price_date.required' => 'Please select the effective date.',
             'price_date.date' => 'Please enter a valid effective date.',
         ];

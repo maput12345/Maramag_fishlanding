@@ -22,6 +22,7 @@ use App\Models\OpeningBatch;
 use App\Models\RequirementType;
 use App\Models\Role;
 use App\Models\Stall;
+use App\Models\StallImage;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -222,9 +224,9 @@ class ApplicationManagementController extends Controller
     /**
      * Show stall occupancy and bidding overview.
      */
-    public function stallsOverview(): View
+    public function stallsOverview(Request $request): View
     {
-        $workspaceData = $this->stallWorkspaceData();
+        $workspaceData = $this->stallWorkspaceData($request->string('stall_search')->trim()->toString());
 
         return view('admin.stalls.overview', $workspaceData);
     }
@@ -307,6 +309,83 @@ class ApplicationManagementController extends Controller
 
         return redirect()->route('admin.stalls.index')
             ->with('success', 'Stall ' . $createdStallNumber . ' created successfully.');
+    }
+
+    /**
+     * Add photos to an existing stall gallery.
+     */
+    public function storeStallPhotos(Request $request, Stall $stall): RedirectResponse
+    {
+        $validated = $request->validate([
+            'stall_images' => ['required', 'array', 'min:1', 'max:6'],
+            'stall_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $currentPhotoCount = $stall->stallImages()->count();
+        $incomingPhotoCount = count($validated['stall_images'] ?? []);
+
+        if ($currentPhotoCount + $incomingPhotoCount > 6) {
+            return redirect()->back()
+                ->withErrors(['stall_images' => 'A stall can have up to 6 photos. Delete an old photo before adding more.'])
+                ->withInput();
+        }
+
+        $storedImagePaths = collect($request->file('stall_images', []))
+            ->filter()
+            ->map(fn ($uploadedImage) => $uploadedImage->store('stalls', 'public'))
+            ->values();
+
+        if ($storedImagePaths->isEmpty()) {
+            return redirect()->back()
+                ->withErrors(['stall_images' => 'Please choose at least one stall photo.'])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($stall, $storedImagePaths, $currentPhotoCount) {
+            $stall->stallImages()->createMany(
+                $storedImagePaths->map(function (string $imagePath, int $index) use ($currentPhotoCount): array {
+                    return [
+                        'image_path' => $imagePath,
+                        'sort_order' => $currentPhotoCount + $index,
+                    ];
+                })->all()
+            );
+
+            if (!$stall->stall_image_path) {
+                $stall->update(['stall_image_path' => $storedImagePaths->first()]);
+            }
+        });
+
+        return redirect()->route('admin.stalls.overview')
+            ->with('success', $stall->display_name . ' photos updated successfully.');
+    }
+
+    /**
+     * Remove a wrong photo from a stall gallery.
+     */
+    public function destroyStallPhoto(Stall $stall, StallImage $stallImage): RedirectResponse
+    {
+        abort_unless((int) $stallImage->stall_id === (int) $stall->id, 404);
+
+        $deletedImagePath = $stallImage->image_path;
+
+        DB::transaction(function () use ($stall, $stallImage, $deletedImagePath) {
+            $stallImage->delete();
+
+            if ($stall->stall_image_path === $deletedImagePath) {
+                $nextPrimaryImagePath = $stall->stallImages()
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->value('image_path');
+
+                $stall->update(['stall_image_path' => $nextPrimaryImagePath]);
+            }
+        });
+
+        Storage::disk('public')->delete($deletedImagePath);
+
+        return redirect()->route('admin.stalls.overview')
+            ->with('success', $stall->display_name . ' photo removed successfully.');
     }
 
     /**
@@ -801,10 +880,25 @@ class ApplicationManagementController extends Controller
     /**
      * Shared data used by the separated stall management pages.
      */
-    private function stallWorkspaceData(): array
+    private function stallWorkspaceData(?string $stallSearch = null): array
     {
         $stalls = Stall::query()
             ->select(['id', 'stall_number', 'stall_status', 'length_meters', 'width_meters', 'area_sqm', 'address', 'remarks', 'stall_image_path'])
+            ->when($stallSearch, function ($query) use ($stallSearch) {
+                $normalizedSearch = trim(preg_replace('/^stall\s+/i', '', $stallSearch));
+
+                $query->where(function ($searchQuery) use ($stallSearch, $normalizedSearch) {
+                    $searchQuery
+                        ->where('stall_number', 'like', '%' . $stallSearch . '%')
+                        ->orWhere('stall_status', 'like', '%' . $stallSearch . '%')
+                        ->orWhere('address', 'like', '%' . $stallSearch . '%')
+                        ->orWhere('remarks', 'like', '%' . $stallSearch . '%');
+
+                    if ($normalizedSearch !== $stallSearch && $normalizedSearch !== '') {
+                        $searchQuery->orWhere('stall_number', 'like', '%' . $normalizedSearch . '%');
+                    }
+                });
+            })
             ->with([
                 'stallImages',
                 'applicationOpenings' => function ($query) {
@@ -855,6 +949,7 @@ class ApplicationManagementController extends Controller
             'openings' => $openings,
             'requirementTypes' => RequirementType::selectableChecklistTypes(),
             'nextStallNumber' => Stall::nextStallNumber(),
+            'stallSearch' => $stallSearch,
         ];
     }
 

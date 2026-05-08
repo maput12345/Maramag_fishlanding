@@ -50,13 +50,13 @@
                     </div>
                     </div>
 
-                    <div class="flex justify-start gap-2 lg:flex-none lg:justify-end">
+                    <div class="filter-action-group justify-start lg:flex-none lg:justify-end">
                         <a href="{{ route('broker.fish-boxes.tracking') }}"
-                           class="app-button app-button--secondary h-10 min-w-[96px] px-4 text-sm">
+                           class="btn-clear">
                             Clear
                         </a>
                         <button type="submit"
-                                class="app-button app-button--primary h-10 min-w-[108px] px-4 text-sm">
+                                class="btn-search">
                             Search
                         </button>
                     </div>

@@ -56,13 +56,13 @@
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="buttons-field flex justify-end space-x-2">
+                            <div class="buttons-field filter-action-group justify-end">
                                 <a href="{{ route('broker.sales.analytics') }}"
-                                class="app-button app-button--secondary px-4 py-2 text-sm">
+                                class="btn-clear">
                                     Clear
                                 </a>
                                 <button type="submit"
-                                        class="app-button app-button--primary px-4 py-2 text-sm">
+                                        class="btn-search">
                                     Search
                                 </button>
                             </div>
@@ -223,8 +223,8 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 </tr>
                             </thead>
@@ -234,7 +234,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {{ \Carbon\Carbon::parse($sale->sales_date)->format('M d, Y') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium tabular-nums text-gray-900">
                                             {{ $sale->formatted_id }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -246,7 +246,7 @@
                                         <td class="px-6 py-4 text-sm text-gray-900">
                                             {{ $sale->formatted_items }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium tabular-nums text-gray-900">
                                             ₱{{ number_format($sale->total_amount, 2) }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

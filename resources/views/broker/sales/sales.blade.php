@@ -1,5 +1,5 @@
-@php
-    $breadcrumbs = [
+﻿@php
+$breadcrumbs = [
         ['title' => 'Sales']
     ];
 
@@ -15,7 +15,6 @@
         $breadcrumbs[] = ['title' => $salesModalBreadcrumbs[request('modal')]];
     }
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -36,15 +35,15 @@
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Sales Amount</p>
-                        <p class="summary-stat-value text-right text-blue-600">PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                        <p class="summary-stat-value text-right text-blue-600">₱{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Total Collection</p>
-                        <p class="summary-stat-value text-right text-green-600">PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                        <p class="summary-stat-value text-right text-green-600">₱{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
                     </div>
                     <div class="bg-white rounded-xl shadow-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
-                        <p class="summary-stat-value text-right text-orange-600">PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                        <p class="summary-stat-value text-right text-orange-600">₱{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
                     </div>
                 </div>
 
@@ -104,13 +103,13 @@
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="buttons-field flex justify-end space-x-2">
+                            <div class="buttons-field filter-action-group justify-end">
                                 <a href="{{ route('broker.sales.sales') }}"
-                                class="app-button app-button--secondary px-3 py-2 text-sm lg:px-4">
+                                class="btn-clear">
                                     Clear
                                 </a>
                                 <button type="submit"
-                                        class="app-button app-button--primary px-3 py-2 text-sm lg:px-4">
+                                        class="btn-search">
                                     Search
                                 </button>
                             </div>

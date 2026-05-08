@@ -26,7 +26,7 @@
 
         @include('layouts.partials.applicant-sidebar')
 
-        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-0" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
+        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden md:ml-64" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
             @include('layouts.partials.applicant-navbar')
 
             <main class="app-main flex-1 overflow-auto p-6 pb-24 md:pb-6">

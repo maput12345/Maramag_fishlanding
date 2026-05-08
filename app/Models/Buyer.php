@@ -50,11 +50,31 @@ class Buyer extends Model
     {
         $nameParts = User::splitName($name);
 
+        return static::resolveForSaleParts(
+            $nameParts['first_name'],
+            $nameParts['middle_name'],
+            $nameParts['last_name'],
+            $contact
+        );
+    }
+
+    /**
+     * Resolve a buyer record from structured sale form inputs.
+     */
+    public static function resolveForSaleParts(string $firstName, ?string $middleName, string $lastName, ?string $contact = null): self
+    {
         return static::firstOrCreate([
-            'first_name' => $nameParts['first_name'],
-            'middle_name' => $nameParts['middle_name'],
-            'last_name' => $nameParts['last_name'],
-            'contact' => $contact ?: null,
+            'first_name' => trim($firstName),
+            'middle_name' => static::nullableText($middleName),
+            'last_name' => trim($lastName),
+            'contact' => static::nullableText($contact),
         ]);
+    }
+
+    private static function nullableText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 }

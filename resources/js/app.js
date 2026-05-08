@@ -1,4 +1,4 @@
-/**
+﻿/**
  * First we will load all of this project's JavaScript dependencies which
  * includes libraries needed for the POS system functionality.
  */
@@ -18,7 +18,7 @@ window.toastr = toastr;
 window.Alpine = Alpine;
 Alpine.start();
 
-const moneyTextPattern = /^(PHP|₱)\s*-?[\d,]+(?:\.\d{1,2})?$/i;
+const moneyTextPattern = /^₱\s*-?[\d,]+(?:\.\d{1,2})?$/;
 let moneyAlignmentTimer = null;
 
 function alignMoneyValues(root = document) {

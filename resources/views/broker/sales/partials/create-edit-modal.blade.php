@@ -1,6 +1,6 @@
-{{-- Create/Edit Sale Modal --}}
+﻿{{-- Create/Edit Sale Modal --}}
 @php
-    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+$brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
 @endphp
@@ -82,7 +82,7 @@
             </x-slot:icon>
 
             @php
-                $salesFormConfig = [
+$salesFormConfig = [
                     'fishBoxes' => $fishBoxes ?? [],
                     'fishTypes' => $fishTypes ?? [],
                     'fishPrices' => $fishPriceMap ?? [],
@@ -91,8 +91,7 @@
                 ];
                 $nextTransactionUrl = route('broker.sales.sales', array_merge($salesBaseQuery ?? [], ['modal' => 'create']));
             @endphp
-
-            <script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+<script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 
             <form action="{{ request('modal') === 'create' ? route('broker.sales.store') : route('broker.sales.update', $editingSales->id ?? '') }}"
                   method="POST"
@@ -138,9 +137,9 @@
                                             <option value="">Select Fish</option>
                                             @foreach($fishTypes as $fishType)
                                                 @php
-                                                    $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+$suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
                                                 @endphp
-                                                <option value="{{ $fishType->id }}"
+<option value="{{ $fishType->id }}"
                                                         data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}"
                                                         {{ (string)($detail['fish_type_id'] ?? '') === (string)$fishType->id ? 'selected' : '' }}>
                                                     {{ $fishType->name }}
@@ -181,7 +180,7 @@
                                         <input type="number" name="sales_details[{{ $index }}][unit_price]"
                                                value="{{ $detail['unit_price'] ?? '' }}"
                                                step="0.01" min="0"
-                                               class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                                placeholder="0.00">
                                     </div>
 
@@ -199,7 +198,7 @@
                                         <input type="number" name="sales_details[{{ $index }}][sub_total]"
                                                value="{{ $detail['sub_total'] ?? '' }}"
                                                step="0.01" min="0"
-                                               class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-500"
+                                               class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                                                readonly>
                                     </div>
 
@@ -221,7 +220,7 @@
                     <div class="rounded-xl bg-blue-50 p-6">
                         <div class="flex items-center justify-between">
                             <span class="text-lg font-semibold text-gray-900">TOTAL:</span>
-                            <span class="text-2xl font-bold text-gray-900" id="total-amount-display">PHP 0.00</span>
+                            <span class="text-right text-2xl font-bold tabular-nums text-gray-900" id="total-amount-display">₱0.00</span>
                         </div>
                     </div>
                     @error('total_amount')
@@ -251,26 +250,53 @@
                 {{-- Buyer Information --}}
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
-                        <label for="buyer_name" class="mb-2 block text-sm font-medium text-gray-700">
-                            Buyer Name <span class="text-red-500">*</span>
+                        <label for="buyer_first_name" class="mb-2 block text-sm font-medium text-gray-700">
+                            First Name <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="buyer_name" name="buyer_name"
-                               value="{{ request('modal') === 'edit' && $editingSales ? $editingSales->buyer_name : (old('buyer_name', '')) }}"
+                        <input type="text" id="buyer_first_name" name="buyer_first_name"
+                               value="{{ old('buyer_first_name', request('modal') === 'edit' && $editingSales ? $editingSales->buyer?->first_name : '') }}"
                                class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter buyer name">
-                        @error('buyer_name')
+                               placeholder="Enter first name"
+                               required>
+                        @error('buyer_first_name')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="buyer_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
+                        <input type="text" id="buyer_middle_name" name="buyer_middle_name"
+                               value="{{ old('buyer_middle_name', request('modal') === 'edit' && $editingSales ? $editingSales->buyer?->middle_name : '') }}"
+                               class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                               placeholder="Optional">
+                        @error('buyer_middle_name')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="buyer_last_name" class="mb-2 block text-sm font-medium text-gray-700">
+                            Last Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="buyer_last_name" name="buyer_last_name"
+                               value="{{ old('buyer_last_name', request('modal') === 'edit' && $editingSales ? $editingSales->buyer?->last_name : '') }}"
+                               class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                               placeholder="Enter last name"
+                               required>
+                        @error('buyer_last_name')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
                         <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">
-                            Buyer Contact
+                            Contact Number <span class="text-red-500">*</span>
                         </label>
                         <input type="text" id="buyer_contact" name="buyer_contact"
-                               value="{{ request('modal') === 'edit' && $editingSales ? $editingSales->buyer_contact : (old('buyer_contact', '')) }}"
+                               value="{{ old('buyer_contact', request('modal') === 'edit' && $editingSales ? $editingSales->buyer_contact : '') }}"
                                class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter buyer contact">
+                               placeholder="Enter contact number"
+                               required>
                         @error('buyer_contact')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -284,14 +310,17 @@
                             <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">
                                 Paid Amount
                             </label>
-                            <input type="number" id="initial_paid_amount" name="initial_paid_amount"
-                                   value="{{ old('initial_paid_amount', '') }}"
-                                   step="0.01" min="0.01"
-                                   data-currency-input="true"
-                                   class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                   placeholder="0.00">
+                            <div class="currency-input-group">
+                                <span class="currency-input-symbol">₱</span>
+                                <input type="number" id="initial_paid_amount" name="initial_paid_amount"
+                                       value="{{ old('initial_paid_amount', '') }}"
+                                       step="0.01" min="0.01"
+                                       data-currency-input="true"
+                                       class="currency-input-field"
+                                       placeholder="0.00">
+                            </div>
                             <div class="mt-2 text-xs text-gray-500">
-                                Maximum payment: PHP <span id="initial-payment-max-amount">0.00</span>
+                                Maximum payment: ₱<span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
                             </div>
                             <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
                             @error('initial_paid_amount')

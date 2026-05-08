@@ -1,5 +1,5 @@
-@php
-    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+﻿@php
+$brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
     $breadcrumbs = [
@@ -21,7 +21,6 @@
     $salesPageScriptUrl = asset('js/sales-page.js') . '?v=' . filemtime(public_path('js/sales-page.js'));
     $remoteSalesScannerScriptUrl = asset('js/remote-sales-scanner.js') . '?v=' . filemtime(public_path('js/remote-sales-scanner.js'));
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -101,9 +100,9 @@
                                                     <option value="">Select Fish</option>
                                                     @foreach($fishTypes as $fishType)
                                                         @php
-                                                            $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+$suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
                                                         @endphp
-                                                        <option value="{{ $fishType->id }}"
+<option value="{{ $fishType->id }}"
                                                                 data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}"
                                                                 {{ (string)($detail['fish_type_id'] ?? '') === (string)$fishType->id ? 'selected' : '' }}>
                                                             {{ $fishType->name }}
@@ -131,7 +130,7 @@
                                                <input type="number" name="sales_details[{{ $index }}][unit_price]"
                                                       value="{{ $detail['unit_price'] ?? '' }}"
                                                       step="0.01" min="0"
-                                                       class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                       class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                                        placeholder="0.00">
                                             </div>
 
@@ -149,7 +148,7 @@
                                                <input type="number" name="sales_details[{{ $index }}][sub_total]"
                                                       value="{{ $detail['sub_total'] ?? '' }}"
                                                       step="0.01" min="0"
-                                                       class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-500"
+                                                       class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                                                        readonly>
                                             </div>
 
@@ -171,7 +170,7 @@
                             <div class="rounded-xl bg-blue-50 p-6">
                                 <div class="flex items-center justify-between">
                                     <span class="text-lg font-semibold text-gray-900">TOTAL:</span>
-                                    <span class="text-right text-2xl font-bold text-gray-900" id="total-amount-display">PHP 0.00</span>
+                                    <span class="text-right text-2xl font-bold tabular-nums text-gray-900" id="total-amount-display">₱0.00</span>
                                 </div>
                             </div>
 
@@ -180,21 +179,44 @@
                         <div class="rounded-2xl border border-gray-200 bg-white p-6">
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label for="buyer_name" class="mb-2 block text-sm font-medium text-gray-700">
-                                        Buyer Name <span class="text-red-500">*</span>
+                                    <label for="buyer_first_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                        First Name <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="buyer_name" name="buyer_name"
-                                           value="{{ old('buyer_name', '') }}"
+                                    <input type="text" id="buyer_first_name" name="buyer_first_name"
+                                           value="{{ old('buyer_first_name', '') }}"
                                            class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter buyer name">
+                                           placeholder="Enter first name"
+                                           required>
                                 </div>
 
                                 <div>
-                                    <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">Buyer Contact Number</label>
+                                    <label for="buyer_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
+                                    <input type="text" id="buyer_middle_name" name="buyer_middle_name"
+                                           value="{{ old('buyer_middle_name', '') }}"
+                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Optional">
+                                </div>
+
+                                <div>
+                                    <label for="buyer_last_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Last Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="buyer_last_name" name="buyer_last_name"
+                                           value="{{ old('buyer_last_name', '') }}"
+                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Enter last name"
+                                           required>
+                                </div>
+
+                                <div>
+                                    <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">
+                                        Contact Number <span class="text-red-500">*</span>
+                                    </label>
                                     <input type="text" id="buyer_contact" name="buyer_contact"
                                            value="{{ old('buyer_contact', '') }}"
                                            class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter buyer contact">
+                                           placeholder="Enter contact number"
+                                           required>
                                 </div>
                             </div>
 
@@ -205,14 +227,17 @@
                             <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">Paid Amount</label>
-                                   <input type="number" id="initial_paid_amount" name="initial_paid_amount"
-                                          value="{{ old('initial_paid_amount', '') }}"
-                                          step="0.01" min="0.01"
-                                          data-currency-input="true"
-                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="0.00">
+                                   <div class="currency-input-group">
+                                       <span class="currency-input-symbol">₱</span>
+                                       <input type="number" id="initial_paid_amount" name="initial_paid_amount"
+                                              value="{{ old('initial_paid_amount', '') }}"
+                                              step="0.01" min="0.01"
+                                              data-currency-input="true"
+                                              class="currency-input-field"
+                                              placeholder="0.00">
+                                   </div>
                                     <div class="mt-2 text-xs text-gray-500">
-                                        Maximum payment: PHP <span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
+                                        Maximum payment: ₱<span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
                                     </div>
                                     <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
                                 </div>
@@ -260,9 +285,9 @@
                         <option value="">Select Fish</option>
                         @foreach($fishTypes ?? [] as $fishType)
                             @php
-                                $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+$suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
                             @endphp
-                            <option value="{{ $fishType->id }}" data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}">
+<option value="{{ $fishType->id }}" data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}">
                                 {{ $fishType->name }}
                             </option>
                         @endforeach
@@ -282,7 +307,7 @@
                 <div class="min-w-[150px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
                     <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="0.00">
                 </div>
                 <div class="min-w-[120px] flex-1">
@@ -294,7 +319,7 @@
                 <div class="min-w-[150px] flex-1">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
                     <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
-                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm text-gray-500"
+                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                            readonly>
                 </div>
                 <div class="flex items-end">
@@ -316,14 +341,133 @@
             createUrl: @json(route('broker.sales.scan-sessions.store', [], false)),
             closeUrlTemplate: @json(route('broker.sales.scan-sessions.close', ['token' => '__TOKEN__'], false))
         };
+        window.brokerTransactionAssets = {
+            qrScannerLegacy: @json($qrScannerLegacyScriptUrl),
+            salesQrScanner: @json($salesQrScannerScriptUrl),
+            remoteSalesScanner: @json($remoteSalesScannerScriptUrl)
+        };
     </script>
     <script src="{{ $printReceiptScriptUrl }}" defer></script>
-    <script src="{{ $qrScannerLegacyScriptUrl }}" defer></script>
-    <script src="{{ $salesQrScannerScriptUrl }}" defer></script>
     <script src="{{ $salesFormScriptUrl }}" defer></script>
     <script src="{{ $salesPageScriptUrl }}" defer></script>
-    <script src="{{ $remoteSalesScannerScriptUrl }}" defer></script>
     <script>
+        const brokerTransactionScriptPromises = {};
+
+        function loadBrokerTransactionScript(key, url) {
+            if (!url) {
+                return Promise.reject(new Error(`${key} asset is not configured.`));
+            }
+
+            if (brokerTransactionScriptPromises[key]) {
+                return brokerTransactionScriptPromises[key];
+            }
+
+            brokerTransactionScriptPromises[key] = new Promise((resolve, reject) => {
+                const existing = document.querySelector(`script[data-broker-transaction-asset="${key}"]`);
+
+                if (existing) {
+                    existing.addEventListener('load', resolve, { once: true });
+                    existing.addEventListener('error', reject, { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = url;
+                script.defer = true;
+                script.dataset.brokerTransactionAsset = key;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Unable to load ${key}.`));
+                document.body.appendChild(script);
+            });
+
+            return brokerTransactionScriptPromises[key];
+        }
+
+        async function ensureSalesQrScannerReady() {
+            const assets = window.brokerTransactionAssets || {};
+
+            if (typeof window.QrScanner !== 'function') {
+                await loadBrokerTransactionScript('qrScannerLegacy', assets.qrScannerLegacy);
+            }
+
+            if (typeof window.SalesQRScanner !== 'function') {
+                await loadBrokerTransactionScript('salesQrScanner', assets.salesQrScanner);
+            }
+
+            if (!window.salesQrScanner && typeof window.SalesQRScanner === 'function') {
+                window.salesQrScanner = new window.SalesQRScanner();
+            }
+
+            return window.salesQrScanner;
+        }
+
+        async function openSalesQrScanner(button) {
+            const originalText = button?.querySelector('span')?.textContent || '';
+
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.querySelector('span').textContent = 'Loading...';
+                }
+
+                const scanner = await ensureSalesQrScannerReady();
+
+                if (scanner) {
+                    scanner.openModal();
+                    return;
+                }
+
+                throw new Error('QR Scanner not initialized.');
+            } catch (error) {
+                console.error(error);
+                if (window.toastr) {
+                    toastr.error('QR Scanner failed to load. Please refresh the page.');
+                }
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.querySelector('span').textContent = originalText || 'Scan QR Code';
+                }
+            }
+        }
+
+        async function openRemoteSalesScanner(button) {
+            const assets = window.brokerTransactionAssets || {};
+            const originalText = button?.querySelector('span')?.textContent || '';
+
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.querySelector('span').textContent = 'Loading...';
+                }
+
+                if (typeof window.openRemoteSalesScannerSession !== 'function') {
+                    await loadBrokerTransactionScript('remoteSalesScanner', assets.remoteSalesScanner);
+                }
+
+                if (typeof window.bindRemoteSalesScannerButtons === 'function') {
+                    window.bindRemoteSalesScannerButtons();
+                }
+
+                if (typeof window.openRemoteSalesScannerSession === 'function') {
+                    await window.openRemoteSalesScannerSession();
+                    return;
+                }
+
+                throw new Error('Phone scanner not initialized.');
+            } catch (error) {
+                console.error(error);
+                if (window.toastr) {
+                    toastr.error('Phone Scanner failed to load. Please refresh the page.');
+                }
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.querySelector('span').textContent = originalText || 'Phone Scanner';
+                }
+            }
+        }
+
         function getActiveSalesFormRoot() {
             return document.querySelector('[data-sales-form-root]') || document;
         }
@@ -362,20 +506,27 @@
         }
 
         window.initializeBrokerSalesPage = function() {
-            if (typeof SalesQRScanner === 'function' && !window.salesQrScanner) {
-                window.salesQrScanner = new SalesQRScanner();
-            }
-
             const root = getActiveSalesFormRoot();
             const scanBtn = root.querySelector('#scan-qr-btn');
             if (scanBtn && !scanBtn.dataset.salesQrBound) {
                 scanBtn.dataset.salesQrBound = 'true';
-                scanBtn.addEventListener('click', function() {
-                    if (window.salesQrScanner) {
-                        window.salesQrScanner.openModal();
-                    } else if (window.toastr) {
-                        toastr.error('QR Scanner not initialized. Please refresh the page.');
+                scanBtn.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    openSalesQrScanner(scanBtn);
+                });
+            }
+
+            const remoteScannerButton = root.querySelector('[data-remote-sales-scanner-open]');
+            if (remoteScannerButton && !remoteScannerButton.dataset.remoteScannerLazyBound) {
+                remoteScannerButton.dataset.remoteScannerLazyBound = 'true';
+                remoteScannerButton.addEventListener('click', function(event) {
+                    if (typeof window.openRemoteSalesScannerSession === 'function') {
+                        return;
                     }
+
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    openRemoteSalesScanner(remoteScannerButton);
                 });
             }
 

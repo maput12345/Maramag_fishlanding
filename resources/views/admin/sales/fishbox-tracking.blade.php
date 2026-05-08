@@ -65,13 +65,13 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
-                    <div class="buttons-field flex justify-end space-x-2">
+                    <div class="buttons-field filter-action-group justify-end">
                         <a href="{{ route('admin.sales.tracking') }}"
-                           class="app-button app-button--secondary">
+                           class="btn-clear">
                             Clear
                         </a>
                         <button type="submit"
-                                class="app-button app-button--primary">
+                                class="btn-search">
                             Search
                         </button>
                     </div>

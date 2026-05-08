@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BrokerApplication;
+use App\Models\ApplicationOpening;
 use App\Models\InventoryMovement;
 use App\Models\Stall;
 use App\Repositories\SalesRepository;
@@ -19,8 +20,12 @@ class AdminDashboardController extends Controller
 
     public function index()
     {
-        // Count total fish boxes sold from sales_details
-        $totalFishBoxesSold = $this->salesRepository->getTotalFishBoxesSoldCount();
+        $today = Carbon::today();
+
+        $totalFishBoxesSold = $this->salesRepository->getTotalFishBoxesSold(
+            $today->toDateString(),
+            $today->toDateString()
+        );
 
         $needsReviewCount = BrokerApplication::query()
             ->where('application_status', 'Submitted')
@@ -38,14 +43,13 @@ class AdminDashboardController extends Controller
             ->count();
 
         $vacantStallsCount = Stall::query()
-            ->where('stall_status', 'Vacant')
+            ->whereIn('stall_status', ApplicationOpening::AVAILABLE_STALL_STATUSES)
             ->count();
 
         $occupiedStallsCount = Stall::query()
             ->where('stall_status', 'Occupied')
             ->count();
 
-        $today = Carbon::today();
         $weekStart = $today->copy()->subDays(6);
 
         $topBrokersDaily = $this->salesRepository->getTopBrokersForAdmin(

@@ -42,7 +42,7 @@
         @include('layouts.partials.broker-sidebar')
 
         <!-- Main Content -->
-        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out md:ml-0" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
+        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden md:ml-64" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
             <!-- Navbar Component -->
             @include('layouts.partials.broker-navbar')
 

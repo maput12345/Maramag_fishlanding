@@ -1,5 +1,5 @@
-@php
-    use Carbon\Carbon;
+﻿@php
+use Carbon\Carbon;
 
     $breadcrumbs = [
         ['title' => 'Financial Statement'],
@@ -12,7 +12,6 @@
     $manualAdjustmentsTotal = $statement['selling_general_and_administrative_expenses'] + $statement['loss_on_sale'];
     $printReceiptScriptUrl = asset('js/print-receipt.js') . '?v=' . filemtime(public_path('js/print-receipt.js'));
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -49,28 +48,28 @@
                             <dt class="text-sm text-blue-100/80">Sales Revenue</dt>
                             <dd class="text-xs text-blue-100/60">Recorded sale totals for the day</dd>
                         </div>
-                        <div class="text-right text-lg font-semibold">PHP {{ number_format($statement['sales'], 2) }}</div>
+                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['sales'], 2) }}</div>
                     </div>
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <dt class="text-sm text-blue-100/80">Gross Profit</dt>
                             <dd class="text-xs text-blue-100/60">Sales less direct fish cost</dd>
                         </div>
-                        <div class="text-right text-lg font-semibold">PHP {{ number_format($statement['gross_profit'], 2) }}</div>
+                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['gross_profit'], 2) }}</div>
                     </div>
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <dt class="text-sm text-blue-100/80">Collections</dt>
                             <dd class="text-xs text-blue-100/60">Cash received on the day</dd>
                         </div>
-                        <div class="text-right text-lg font-semibold">PHP {{ number_format($statement['collections'], 2) }}</div>
+                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['collections'], 2) }}</div>
                     </div>
                     <div class="flex items-start justify-between gap-4 border-t border-white/10 pt-4">
                         <div>
                             <dt class="text-sm text-blue-100/80">Net Income</dt>
                             <dd class="text-xs text-blue-100/60">After expenses and loss adjustments</dd>
                         </div>
-                        <div class="text-right text-2xl font-semibold">PHP {{ number_format($statement['net_income'], 2) }}</div>
+                        <div class="text-right text-2xl font-semibold">₱{{ number_format($statement['net_income'], 2) }}</div>
                     </div>
                 </dl>
             </div>
@@ -97,13 +96,13 @@
                             class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 sm:min-w-[220px]"
                         >
                     </div>
-                    <div class="flex gap-2">
+                    <div class="filter-action-group">
                         <a href="{{ route('broker.financial-statements.index', ['statement_date' => $todayDate]) }}"
-                           class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">
+                           class="btn-clear">
                             Today
                         </a>
                         <button type="submit"
-                                class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                                class="btn-search">
                             View Statement
                         </button>
                     </div>
@@ -147,14 +146,14 @@
                         <div>
                             <p class="text-sm font-semibold text-emerald-900">Sales</p>
                         </div>
-                        <p class="text-lg font-semibold text-emerald-900">PHP {{ number_format($statement['sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['sales'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-rose-900">Less: Cost of Sales</p>
                         </div>
-                        <p class="text-lg font-semibold text-rose-900">PHP {{ number_format($statement['cost_of_sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-rose-900">₱{{ number_format($statement['cost_of_sales'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
@@ -162,35 +161,35 @@
                             <p class="text-sm font-semibold text-blue-900">Gross Profit</p>
 
                         </div>
-                        <p class="text-lg font-semibold text-blue-900">PHP {{ number_format($statement['gross_profit'], 2) }}</p>
+                        <p class="text-lg font-semibold text-blue-900">₱{{ number_format($statement['gross_profit'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-amber-900">Less: Selling, General and Administrative Expenses</p>
                         </div>
-                        <p class="text-lg font-semibold text-amber-900">PHP {{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</p>
+                        <p class="text-lg font-semibold text-amber-900">₱{{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-indigo-900">Operating Income</p>
                         </div>
-                        <p class="text-lg font-semibold text-indigo-900">PHP {{ number_format($statement['operating_income'], 2) }}</p>
+                        <p class="text-lg font-semibold text-indigo-900">₱{{ number_format($statement['operating_income'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-fuchsia-100 bg-fuchsia-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-fuchsia-900">Less: Loss on Sale</p>
                         </div>
-                        <p class="text-lg font-semibold text-fuchsia-900">PHP {{ number_format($statement['loss_on_sale'], 2) }}</p>
+                        <p class="text-lg font-semibold text-fuchsia-900">₱{{ number_format($statement['loss_on_sale'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl bg-slate-900 px-4 py-4 text-white">
                         <div>
                             <p class="text-sm font-semibold">Net Income</p>
                         </div>
-                        <p class="text-xl font-semibold">PHP {{ number_format($statement['net_income'], 2) }}</p>
+                        <p class="text-xl font-semibold">₱{{ number_format($statement['net_income'], 2) }}</p>
                     </div>
                 </div>
 
@@ -201,13 +200,13 @@
                                 <p class="text-sm font-semibold text-orange-900">Outstanding Receivable Balance</p>
                                 <p class="mt-1 text-xs text-orange-700/80">As of {{ $statementDateCarbon->format('M d, Y') }}</p>
                             </div>
-                            <p class="text-lg font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</p>
+                            <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['outstanding_receivable_balance'], 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-start justify-between gap-4 border-t border-orange-200 pt-4">
                             <div>
                                 <p class="text-sm font-semibold text-orange-900">Cash on Hand</p>
                             </div>
-                            <p class="text-lg font-semibold text-orange-900">PHP {{ number_format($statement['cash_on_hand'], 2) }}</p>
+                            <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['cash_on_hand'], 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -280,8 +279,8 @@
 
                     <div>
                         <label for="amount" class="mb-1 block text-sm font-medium text-gray-700">Amount</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-sm text-gray-500">PHP</span>
+                        <div class="currency-input-group">
+                            <span class="currency-input-symbol">₱</span>
                             <input
                                 id="amount"
                                 type="number"
@@ -289,7 +288,7 @@
                                 value="{{ old('amount') }}"
                                 min="0.01"
                                 step="0.01"
-                                class="w-full rounded-xl border border-gray-300 py-3 pl-14 pr-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                class="currency-input-field"
                                 required
                             >
                         </div>
@@ -320,10 +319,10 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sale</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Buyer</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Boxes</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sales</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Gross Profit</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Boxes</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Sales</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Gross Profit</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -337,10 +336,10 @@
                                         <div class="font-medium">{{ $sale['buyer_name'] }}</div>
                                         <div class="text-xs text-gray-500">{{ $sale['commodities'] ?: 'No commodity label' }}</div>
                                     </td>
-                                    <td class="px-4 py-4 text-sm text-gray-900">{{ number_format($sale['sold_boxes']) }}</td>
-                                    <td class="px-4 py-4 text-sm font-medium text-gray-900">PHP {{ number_format($sale['sales'], 2) }}</td>
-                                    <td class="px-4 py-4 text-sm font-medium text-gray-900">PHP {{ number_format($sale['cost_of_sales'], 2) }}</td>
-                                    <td class="px-4 py-4 text-sm font-semibold text-blue-700">PHP {{ number_format($sale['gross_profit'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm tabular-nums text-gray-900">{{ number_format($sale['sold_boxes']) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['sales'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['cost_of_sales'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-semibold tabular-nums text-blue-700">₱{{ number_format($sale['gross_profit'], 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -375,7 +374,7 @@
                                     <h4 class="text-sm font-semibold text-gray-900">{{ $group['label'] }}</h4>
                                     <p class="text-xs text-gray-500">{{ $group['entries_count'] }} item{{ $group['entries_count'] === 1 ? '' : 's' }}</p>
                                 </div>
-                                <div class="text-sm font-semibold text-gray-900">PHP {{ number_format($group['total'], 2) }}</div>
+                                <div class="text-right text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format($group['total'], 2) }}</div>
                             </div>
 
                             <div class="mt-3 space-y-3">
@@ -389,7 +388,7 @@
                                                 </p>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-sm font-semibold text-gray-900">PHP {{ number_format((float) $entry->amount, 2) }}</p>
+                                                <p class="text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format((float) $entry->amount, 2) }}</p>
                                                 <form method="POST"
                                                       action="{{ route('broker.financial-statements.entries.destroy', ['entry' => $entry, 'statement_date' => $statementDate]) }}"
                                                       class="mt-2">
@@ -444,7 +443,7 @@
                 </div>
                 <div class="mb-2 flex justify-between text-sm">
                     <span class="text-gray-600">Collections:</span>
-                    <span class="font-medium">PHP {{ number_format($statement['collections'], 2) }}</span>
+                    <span class="font-medium">₱{{ number_format($statement['collections'], 2) }}</span>
                 </div>
             </div>
 
@@ -454,37 +453,37 @@
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Sales</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['sales'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['sales'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Cost of Sales</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['cost_of_sales'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['cost_of_sales'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Gross Profit</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['gross_profit'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['gross_profit'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Selling, General and Administrative Expenses</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Operating Income</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['operating_income'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['operating_income'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Loss on Sale</span>
-                            <span class="font-semibold text-gray-900">PHP {{ number_format($statement['loss_on_sale'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['loss_on_sale'], 2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -494,11 +493,11 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Manual Adjustments Total:</span>
-                        <span class="font-semibold">PHP {{ number_format($manualAdjustmentsTotal, 2) }}</span>
+                        <span class="font-semibold">₱{{ number_format($manualAdjustmentsTotal, 2) }}</span>
                     </div>
                     <div class="flex justify-between border-t pt-2 text-sm">
                         <span class="font-semibold text-gray-600">Net Income:</span>
-                        <span class="font-bold text-green-600">PHP {{ number_format($statement['net_income'], 2) }}</span>
+                        <span class="font-bold text-green-600">₱{{ number_format($statement['net_income'], 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -508,11 +507,11 @@
                 <div class="rounded-lg bg-orange-50 p-3">
                     <div class="flex items-center justify-between text-sm">
                         <span class="font-medium text-orange-900">As of {{ $statementDateCarbon->format('M d, Y') }}</span>
-                        <span class="font-semibold text-orange-900">PHP {{ number_format($statement['outstanding_receivable_balance'], 2) }}</span>
+                        <span class="font-semibold text-orange-900">₱{{ number_format($statement['outstanding_receivable_balance'], 2) }}</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between border-t border-orange-100 pt-2 text-sm">
                         <span class="font-medium text-orange-900">Cash on Hand</span>
-                        <span class="font-semibold text-orange-900">PHP {{ number_format($statement['cash_on_hand'], 2) }}</span>
+                        <span class="font-semibold text-orange-900">₱{{ number_format($statement['cash_on_hand'], 2) }}</span>
                     </div>
                 </div>
             </div>

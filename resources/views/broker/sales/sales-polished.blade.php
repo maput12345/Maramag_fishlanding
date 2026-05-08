@@ -1,5 +1,5 @@
-@php
-    $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+﻿@php
+$brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
     $breadcrumbs = [
@@ -30,7 +30,6 @@
     $salesFormScriptUrl = asset('js/sales-form.js') . '?v=' . filemtime(public_path('js/sales-form.js'));
     $salesPageScriptUrl = asset('js/sales-page.js') . '?v=' . filemtime(public_path('js/sales-page.js'));
 @endphp
-
 @extends('layouts.broker')
 
 @section('content')
@@ -57,15 +56,15 @@
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Sales Amount</p>
-                <p class="summary-stat-value text-right text-blue-600">{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-blue-600">₱{{ number_format($salesSummary['gross_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Total Collection</p>
-                <p class="summary-stat-value text-right text-green-600">{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-green-600">₱{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
-                <p class="summary-stat-value text-right text-orange-600">{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                <p class="summary-stat-value text-right text-orange-600">₱{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
             </div>
         </div>
 
@@ -119,13 +118,13 @@
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                     </div>
 
-                    <div class="buttons-field flex justify-end space-x-2">
+                    <div class="buttons-field flex flex-col items-center justify-end gap-3 sm:flex-row">
                         <a href="{{ route('broker.sales.sales') }}"
-                           class="app-button app-button--secondary px-3 py-2 text-sm lg:px-4">
+                           class="btn-clear w-full sm:w-auto">
                             Clear
                         </a>
                         <button type="submit"
-                                class="app-button app-button--primary px-3 py-2 text-sm lg:px-4">
+                                class="btn-search w-full sm:w-auto">
                             Search
                         </button>
                     </div>
@@ -172,10 +171,10 @@
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
-                                    PHP {{ number_format($sale->total_amount, 2) }}
+                                    ₱{{ number_format($sale->total_amount, 2) }}
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
-                                    PHP {{ number_format($sale->paid_amount, 2) }}
+                                    ₱{{ number_format($sale->paid_amount, 2) }}
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-4">
                                     <x-status-badge :status="$salesStatusesWithDisplayNames[$sale->status]" />
@@ -270,9 +269,9 @@
                         <option value="">Select Fish</option>
                         @foreach($fishTypes ?? [] as $fishType)
                             @php
-                                $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
+$suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
                             @endphp
-                            <option value="{{ $fishType->id }}"
+<option value="{{ $fishType->id }}"
                                     data-suggested-price="{{ $suggestedPrice !== null ? $suggestedPrice : '' }}">
                                 {{ $fishType->name }}
                             </option>
@@ -493,7 +492,7 @@
                     const currentAmount = Number(this.paidAmount) || 0;
 
                     if (currentAmount > this.maxPaymentAmount) {
-                        this.paymentError = 'Payment amount cannot exceed the remaining balance of PHP ' + this.maxPaymentAmount.toFixed(2);
+                        this.paymentError = 'Payment amount cannot exceed the remaining balance of ₱' + this.maxPaymentAmount.toFixed(2);
                         return false;
                     }
 

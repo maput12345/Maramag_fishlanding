@@ -21,6 +21,7 @@
                 <div>
                     <p class="metric-card__eyebrow">Total Sold Boxes</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxesSold) }}</p>
+                    <p class="metric-card__meta">Boxes sold today</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-shopping-bag />
@@ -99,7 +100,6 @@
                                 Weekly
                             </button>
                         </div>
-                        <a href="{{ route('admin.sales.index') }}" class="panel-card__action">View All</a>
                     </div>
                 </div>
 
@@ -166,7 +166,6 @@
                                 Weekly
                             </button>
                         </div>
-                        <a href="{{ route('admin.sales.index') }}" class="panel-card__action">View All</a>
                     </div>
                 </div>
 

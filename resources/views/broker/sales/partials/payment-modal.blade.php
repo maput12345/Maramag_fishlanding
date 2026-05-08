@@ -56,15 +56,15 @@
                             <div class="space-y-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-600">Total Bill:</span>
-                                    <span class="text-sm font-bold text-gray-900">₱{{ number_format($saleForPayment->total_amount, 2) }}</span>
+                                    <span class="text-right text-sm font-bold tabular-nums text-gray-900">₱{{ number_format($saleForPayment->total_amount, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-600">To Pay Total:</span>
-                                    <span class="text-sm font-bold text-green-600">₱{{ number_format($saleForPayment->paid_amount, 2) }}</span>
+                                    <span class="text-right text-sm font-bold tabular-nums text-green-600">₱{{ number_format($saleForPayment->paid_amount, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between items-center border-t pt-2">
                                     <span class="text-sm text-gray-600">Running Balance:</span>
-                                    <span class="text-sm font-bold text-orange-600">₱{{ number_format($saleForPayment->remaining_amount, 2) }}</span>
+                                    <span class="text-right text-sm font-bold tabular-nums text-orange-600">₱{{ number_format($saleForPayment->remaining_amount, 2) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -86,15 +86,18 @@
                                 <label for="paid_amount" class="block text-sm font-medium text-gray-700 mb-2">
                                     Paid Amount <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="paid_amount" name="paid_amount" required
-                                       step="0.01" min="0.01" :max="maxPaymentAmount"
-                                       data-currency-input="true"
-                                       x-model.number="paidAmount"
-                                       @input="validatePaymentAmount()"
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                       placeholder="0.00">
+                                <div class="currency-input-group">
+                                    <span class="currency-input-symbol">₱</span>
+                                    <input type="number" id="paid_amount" name="paid_amount" required
+                                           step="0.01" min="0.01" :max="maxPaymentAmount"
+                                           data-currency-input="true"
+                                           x-model.number="paidAmount"
+                                           @input="validatePaymentAmount()"
+                                           class="currency-input-field"
+                                           placeholder="0.00">
+                                </div>
                                 <div class="mt-1 text-xs text-gray-500">
-                                    Maximum payment: ₱<span x-text="maxPaymentAmount.toFixed(2)"></span>
+                                    Maximum payment: ₱<span class="inline-block min-w-[4rem] text-right tabular-nums" x-text="maxPaymentAmount.toFixed(2)"></span>
                                 </div>
                                 <div x-show="paymentError" class="mt-1 text-sm text-red-600" x-text="paymentError"></div>
                                 @error('paid_amount')
@@ -175,4 +178,3 @@
         </x-app-modal>
     @endif
 @endif
-

@@ -316,4 +316,5 @@ import QRCodeStyling from 'qr-code-styling';
 
     document.addEventListener('DOMContentLoaded', bindButtons);
     window.bindRemoteSalesScannerButtons = bindButtons;
+    window.openRemoteSalesScannerSession = openSession;
 })();

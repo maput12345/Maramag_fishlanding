@@ -39,7 +39,7 @@ class SalesPaymentRequest extends FormRequest
                     }
 
                     if ((float) $value > (float) $sale->remaining_amount) {
-                        $fail('Payment amount cannot exceed the remaining balance of PHP ' . number_format((float) $sale->remaining_amount, 2) . '.');
+                        $fail('Payment amount cannot exceed the remaining balance of ₱' . number_format((float) $sale->remaining_amount, 2) . '.');
                     }
                 },
             ],

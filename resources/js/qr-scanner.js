@@ -109,8 +109,8 @@ class QRScanner {
                                         <div class="absolute bottom-4 left-4 w-8 h-8 border-l-4 border-b-4 border-blue-400 rounded-bl-lg"></div>
                                         <div class="absolute bottom-4 right-4 w-8 h-8 border-r-4 border-b-4 border-blue-400 rounded-br-lg"></div>
 
-                                        <!-- Scanning Line Animation -->
-                                        <div id="scanning-line" class="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-0 transition-all duration-1000"></div>
+                                        <!-- Static guide line -->
+                                        <div id="scanning-line" class="absolute left-4 right-4 top-1/2 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-70"></div>
 
                                         <!-- Center Target -->
                                         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-blue-400 rounded-lg opacity-30"></div>
@@ -207,7 +207,7 @@ class QRScanner {
         }
 
         try {
-            // Update status with modern loading animation
+            // Update status with a simple loading spinner
             if (statusElement) {
                 statusElement.innerHTML = `
                     <div class="flex items-center justify-center space-x-2">
@@ -262,7 +262,7 @@ class QRScanner {
 
             await this.scanner.start();
 
-            // Start scanning line animation
+            // Show static scan guide
             this.startScanningAnimation();
 
             // Update status
@@ -270,7 +270,7 @@ class QRScanner {
                 statusElement.innerHTML = `
                     <div class="text-center">
                         <div class="flex items-center justify-center space-x-2 mb-2">
-                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                             <p class="text-green-600 font-medium">Camera active</p>
                         </div>
                         <p class="text-gray-600 text-sm">Point your camera at a QR code to scan</p>
@@ -297,36 +297,17 @@ class QRScanner {
     }
 
     /**
-     * Start scanning line animation
+     * Show static scan guide
      */
     startScanningAnimation() {
         const scanningLine = document.getElementById('scanning-line');
         if (scanningLine) {
-            // Reset position and opacity
-            scanningLine.style.top = '1rem';
-            scanningLine.style.opacity = '1';
-
-            // Animate the line
-            setTimeout(() => {
-                scanningLine.style.top = 'calc(100% - 2rem)';
-                scanningLine.style.opacity = '0.8';
-            }, 100);
-
-            // Repeat animation
-            this.scanningInterval = setInterval(() => {
-                scanningLine.style.top = '1rem';
-                scanningLine.style.opacity = '1';
-
-                setTimeout(() => {
-                    scanningLine.style.top = 'calc(100% - 2rem)';
-                    scanningLine.style.opacity = '0.8';
-                }, 100);
-            }, 2000);
+            scanningLine.style.opacity = '0.7';
         }
     }
 
     /**
-     * Stop scanning line animation
+     * Hide static scan guide
      */
     stopScanningAnimation() {
         if (this.scanningInterval) {
@@ -417,7 +398,7 @@ class QRScanner {
      * Stop the QR scanner
      */
     stopScanner() {
-        // Stop scanning animation
+        // Hide scan guide
         this.stopScanningAnimation();
 
         if (this.scanner) {
@@ -461,7 +442,7 @@ class QRScanner {
         this.updateStatusMessage(`
             <div class="text-center">
                 <div class="flex items-center justify-center space-x-2 mb-2">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                     <p class="text-green-600 font-medium">Return successful</p>
                 </div>
                 <p class="text-gray-600 text-sm">${message}</p>

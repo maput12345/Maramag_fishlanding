@@ -67,7 +67,9 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $indexResponse = $this->actingAs($applicant)->get('/applications');
 
         $indexResponse->assertOk();
-        $indexResponse->assertSee('You already submitted an application for the current open stalls.');
+        $indexResponse->assertSee('Your application is Submitted. Please track the details under My Applications.');
+        $indexResponse->assertSee('View My Application');
+        $indexResponse->assertDontSee('Stall 15');
         $this->assertSame(0, substr_count($indexResponse->getContent(), 'Apply Now'));
 
         $storeResponse = $this->actingAs($applicant)->post('/applications/openings/' . $secondOpening->getRouteKey(), [
@@ -81,6 +83,39 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         ]);
 
         $storeResponse->assertSessionHasErrors('opening');
+        $this->assertSame(1, BrokerApplication::count());
+    }
+
+    public function test_duplicate_submission_to_same_opening_returns_validation_error(): void
+    {
+        $applicant = $this->createApplicant();
+        $opening = $this->createOpenOpening('12');
+
+        BrokerApplication::create([
+            'user_id' => $applicant->id,
+            'application_opening_id' => $opening->id,
+            'first_name' => 'Existing',
+            'last_name' => 'Applicant',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09171234567',
+            'application_status' => 'Rejected',
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($applicant)->post('/applications/openings/' . $opening->getRouteKey(), [
+            'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'first_name' => 'Second',
+            'last_name' => 'Applicant',
+            'civil_status' => 'Single',
+            'address' => 'Maramag, Bukidnon',
+            'contact_number' => '09170000000',
+            'requirements' => [],
+        ]);
+
+        $response->assertSessionHasErrors([
+            'opening' => 'You already submitted an application for this stall opening.',
+        ]);
+
         $this->assertSame(1, BrokerApplication::count());
     }
 

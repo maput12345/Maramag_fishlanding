@@ -12,7 +12,7 @@
 @endphp
 
 <div
-    class="app-sidebar admin-sidebar fixed left-0 top-0 z-40 hidden min-h-screen w-64 overflow-hidden transition-all duration-300 ease-in-out md:block"
+    class="app-sidebar admin-sidebar fixed left-0 top-0 z-40 hidden min-h-screen w-64 overflow-hidden transition-all duration-200 ease-out md:block"
     data-admin-sidebar
 >
     <div class="app-sidebar-brand border-b p-4">
@@ -119,7 +119,7 @@
                     </a>
                     <a href="{{ route('admin.stalls.overview') }}"
                        class="block rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200 {{ $isAdminStallOverviewActive ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' }}">
-                        Stall Overview
+                        Stall Status
                     </a>
                 </div>
              </div>

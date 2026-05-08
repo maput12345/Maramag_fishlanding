@@ -242,9 +242,9 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="submitted-applications-filter__actions">
-                        <button type="submit" class="app-button app-button--secondary submitted-applications-filter__button">Filter</button>
-                        <a href="{{ route('admin.applications.index') }}" class="app-button app-button--dark submitted-applications-filter__button">Clear</a>
+                    <div class="submitted-applications-filter__actions filter-action-group">
+                        <a href="{{ route('admin.applications.index') }}" class="btn-clear submitted-applications-filter__button">Clear</a>
+                        <button type="submit" class="btn-search submitted-applications-filter__button">Filter</button>
                     </div>
                 </div>
             </form>

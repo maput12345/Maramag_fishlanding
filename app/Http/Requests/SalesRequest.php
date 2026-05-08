@@ -4,12 +4,36 @@ namespace App\Http\Requests;
 
 use App\Models\Broker;
 use App\Models\FishBox;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Validator;
 
 class SalesRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $fallbackName = trim((string) $this->input('buyer_name', ''));
+        $fallbackNameParts = $fallbackName !== '' ? User::splitName($fallbackName) : [];
+        $firstName = trim((string) $this->input('buyer_first_name', $fallbackNameParts['first_name'] ?? ''));
+        $middleName = trim((string) $this->input('buyer_middle_name', $fallbackNameParts['middle_name'] ?? ''));
+        $lastName = trim((string) $this->input('buyer_last_name', $fallbackNameParts['last_name'] ?? ''));
+
+        if ($lastName === '' && !$this->has('buyer_first_name') && $fallbackName !== '') {
+            $lastName = $firstName;
+        }
+        $contact = trim((string) $this->input('buyer_contact', ''));
+        $buyerName = trim(collect([$firstName, $middleName, $lastName])->filter()->implode(' '));
+
+        $this->merge([
+            'buyer_first_name' => $firstName,
+            'buyer_middle_name' => $middleName !== '' ? $middleName : null,
+            'buyer_last_name' => $lastName,
+            'buyer_contact' => $contact,
+            'buyer_name' => $buyerName ?: trim((string) $this->input('buyer_name', '')),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -28,8 +52,11 @@ class SalesRequest extends FormRequest
         $rules = [
             'sales_date' => 'required|date',
             'total_amount' => 'required|numeric|min:0',
-            'buyer_name' => 'required|string|max:255',
-            'buyer_contact' => 'nullable|string|max:255',
+            'buyer_first_name' => 'required|string|max:255',
+            'buyer_middle_name' => 'nullable|string|max:255',
+            'buyer_last_name' => 'required|string|max:255',
+            'buyer_name' => 'nullable|string|max:255',
+            'buyer_contact' => 'required|string|max:255',
             'initial_paid_amount' => 'nullable|required_with:initial_payment_date,initial_payment_method|numeric|min:0.01',
             'initial_payment_date' => 'nullable|required_with:initial_paid_amount,initial_payment_method|date',
             'initial_payment_method' => 'nullable|required_with:initial_paid_amount,initial_payment_date|string|max:255',
@@ -163,7 +190,11 @@ class SalesRequest extends FormRequest
             'total_amount.required' => 'Please enter the total amount.',
             'total_amount.numeric' => 'Total amount must be a valid number.',
             'total_amount.min' => 'Total amount must be at least 0.',
-            'buyer_name.required' => 'Please enter the buyer name.',
+            'buyer_first_name.required' => 'Please enter the buyer first name.',
+            'buyer_first_name.max' => 'Buyer first name cannot exceed 255 characters.',
+            'buyer_middle_name.max' => 'Buyer middle name cannot exceed 255 characters.',
+            'buyer_last_name.required' => 'Please enter the buyer last name.',
+            'buyer_last_name.max' => 'Buyer last name cannot exceed 255 characters.',
             'buyer_name.max' => 'Buyer name cannot exceed 255 characters.',
             'buyer_contact.required' => 'Please enter the buyer contact.',
             'buyer_contact.max' => 'Buyer contact cannot exceed 255 characters.',
@@ -201,8 +232,11 @@ class SalesRequest extends FormRequest
         return [
             'sales_date' => 'sales date',
             'total_amount' => 'total amount',
+            'buyer_first_name' => 'buyer first name',
+            'buyer_middle_name' => 'buyer middle name',
+            'buyer_last_name' => 'buyer last name',
             'buyer_name' => 'buyer name',
-            'buyer_contact' => 'buyer contact',
+            'buyer_contact' => 'contact number',
             'initial_paid_amount' => 'initial paid amount',
             'initial_payment_date' => 'initial payment date',
             'initial_payment_method' => 'initial payment method',

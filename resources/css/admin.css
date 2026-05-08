@@ -1,7 +1,7 @@
 /* Admin Sidebar Responsive Styles */
 @media (min-width: 768px) {
     .main-content {
-        transition: margin-left 0.3s ease-in-out;
+        transition: margin-left 200ms ease-out;
     }
 
     .theme-admin .admin-sidebar.w-64 {

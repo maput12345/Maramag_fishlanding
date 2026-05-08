@@ -1,10 +1,10 @@
-<div>
+﻿<div>
     @php
-        $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
+$brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
             : false;
     @endphp
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div>
             <h2 class="text-xl font-semibold text-gray-900">Fish Price List</h2>
         </div>
@@ -104,7 +104,7 @@
                                     {{ (string) old('broker_fish_type_id') === (string) $assignment->id ? 'selected' : '' }}>
                                     {{ $assignment->display_name ?? 'Unknown Fish' }}
                                     @if($assignment->latestPrice)
-                                        - Current: PHP {{ number_format((float) $assignment->latestPrice->price, 2) }}
+                                        - Current: ₱{{ number_format((float) $assignment->latestPrice->price, 2) }}
                                     @endif
                                 </option>
                             @endforeach
@@ -125,15 +125,15 @@
                         <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
                             Price <span class="text-red-500">*</span>
                         </label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-sm text-gray-500">PHP</span>
+                        <div class="currency-input-group">
+                            <span class="currency-input-symbol">₱</span>
                             <input type="number"
                                    id="price"
                                    name="price"
                                    min="0"
                                    step="0.01"
                                    value="{{ old('price', $editingBrokerFishType?->latestPrice?->price) }}"
-                                   class="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                   class="currency-input-field"
                                    placeholder="0.00"
                                    required>
                         </div>
@@ -145,15 +145,15 @@
                         <label for="default_cost_price" class="block text-sm font-medium text-gray-700 mb-2">
                             Cost per box
                         </label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-sm text-gray-500">PHP</span>
+                        <div class="currency-input-group">
+                            <span class="currency-input-symbol">₱</span>
                             <input type="number"
                                    id="default_cost_price"
                                    name="default_cost_price"
                                    min="0"
                                    step="0.01"
                                    value="{{ old('default_cost_price', $editingBrokerFishType?->latestPrice?->default_cost_price) }}"
-                                   class="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                   class="currency-input-field"
                                    placeholder="0.00">
                         </div>
                         <p class="mt-1 text-xs text-gray-500">
@@ -218,15 +218,14 @@
                                    value="{{ request('history_date') }}"
                                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                         </div>
-                        <div class="flex gap-2">
+                        <div class="filter-action-group">
                             <button type="submit"
-                                    class="inline-flex justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors"
-                                    style="background: #2563eb;">
+                                    class="btn-search">
                                 Search
                             </button>
                             @if(request()->filled('history_date'))
                                 <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'history', 'history' => $historyBrokerFishType->id]) }}"
-                                   class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                   class="btn-clear">
                                     Clear
                                 </a>
                             @endif
@@ -240,8 +239,8 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Default Cost</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
@@ -250,12 +249,12 @@
                                         <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                                             {{ $priceRecord->price_date?->format('M d, Y') ?? 'Not set' }}
                                         </td>
-                                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
-                                            PHP {{ number_format((float) $priceRecord->price, 2) }}
+                                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold tabular-nums text-gray-900">
+                                            ₱{{ number_format((float) $priceRecord->price, 2) }}
                                         </td>
-                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">
                                             @if($priceRecord->default_cost_price !== null)
-                                                PHP {{ number_format((float) $priceRecord->default_cost_price, 2) }}
+                                                ₱{{ number_format((float) $priceRecord->default_cost_price, 2) }}
                                             @else
                                                 <span class="text-gray-400">Not set</span>
                                             @endif
@@ -303,13 +302,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex space-x-2">
+                <div class="filter-action-group">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices']) }}"
-                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                       class="btn-clear">
                         Clear
                     </a>
                     <button type="submit"
-                            class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
+                            class="btn-search">
                         Search
                     </button>
                 </div>
@@ -332,8 +331,8 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default Cost</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -352,16 +351,16 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
                                 @if($assignment->latestPrice)
-                                    <span class="font-semibold">PHP {{ number_format((float) $assignment->latestPrice->price, 2) }}</span>
+                                    <span class="font-semibold">₱{{ number_format((float) $assignment->latestPrice->price, 2) }}</span>
                                 @else
                                     <span class="text-gray-400">Not set</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
                                 @if($assignment->latestPrice?->default_cost_price !== null)
-                                    <span class="font-semibold">PHP {{ number_format((float) $assignment->latestPrice->default_cost_price, 2) }}</span>
+                                    <span class="font-semibold">₱{{ number_format((float) $assignment->latestPrice->default_cost_price, 2) }}</span>
                                 @else
                                     <span class="text-gray-400">Not set</span>
                                 @endif

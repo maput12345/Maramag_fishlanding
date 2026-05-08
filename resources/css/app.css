@@ -2,22 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* QR Scanner animations */
-@keyframes scanLine {
-    0% {
-        transform: translateX(-50%) translateY(-50%) translateY(-120px);
-        opacity: 0;
+/* Toastr styles consolidated */
+
+@layer components {
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    .app-button,
+    .portal-button,
+    .login-submit {
+        @apply transition-transform duration-150;
     }
-    50% {
-        opacity: 1;
+
+    button:not(:disabled):active,
+    [role="button"]:not([aria-disabled="true"]):active,
+    .app-button:active,
+    .portal-button:active,
+    .login-submit:active {
+        @apply scale-95;
     }
-    100% {
-        transform: translateX(-50%) translateY(-50%) translateY(120px);
-        opacity: 0;
+
+    .metric-card,
+    .panel-card,
+    .portal-card,
+    .login-showcase-card {
+        @apply transition-all duration-200;
+    }
+
+    .metric-card:hover,
+    .panel-card:hover,
+    .portal-card:hover {
+        @apply -translate-y-1 shadow-lg;
     }
 }
-
-/* Toastr styles consolidated */
 
 /* Placement and interaction */
 #toast-container.toast-top-right {
