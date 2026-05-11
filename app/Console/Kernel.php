@@ -19,6 +19,10 @@ class Kernel extends ConsoleKernel
             ->timezone(config('app.timezone'))
             ->everyMinute()
             ->withoutOverlapping();
+
+        $schedule->command('applicants:prune-unverified --days=7')
+            ->timezone(config('app.timezone'))
+            ->daily();
     }
 
     /**

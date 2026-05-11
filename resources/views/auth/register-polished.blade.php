@@ -3,18 +3,43 @@
 @section('body-class', 'login-shell theme-admin')
 
 @section('content')
-<div class="login-stage">
-    <section class="login-hero login-hero--watermark">
-        <img src="{{ asset('image/logo-small.png') }}" alt="" class="login-hero-watermark" aria-hidden="true">
-        <div class="login-hero-content">
-            <div class="brand-chip">Account Access</div>
-            <p class="login-kicker">New User Setup</p>
-            <h1>WELCOME TO MARAMAG FISH LANDING.</h1>
-            <p class="login-description">Once your account is created, you can submit your application when stalls become available.
-All applications are subject to review and approval by the LEEO administrator.</p>
-        </div>
-    </section>
+<style>
+    .login-shell,
+    .login-stage {
+        background:
+            radial-gradient(circle at 18% 16%, rgba(29, 78, 216, 0.14), transparent 24rem),
+            linear-gradient(180deg, rgba(7, 21, 37, 0.88), rgba(7, 21, 37, 0.84)),
+            url("{{ asset('image/background.png') }}") center / cover fixed no-repeat !important;
+    }
 
+    .login-stage {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .login-panel-wrap {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 550px;
+    }
+
+    .login-card,
+    .login-hero {
+        border-color: rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 24px 70px rgba(2, 6, 23, 0.32) !important;
+    }
+</style>
+
+<div class="login-stage">
     <section class="login-panel-wrap">
         <div class="login-card">
             <div class="login-card-header">
@@ -65,6 +90,11 @@ All applications are subject to review and approval by the LEEO administrator.</
                     @error('email')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div>
+                    <label for="email-confirm" class="login-label">Confirm Email Address</label>
+                    <input id="email-confirm" type="email" class="login-input" name="email_confirmation" value="{{ old('email_confirmation') }}" required autocomplete="email">
                 </div>
 
                 <div>

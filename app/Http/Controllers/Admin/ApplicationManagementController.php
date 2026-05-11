@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -182,8 +183,9 @@ class ApplicationManagementController extends Controller
             ->get();
         $stalls = Stall::query()
             ->select(['id', 'stall_number'])
-            ->orderBy('stall_number')
-            ->get();
+            ->get()
+            ->sortBy('stall_number', SORT_NATURAL)
+            ->values();
 
         return view('admin.applications.index', compact(
             'applications',
@@ -226,7 +228,10 @@ class ApplicationManagementController extends Controller
      */
     public function stallsOverview(Request $request): View
     {
-        $workspaceData = $this->stallWorkspaceData($request->string('stall_search')->trim()->toString());
+        $workspaceData = $this->stallWorkspaceData(
+            $request->string('stall_search')->trim()->toString(),
+            true
+        );
 
         return view('admin.stalls.overview', $workspaceData);
     }
@@ -579,7 +584,7 @@ class ApplicationManagementController extends Controller
             'remarks' => ['nullable', 'string', 'max:2000'],
             'requirements' => ['nullable', 'array'],
             'requirements.*.id' => ['required_with:requirements', 'integer'],
-            'requirements.*.verification_status' => ['nullable', Rule::in(['Pending', 'Verified', 'Rejected'])],
+            'requirements.*.verification_status' => ['nullable', Rule::in(['Pending', 'Verified', 'Needs Revision', 'Rejected'])],
             'requirements.*.remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -880,7 +885,7 @@ class ApplicationManagementController extends Controller
     /**
      * Shared data used by the separated stall management pages.
      */
-    private function stallWorkspaceData(?string $stallSearch = null): array
+    private function stallWorkspaceData(?string $stallSearch = null, bool $paginateStalls = false): array
     {
         $stalls = Stall::query()
             ->select(['id', 'stall_number', 'stall_status', 'length_meters', 'width_meters', 'area_sqm', 'address', 'remarks', 'stall_image_path'])
@@ -919,8 +924,13 @@ class ApplicationManagementController extends Controller
                         ->latest();
                 },
             ])
-            ->orderBy('stall_number')
-            ->get();
+            ->get()
+            ->sortBy('stall_number', SORT_NATURAL)
+            ->values();
+
+        if ($paginateStalls) {
+            $stalls = $this->paginateCollection($stalls, 10);
+        }
 
         $vacantStalls = $stalls
             ->filter(fn (Stall $stall) => $stall->stall_status === 'Vacant')
@@ -951,6 +961,22 @@ class ApplicationManagementController extends Controller
             'nextStallNumber' => Stall::nextStallNumber(),
             'stallSearch' => $stallSearch,
         ];
+    }
+
+    private function paginateCollection(Collection $items, int $perPage): LengthAwarePaginator
+    {
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+
+        return new LengthAwarePaginator(
+            $items->forPage($currentPage, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => request()->query(),
+            ]
+        );
     }
 
     /**

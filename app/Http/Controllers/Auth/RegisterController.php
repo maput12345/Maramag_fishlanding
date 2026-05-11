@@ -7,6 +7,7 @@ use App\Providers\RouteServiceProvider;
 use App\Models\ApplicationOpening;
 use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -68,7 +69,7 @@ class RegisterController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'suffix' => ['nullable', 'string', 'max:50'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:User'],
+            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'confirmed', 'unique:User'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -91,6 +92,7 @@ class RegisterController extends Controller
     {
         return User::createUserWithRole([
             'email' => $data['email'],
+            'email_verified_at' => null,
             'password' => $data['password'],
             'role' => 'applicant',
         ], [
@@ -99,6 +101,15 @@ class RegisterController extends Controller
             'last_name' => $data['last_name'],
             'suffix' => $data['suffix'] ?? null,
         ]);
+    }
+
+    /**
+     * Send newly registered applicants to the email verification gate.
+     */
+    protected function registered(Request $request, $user)
+    {
+        return redirect()->route('verification.notice')
+            ->with('status', 'Please verify your email address before continuing.');
     }
 
     private function hasAvailableApplicationOpening(): bool

@@ -190,8 +190,8 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $requirement->refresh();
 
         $this->assertSame('Submitted', $application->application_status);
-        $this->assertSame('Portal', $application->first_name);
-        $this->assertSame('Applicant', $application->last_name);
+        $this->assertSame('Needs', $application->first_name);
+        $this->assertSame('Revision', $application->last_name);
         $this->assertSame('New Address', $application->address);
         $this->assertNotNull($application->revision_resubmitted_at);
         $this->assertSame(1, $application->revision_count);
@@ -200,8 +200,27 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $this->assertNull($requirement->remarks);
         $this->assertSame('NEW-001', $requirement->document_number);
         $this->assertNotSame($oldPath, $requirement->file_path);
+        $this->assertTrue($requirement->uploaded_at->equalTo($application->revision_resubmitted_at));
         Storage::disk('public')->assertExists($oldPath);
         Storage::disk('public')->assertExists($requirement->file_path);
+
+        $admin = User::createUserWithRole(
+            [
+                'email' => 'review-admin-' . Str::random(8) . '@example.com',
+                'password' => 'password',
+                'role' => RoleStatusConstant::ADMIN,
+            ],
+            [
+                'first_name' => 'Review',
+                'last_name' => 'Admin',
+            ]
+        );
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.show', $application))
+            ->assertOk()
+            ->assertSee('New revision file')
+            ->assertSee('Updated File');
     }
 
     public function test_applicant_cannot_resubmit_revision_without_replacement_file(): void
@@ -393,6 +412,8 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
     {
         $validator = $this->validatorForApplicationPayload([
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'first_name' => 'Natural',
+            'last_name' => 'Applicant',
             'civil_status' => 'Single',
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09171234567',
@@ -410,6 +431,8 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
     {
         $validMarriedPayload = $this->validatorForApplicationPayload([
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'first_name' => 'Married',
+            'last_name' => 'Applicant',
             'civil_status' => 'Married',
             'spouse_name' => 'Maria Applicant',
             'address' => 'Maramag, Bukidnon',
@@ -420,6 +443,8 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
 
         $missingSpouseName = $this->validatorForApplicationPayload([
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
+            'first_name' => 'Married',
+            'last_name' => 'Applicant',
             'civil_status' => 'Married',
             'address' => 'Maramag, Bukidnon',
             'contact_number' => '09171234567',

@@ -24,6 +24,23 @@
     }
 @endphp
 
+<style>
+    .login-shell--split,
+    .login-stage--split {
+        background:
+            radial-gradient(circle at 18% 16%, rgba(29, 78, 216, 0.14), transparent 24rem),
+            linear-gradient(180deg, rgba(7, 21, 37, 0.88), rgba(7, 21, 37, 0.84)),
+            url("{{ asset('image/background.png') }}") center / cover fixed no-repeat !important;
+    }
+
+    .login-showcase-card {
+        border-color: rgba(255, 255, 255, 0.18) !important;
+        background: rgba(2, 6, 23, 0.58) !important;
+        box-shadow: 0 24px 70px rgba(2, 6, 23, 0.32) !important;
+        backdrop-filter: blur(14px);
+    }
+</style>
+
 <div class="login-stage login-stage--split" x-data="{ previewOpen: false }">
     <div class="login-showcase-card">
         <section class="login-form-panel">
@@ -105,15 +122,7 @@
 
             <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-700 shadow-sm">
                 <p class="font-semibold text-slate-900">Looking for a vacant stall?</p>
-                <p class="mt-1 text-xs leading-5 text-slate-500">Check current openings and prepare the required documents before applying.</p>
-
                 <div class="mt-4 flex flex-col items-stretch gap-2">
-                    <button type="button"
-                            class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-slate-800"
-                            @click="previewOpen = true">
-                        View Stalls and Requirements
-                    </button>
-
                     @if($hasAvailableStall ?? false)
                         <a href="{{ route('register') }}" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-700 transition hover:bg-slate-50">
                             Apply here!

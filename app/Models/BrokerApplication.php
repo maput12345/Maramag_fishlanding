@@ -143,6 +143,19 @@ class BrokerApplication extends Model
     }
 
     /**
+     * Determine if a revision resubmission still needs LEEO review.
+     */
+    public function hasPendingRevisionReview(): bool
+    {
+        if (!$this->isRevisionResubmission()) {
+            return false;
+        }
+
+        return $this->review_date === null
+            || $this->review_date->lt($this->revision_resubmitted_at);
+    }
+
+    /**
      * Determine whether this application can be treated as fully qualified.
      *
      * When review payload is provided, every requirement row must be present

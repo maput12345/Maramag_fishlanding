@@ -12,6 +12,7 @@ use App\Http\Controllers\Broker\SalesController;
 use App\Http\Controllers\Broker\SalesScanSessionController;
 use App\Http\Controllers\Broker\FishboxManagementController;
 use App\Http\Controllers\BrokerDashboardController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SalesManagementController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -28,22 +29,12 @@ use Illuminate\Support\Facades\Auth;
 |
 */
 
-Route::get('/', function () {
-    if (Auth::check()) {
-        $user = Auth::user();
-        if (in_array($user->role, ['admin', 'staff'], true)) {
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->role === 'broker') {
-            return redirect()->route('broker.dashboard');
-        }
+Route::get('/', [PublicPageController::class, 'home'])->name('public.home');
+Route::get('/about', [PublicPageController::class, 'about'])->name('public.about');
+Route::get('/services', [PublicPageController::class, 'services'])->name('public.services');
+Route::get('/public/stalls', [PublicPageController::class, 'stalls'])->name('public.stalls');
 
-        return redirect()->route('applications.index');
-    }
-
-    return redirect()->route('login');
-});
-
-Auth::routes();
+Auth::routes(['verify' => true]);
 
 // Custom logout route
 Route::post('/logout', function () {
@@ -54,7 +45,7 @@ Route::post('/logout', function () {
 })->name('logout')->middleware('auth');
 
 // Profile routes - available to all authenticated users
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');

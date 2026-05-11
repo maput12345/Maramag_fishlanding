@@ -13,7 +13,9 @@
     $reviewDraftRequirements = collect($reviewDraftPayload['requirements'] ?? [])
         ->filter(fn ($draftRequirement) => is_array($draftRequirement))
         ->keyBy(fn ($draftRequirement) => (int) ($draftRequirement['id'] ?? 0));
-    $isRevisionResubmission = $application->isRevisionResubmission();
+    $hasPendingRevisionReview = $application->hasPendingRevisionReview();
+    $submissionTimelineLabel = $hasPendingRevisionReview ? 'resubmitted' : 'submitted';
+    $submissionTimelineDate = $hasPendingRevisionReview ? $application->revision_resubmitted_at : $application->submitted_at;
 @endphp
 
 @section('content')
@@ -30,8 +32,8 @@
                 <h1 class="app-page-title">{{ $application->name }}</h1>
                 <p class="app-page-description">
                     {{ $reviewStallLabel }} -
-                    {{ $isRevisionResubmission ? 'resubmitted' : 'submitted' }}
-                    {{ optional($isRevisionResubmission ? $application->revision_resubmitted_at : $application->submitted_at)->format('M d, Y h:i A') ?? 'N/A' }}
+                    {{ $submissionTimelineLabel }}
+                    {{ optional($submissionTimelineDate)->format('M d, Y h:i A') ?? 'N/A' }}
                 </p>
             </div>
             <x-status-badge :status="$application->application_status" />
@@ -56,7 +58,7 @@
         </section>
     @endunless
 
-    @if($isRevisionResubmission)
+    @if($hasPendingRevisionReview)
         <section class="rounded-3xl border border-orange-200 bg-orange-50 p-6 text-sm text-orange-900 shadow-sm">
             <div class="flex items-start gap-3">
                 <x-heroicon-o-arrow-path class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600" />
@@ -204,14 +206,30 @@
             @foreach($application->requirements as $requirement)
                 @php
                     $draftRequirementReview = $reviewDraftRequirements->get($requirement->id, []);
+                    $isNewRevisionFile = $hasPendingRevisionReview
+                        && $application->revision_resubmitted_at
+                        && $requirement->uploaded_at
+                        && $requirement->uploaded_at->gte($application->revision_resubmitted_at);
                 @endphp
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-6" data-requirement-review-row>
+                <article class="rounded-3xl border {{ $isNewRevisionFile ? 'border-orange-300 bg-orange-50/70 ring-2 ring-orange-100' : 'border-slate-200 bg-slate-50' }} p-6" data-requirement-review-row>
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-900">{{ $requirement->requirementType?->requirement_name }}</h3>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-lg font-semibold text-slate-900">{{ $requirement->requirementType?->requirement_name }}</h3>
+                                @if($isNewRevisionFile)
+                                    <span class="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700 ring-1 ring-orange-200">
+                                        New revision file
+                                    </span>
+                                @endif
+                            </div>
                             <p class="mt-1 text-sm text-slate-600">
                                 Uploaded {{ optional($requirement->uploaded_at)->format('M d, Y h:i A') ?? 'N/A' }}
                             </p>
+                            @if($isNewRevisionFile)
+                                <p class="mt-2 text-sm font-medium text-orange-700">
+                                    Applicant replaced this file during revision attempt #{{ $application->revision_count }}.
+                                </p>
+                            @endif
                         </div>
                         <div class="flex items-center gap-3">
                             @if($requirement->file_url)
@@ -229,7 +247,7 @@
                             <select name="requirements[{{ $loop->index }}][verification_status]"
                                     class="app-select requirement-status-select rounded-full border border-slate-300 px-4 py-2 text-sm"
                                     data-requirement-status-select>
-                                @foreach(['Pending', 'Verified', 'Rejected'] as $verificationStatus)
+                                @foreach(['Pending', 'Verified', 'Needs Revision', 'Rejected'] as $verificationStatus)
                                     <option value="{{ $verificationStatus }}" {{ $selectedVerificationStatus === $verificationStatus ? 'selected' : '' }}>
                                         {{ $verificationStatus }}
                                     </option>
@@ -293,9 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let autosaveTimer = null;
     let activeRequest = null;
     let isSubmittingOfficialReview = false;
+    let isOfficialReviewConfirmed = false;
     const verificationStatusSelects = form.querySelectorAll('[data-requirement-status-select]');
     const verificationStatusClasses = [
         'requirement-status-select--pending',
+        'requirement-status-select--needs-revision',
         'requirement-status-select--verified',
         'requirement-status-select--rejected',
     ];
@@ -303,13 +323,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateVerificationStatusColor = (select) => {
         select.classList.remove(...verificationStatusClasses);
 
-        const statusClass = {
-            Pending: 'requirement-status-select--pending',
-            Verified: 'requirement-status-select--verified',
-            Rejected: 'requirement-status-select--rejected',
-        }[select.value] || 'requirement-status-select--pending';
+        const statusStyles = {
+            Pending: {
+                className: 'requirement-status-select--pending',
+                borderColor: '#fde68a',
+                backgroundColor: '#fffbeb',
+                color: '#92400e',
+            },
+            'Needs Revision': {
+                className: 'requirement-status-select--needs-revision',
+                borderColor: '#fdba74',
+                backgroundColor: '#fff7ed',
+                color: '#c2410c',
+            },
+            Verified: {
+                className: 'requirement-status-select--verified',
+                borderColor: '#86efac',
+                backgroundColor: '#f0fdf4',
+                color: '#166534',
+            },
+            Rejected: {
+                className: 'requirement-status-select--rejected',
+                borderColor: '#fecaca',
+                backgroundColor: '#fef2f2',
+                color: '#991b1b',
+            },
+        };
+        const statusStyle = statusStyles[select.value] || statusStyles.Pending;
 
-        select.classList.add(statusClass);
+        select.classList.add(statusStyle.className);
+        select.style.borderColor = statusStyle.borderColor;
+        select.style.backgroundColor = statusStyle.backgroundColor;
+        select.style.color = statusStyle.color;
     };
 
     verificationStatusSelects.forEach((select) => {
@@ -410,7 +455,93 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    form.addEventListener('submit', () => {
+    const reviewConfirmationConfig = (status) => {
+        const requirementStatuses = Array.from(verificationStatusSelects)
+            .map((select) => select.value)
+            .reduce((counts, statusValue) => {
+                counts[statusValue] = (counts[statusValue] || 0) + 1;
+                return counts;
+            }, {});
+
+        const requirementSummary = Object.entries(requirementStatuses)
+            .map(([statusValue, count]) => `${count} ${statusValue}`)
+            .join(', ');
+
+        const baseText = requirementSummary
+            ? `Requirement statuses: ${requirementSummary}.`
+            : 'Please review the requirement statuses before continuing.';
+
+        const configs = {
+            'Needs Revision': {
+                title: 'Send this back for revision?',
+                text: `${baseText} The applicant will need to correct and resubmit the marked items.`,
+                confirmButtonText: 'Yes, request revision',
+                confirmButtonColor: '#ea580c',
+                icon: 'warning',
+            },
+            Qualified: {
+                title: 'Mark this application as qualified?',
+                text: `${baseText} The applicant will move forward to the bidding stage.`,
+                confirmButtonText: 'Yes, qualify applicant',
+                confirmButtonColor: '#059669',
+                icon: 'question',
+            },
+            Rejected: {
+                title: 'Reject this application?',
+                text: `${baseText} This will mark the application as rejected.`,
+                confirmButtonText: 'Yes, reject application',
+                confirmButtonColor: '#dc2626',
+                icon: 'warning',
+            },
+            'Under Review': {
+                title: 'Save as under review?',
+                text: `${baseText} This will save the official review status as Under Review.`,
+                confirmButtonText: 'Yes, save review',
+                confirmButtonColor: '#2563eb',
+                icon: 'question',
+            },
+        };
+
+        return configs[status] || configs['Under Review'];
+    };
+
+    form.addEventListener('submit', (event) => {
+        if (!isOfficialReviewConfirmed) {
+            event.preventDefault();
+
+            const selectedStatus = form.querySelector('[name="application_status"]')?.value || 'Under Review';
+            const config = reviewConfirmationConfig(selectedStatus);
+
+            if (!window.Swal) {
+                if (window.confirm(config.title)) {
+                    isOfficialReviewConfirmed = true;
+                    form.requestSubmit();
+                }
+
+                return;
+            }
+
+            window.Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonText: config.confirmButtonText,
+                cancelButtonText: 'Review again',
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#64748b',
+                focusCancel: true,
+                allowOutsideClick: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    isOfficialReviewConfirmed = true;
+                    form.requestSubmit();
+                }
+            });
+
+            return;
+        }
+
         isSubmittingOfficialReview = true;
         window.clearTimeout(autosaveTimer);
 

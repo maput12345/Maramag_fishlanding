@@ -28,7 +28,7 @@
 
                 <!-- Form -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
-                    <form method="POST" action="{{ $action }}">
+                    <form method="POST" action="{{ $action }}" data-user-confirm="{{ isset($user) && $user->id ? 'update-user' : 'create-user' }}">
                         @csrf
                         @if(isset($user) && $user->id)
                             @method('PUT')
@@ -218,4 +218,71 @@
                     </form>
                 </div>
             </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form[data-user-confirm]').forEach((form) => {
+        let confirmed = false;
+
+        form.addEventListener('submit', (event) => {
+            if (confirmed) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const mode = form.dataset.userConfirm;
+            const firstName = form.querySelector('[name="first_name"]')?.value?.trim() || '';
+            const lastName = form.querySelector('[name="last_name"]')?.value?.trim() || '';
+            const email = form.querySelector('[name="email"]')?.value?.trim() || '';
+            const roleSelect = form.querySelector('[name="role"]');
+            const role = roleSelect?.selectedOptions?.[0]?.textContent?.trim() || 'selected role';
+            const displayName = [firstName, lastName].filter(Boolean).join(' ') || email || 'this user';
+            const isCreate = mode === 'create-user';
+            const config = isCreate
+                ? {
+                    title: 'Create this user account?',
+                    text: `This will create ${displayName} as ${role}. Please confirm the email address before saving.`,
+                    confirmButtonText: 'Yes, create user',
+                    confirmButtonColor: '#059669',
+                    icon: 'question',
+                }
+                : {
+                    title: 'Update this user account?',
+                    text: `This will save changes for ${displayName}.`,
+                    confirmButtonText: 'Yes, update user',
+                    confirmButtonColor: '#2563eb',
+                    icon: 'question',
+                };
+
+            if (!window.Swal) {
+                if (window.confirm(config.title)) {
+                    confirmed = true;
+                    form.requestSubmit();
+                }
+
+                return;
+            }
+
+            window.Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonText: config.confirmButtonText,
+                cancelButtonText: 'Review again',
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#64748b',
+                focusCancel: true,
+                allowOutsideClick: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    confirmed = true;
+                    form.requestSubmit();
+                }
+            });
+        });
+    });
+});
+</script>
 @endsection

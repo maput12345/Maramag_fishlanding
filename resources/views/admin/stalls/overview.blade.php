@@ -246,6 +246,10 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-4">
+            {{ $stalls->links('components.pagination') }}
+        </div>
     </section>
 </div>
 @endsection

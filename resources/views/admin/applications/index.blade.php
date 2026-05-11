@@ -271,7 +271,7 @@
                                 ? $batch->applicationOpenings->pluck('stall.display_name')->filter()->join(', ')
                                 : null;
                             $applicationStall = $application->applicationOpening?->stall?->display_name;
-                            $isResubmitted = $application->isRevisionResubmission();
+                            $isResubmitted = $application->hasPendingRevisionReview();
                         @endphp
                         <tr>
                             <td class="px-4 py-4">

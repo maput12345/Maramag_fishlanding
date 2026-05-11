@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Constants\RoleStatusConstant;
 use App\Constants\UserStatusConstant;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -23,14 +24,9 @@ class User extends Authenticatable
 
     protected $fillable = [
         'email',
+        'email_verified_at',
         'password',
         'status',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'suffix',
-        'contact_number',
-        'address',
     ];
 
     protected $hidden = [
@@ -83,6 +79,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the applicant account identity profile.
+     */
+    public function applicantProfile(): HasOne
+    {
+        return $this->hasOne(ApplicantProfile::class, 'user_id');
+    }
+
+    /**
+     * Get the latest submitted applicant details for display/autofill.
+     */
+    public function latestBrokerApplication(): HasOne
+    {
+        return $this->hasOne(BrokerApplication::class, 'user_id')->latestOfMany();
+    }
+
+    /**
      * Compatibility accessor for legacy views expecting $model->user.
      */
     public function getUserAttribute(): self
@@ -111,13 +123,20 @@ class User extends Authenticatable
             return $this->broker->name;
         }
 
-        if ($this->first_name || $this->last_name) {
-            return collect([
-                $this->first_name,
-                $this->middle_name,
-                $this->last_name,
-                $this->suffix,
-            ])->filter()->implode(' ');
+        if ($this->relationLoaded('applicantProfile') && $this->applicantProfile) {
+            return $this->applicantProfile->name;
+        }
+
+        if ($this->applicantProfile) {
+            return $this->applicantProfile->name;
+        }
+
+        if ($this->relationLoaded('latestBrokerApplication') && $this->latestBrokerApplication) {
+            return $this->latestBrokerApplication->name;
+        }
+
+        if ($this->latestBrokerApplication) {
+            return $this->latestBrokerApplication->name;
         }
 
         return Str::of(Str::before($this->email ?? ('user-' . $this->id), '@'))
@@ -143,7 +162,9 @@ class User extends Authenticatable
      */
     public function getAddressAttribute(): ?string
     {
-        return $this->broker?->address ?? ($this->attributes['address'] ?? null);
+        return $this->broker?->address
+            ?? $this->applicantProfile?->address
+            ?? $this->latestBrokerApplication?->address;
     }
 
     /**
@@ -276,18 +297,14 @@ class User extends Authenticatable
     public static function createUserWithRole(array $userData, array $profileData = []): self
     {
         $nameParts = static::extractNameParts($profileData + $userData);
-        $isApplicant = ($userData['role'] ?? null) === RoleStatusConstant::APPLICANT;
 
         $user = static::create([
             'email' => $userData['email'],
+            'email_verified_at' => array_key_exists('email_verified_at', $userData)
+                ? $userData['email_verified_at']
+                : now(),
             'password' => Hash::make($userData['password']),
             'status' => UserStatusConstant::ACTIVE,
-            'first_name' => $isApplicant ? $nameParts['first_name'] : null,
-            'middle_name' => $isApplicant ? $nameParts['middle_name'] : null,
-            'last_name' => $isApplicant ? $nameParts['last_name'] : null,
-            'suffix' => $isApplicant ? static::normalizeNullableName($profileData['suffix'] ?? $userData['suffix'] ?? null) : null,
-            'contact_number' => $isApplicant ? static::normalizeNullableName($profileData['contact_number'] ?? $userData['contact_number'] ?? null) : null,
-            'address' => $isApplicant ? static::normalizeNullableName($profileData['address'] ?? $userData['address'] ?? null) : null,
         ]);
 
         $role = Role::firstOrCreate(
@@ -303,9 +320,11 @@ class User extends Authenticatable
             Broker::createProfile($user->id, $profilePayload);
         } elseif (in_array($role->role_name, [RoleStatusConstant::ADMIN, RoleStatusConstant::STAFF], true)) {
             Employee::createProfile($user->id, $profilePayload);
+        } elseif ($role->role_name === RoleStatusConstant::APPLICANT && $nameParts['first_name'] && $nameParts['last_name']) {
+            ApplicantProfile::createProfile($user->id, $profilePayload);
         }
 
-        return $user->load('roles', 'broker', 'employee');
+        return $user->load('roles', 'broker', 'employee', 'applicantProfile');
     }
 
     /**
@@ -349,14 +368,17 @@ class User extends Authenticatable
             return $this->employee->updateProfile($profileData);
         }
 
-        return $this->update([
-            'first_name' => trim((string) ($profileData['first_name'] ?? $this->first_name)),
-            'middle_name' => static::normalizeNullableName($profileData['middle_name'] ?? $this->middle_name),
-            'last_name' => static::normalizeNullableName($profileData['last_name'] ?? $this->last_name),
-            'suffix' => static::normalizeNullableName($profileData['suffix'] ?? $this->suffix),
-            'contact_number' => static::normalizeNullableName($profileData['contact_number'] ?? $this->contact_number),
-            'address' => static::normalizeNullableName($profileData['address'] ?? $this->address),
-        ]);
+        if ($this->applicantProfile) {
+            return $this->applicantProfile->updateProfile($profileData);
+        }
+
+        if ($this->isApplicant()) {
+            ApplicantProfile::createProfile($this->id, $profileData);
+
+            return true;
+        }
+
+        return true;
     }
 
     /**
@@ -364,7 +386,7 @@ class User extends Authenticatable
      */
     public function getProfile()
     {
-        return $this->broker ?: ($this->employee ?: $this);
+        return $this->broker ?: ($this->employee ?: ($this->applicantProfile ?: ($this->latestBrokerApplication ?: $this)));
     }
 
     /**

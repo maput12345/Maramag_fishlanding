@@ -36,10 +36,10 @@ class StoreBrokerApplicationRequest extends FormRequest
 
         return [
             'applicant_type' => ['required', 'string', Rule::in(array_keys(RequirementType::applicantTypeOptions()))],
-            'first_name' => ['nullable', 'string', 'max:255'],
-            'middle_name' => ['nullable', 'string', 'max:255'],
-            'last_name' => ['nullable', 'string', 'max:255'],
-            'suffix' => ['nullable', 'string', 'max:50'],
+            'first_name' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', 'max:255'],
+            'middle_name' => ['exclude_unless:applicant_type,' . $naturalPerson, 'nullable', 'string', 'max:255'],
+            'last_name' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', 'max:255'],
+            'suffix' => ['exclude_unless:applicant_type,' . $naturalPerson, 'nullable', 'string', 'max:50'],
             'civil_status' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required', 'string', Rule::in(['Single', 'Married', 'Widowed', 'Separated'])],
             'spouse_name' => ['exclude_unless:applicant_type,' . $naturalPerson, 'required_if:civil_status,Married', 'nullable', 'string', 'max:255'],
             'spouse_contact_number' => ['exclude_unless:applicant_type,' . $naturalPerson, 'nullable', 'string', 'max:50'],

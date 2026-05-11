@@ -19,6 +19,9 @@
     $stall = $opening->stall;
     $stallGallery = $stall?->gallery_image_urls ?? [];
     $applicant = auth()->user();
+    $applicantProfile = $applicantProfile ?? null;
+    $latestApplication = $latestApplication ?? null;
+    $profileDraftVersion = optional($applicantProfile?->updated_at)->timestamp ?? 'no-profile';
 @endphp
 
 @section('content')
@@ -59,7 +62,7 @@
                   }
               }"
               data-application-autosave-form
-              data-autosave-key="broker-application-draft:{{ auth()->id() }}:{{ $opening->id }}">
+              data-autosave-key="broker-application-draft:{{ auth()->id() }}:{{ $opening->id }}:{{ $profileDraftVersion }}">
             @csrf
 
             @if($errors->any())
@@ -129,6 +132,23 @@
                         </div>
                     @endif
 
+                    @if($stall?->address || $stall?->area_sqm)
+                        <div class="portal-detail-item">
+                            <div class="portal-detail-item__icon">
+                                <x-heroicon-o-map-pin class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="portal-detail-item__label">Stall Location</p>
+                                <p class="portal-detail-item__value">
+                                    {{ $stall->address ?: 'No address recorded' }}
+                                    @if($stall?->area_sqm)
+                                        <span class="text-slate-400">/</span> {{ number_format((float) $stall->area_sqm, 2) }} sq m
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+
                     @if($stall?->remarks)
                         <div class="portal-detail-item">
                             <div class="portal-detail-item__icon">
@@ -158,13 +178,6 @@
                 </div>
 
                 <div class="portal-form-grid">
-                    <div class="portal-field portal-field--wide">
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Applicant Name</p>
-                            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $applicant->name }}</p>
-                        </div>
-                    </div>
-
                     <div class="portal-field">
                         <div class="portal-field__label-row">
                             <label for="applicant_type" class="portal-field__label">Applicant Type</label>
@@ -189,15 +202,99 @@
                          data-applicant-type-section="{{ $naturalApplicantType }}"
                          x-show="applicantType === naturalType"
                          x-cloak>
+                        <label for="first_name" class="portal-field__label">First Name</label>
+                        <input id="first_name"
+                               name="first_name"
+                               type="text"
+                               value="{{ old('first_name', $applicantProfile?->first_name ?? $latestApplication?->first_name) }}"
+                               class="portal-input @error('first_name') portal-input--error @enderror"
+                               autocomplete="given-name"
+                               data-applicant-type-input
+                               data-step-one-input
+                               data-profile-default
+                               :disabled="applicantType !== naturalType"
+                               :required="applicantType === naturalType">
+                        @error('first_name')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="middle_name" class="portal-field__label">Middle Name</label>
+                        <input id="middle_name"
+                               name="middle_name"
+                               type="text"
+                               value="{{ old('middle_name', $applicantProfile?->middle_name ?? $latestApplication?->middle_name) }}"
+                               class="portal-input @error('middle_name') portal-input--error @enderror"
+                               autocomplete="additional-name"
+                               data-applicant-type-input
+                               data-step-one-input
+                               data-profile-default
+                               :disabled="applicantType !== naturalType">
+                        @error('middle_name')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="last_name" class="portal-field__label">Last Name</label>
+                        <input id="last_name"
+                               name="last_name"
+                               type="text"
+                               value="{{ old('last_name', $applicantProfile?->last_name ?? $latestApplication?->last_name) }}"
+                               class="portal-input @error('last_name') portal-input--error @enderror"
+                               autocomplete="family-name"
+                               data-applicant-type-input
+                               data-step-one-input
+                               data-profile-default
+                               :disabled="applicantType !== naturalType"
+                               :required="applicantType === naturalType">
+                        @error('last_name')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
+                        <label for="suffix" class="portal-field__label">Suffix</label>
+                        <input id="suffix"
+                               name="suffix"
+                               type="text"
+                               value="{{ old('suffix', $applicantProfile?->suffix ?? $latestApplication?->suffix) }}"
+                               class="portal-input @error('suffix') portal-input--error @enderror"
+                               autocomplete="honorific-suffix"
+                               placeholder="Optional"
+                               data-applicant-type-input
+                               data-step-one-input
+                               data-profile-default
+                               :disabled="applicantType !== naturalType">
+                        @error('suffix')
+                            <p class="portal-field__error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="portal-field"
+                         data-applicant-type-section="{{ $naturalApplicantType }}"
+                         x-show="applicantType === naturalType"
+                         x-cloak>
                         <label for="contact_number" class="portal-field__label">Contact Number</label>
                         <input id="contact_number"
                                name="contact_number"
                                type="text"
-                               value="{{ old('contact_number', $applicant->contact_number) }}"
+                               value="{{ old('contact_number', $applicantProfile?->contact_number ?? $latestApplication?->contact_number) }}"
                                class="portal-input @error('contact_number') portal-input--error @enderror"
                                placeholder="09xx xxx xxxx"
                                data-applicant-type-input
                                data-step-one-input
+                               data-profile-default
                                :disabled="applicantType !== naturalType"
                                :required="applicantType === naturalType">
                         @error('contact_number')
@@ -217,8 +314,9 @@
                                   placeholder="Enter complete address"
                                   data-applicant-type-input
                                   data-step-one-input
+                                  data-profile-default
                                   :disabled="applicantType !== naturalType"
-                                  :required="applicantType === naturalType">{{ old('address', $applicant->address) }}</textarea>
+                                  :required="applicantType === naturalType">{{ old('address', $applicantProfile?->address ?? $latestApplication?->address) }}</textarea>
                         @error('address')
                             <p class="portal-field__error">{{ $message }}</p>
                         @enderror
@@ -637,7 +735,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
 
-                    field.value = savedFields[field.name] ?? '';
+                    const savedValue = savedFields[field.name] ?? '';
+
+                    if (field.hasAttribute('data-profile-default') && savedValue === '' && field.defaultValue !== '') {
+                        return;
+                    }
+
+                    field.value = savedValue;
                 });
 
                 if (Object.keys(savedFields).length > 0) {
@@ -689,8 +793,8 @@ document.addEventListener('DOMContentLoaded', function () {
         applicationForm.addEventListener('submit', saveDraft);
     };
 
-    applicantTypeSelect.addEventListener('change', () => updateRequirementVisibility(true));
-    civilStatusInput?.addEventListener('change', () => updateRequirementVisibility(true));
+    applicantTypeSelect.addEventListener('change', () => updateRequirementVisibility(false));
+    civilStatusInput?.addEventListener('change', () => updateRequirementVisibility(false));
     initApplicationAutosave();
     updateRequirementVisibility();
 });

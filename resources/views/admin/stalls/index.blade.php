@@ -34,10 +34,10 @@
             <div class="app-section-heading">
                 <h2 class="app-section-title">Create Stall</h2>
             </div>
-            <form action="{{ route('admin.stalls.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4">
+            <form action="{{ route('admin.stalls.store') }}" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4" data-stall-confirm="create-stall">
                 @csrf
                 <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <p class="mt-2 text-lg font-semibold text-slate-950">Next stall number: Stall {{ $nextStallNumber }}</p>
+                    <p class="mt-2 text-lg font-semibold text-slate-950">Suggested stall number: Stall {{ $nextStallNumber }}</p>
                 </div>
                 <div class="grid gap-4 md:grid-cols-3" data-stall-area-calculator>
                     <div>
@@ -97,7 +97,7 @@
             <div class="app-section-heading">
                 <h2 class="app-section-title">Stall Vacancy and Bidding Schedule</h2>
             </div>
-            <form action="{{ route('admin.stalls.openings.store') }}" method="POST" class="mt-6 space-y-4">
+            <form action="{{ route('admin.stalls.openings.store') }}" method="POST" class="mt-6 space-y-4" data-stall-confirm="open-vacancy">
                 @csrf
                 <div>
                     @php
@@ -117,25 +117,35 @@
                                 No vacant stalls available
                             </div>
                         @else
-                            <div class="grid max-h-72 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-                                @foreach($vacantStalls as $stall)
-                                    <label
-                                        for="opening_stall_{{ $stall->id }}"
-                                        class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm transition hover:border-slate-400"
-                                    >
-                                        <input
-                                            id="opening_stall_{{ $stall->id }}"
-                                            name="stall_ids[]"
-                                            type="checkbox"
-                                            value="{{ $stall->id }}"
-                                            class="mt-1 rounded border-slate-300 text-slate-900"
-                                            data-stall-checkbox
-                                            @checked(in_array($stall->id, $selectedStallIds, true))
-                                        >
-                                        <span>
-                                            <span class="block font-semibold text-slate-950">{{ $stall->display_name }}</span>
-                                        </span>
-                                    </label>
+                            <div class="grid gap-3 sm:grid-cols-[1fr,auto]">
+                                <div>
+                                    <label for="vacant_stall_picker" class="sr-only">Select vacant stall</label>
+                                    <select id="vacant_stall_picker" class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm" data-stall-picker>
+                                        <option value="">Select a vacant stall...</option>
+                                        @foreach($vacantStalls as $stall)
+                                            <option value="{{ $stall->id }}" data-stall-name="{{ $stall->display_name }}">
+                                                {{ $stall->display_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold text-slate-900">Selected Stalls</p>
+                                </div>
+
+                                <div class="mt-3 flex flex-wrap gap-2" data-stall-selected-list></div>
+
+                                <p class="mt-3 text-sm text-slate-500" data-stall-selected-empty>
+                                    No stalls selected yet.
+                                </p>
+                            </div>
+
+                            <div data-stall-hidden-inputs>
+                                @foreach($selectedStallIds as $selectedStallId)
+                                    <input type="hidden" name="stall_ids[]" value="{{ $selectedStallId }}" data-stall-hidden-input>
                                 @endforeach
                             </div>
                         @endif
@@ -308,18 +318,111 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('[data-stall-multi-select]').forEach((manager) => {
-        const checkboxes = Array.from(manager.querySelectorAll('[data-stall-checkbox]'));
+        const picker = manager.querySelector('[data-stall-picker]');
+        const addButton = manager.querySelector('[data-stall-add]');
+        const selectedList = manager.querySelector('[data-stall-selected-list]');
+        const emptyState = manager.querySelector('[data-stall-selected-empty]');
+        const hiddenInputs = manager.querySelector('[data-stall-hidden-inputs]');
         const summary = document.querySelector('[data-stall-selected-summary]');
+        const stallNames = new Map(
+            Array.from(picker?.querySelectorAll('option[value]') || [])
+                .filter((option) => option.value !== '')
+                .map((option) => [option.value, option.dataset.stallName || option.textContent.trim()])
+        );
 
         const updateSummary = () => {
-            const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+            const selectedCount = hiddenInputs?.querySelectorAll('[data-stall-hidden-input]').length || 0;
 
             if (summary) {
                 summary.textContent = `${selectedCount} ${selectedCount === 1 ? 'stall' : 'stalls'} selected`;
             }
+
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', selectedCount > 0);
+            }
         };
 
-        checkboxes.forEach((checkbox) => checkbox.addEventListener('change', updateSummary));
+        const refreshPickerOptions = () => {
+            const selectedIds = new Set(
+                Array.from(hiddenInputs?.querySelectorAll('[data-stall-hidden-input]') || [])
+                    .map((input) => input.value)
+            );
+
+            Array.from(picker?.querySelectorAll('option[value]') || []).forEach((option) => {
+                if (option.value === '') {
+                    return;
+                }
+
+                option.hidden = selectedIds.has(option.value);
+                option.disabled = selectedIds.has(option.value);
+            });
+
+            if (picker && selectedIds.has(picker.value)) {
+                picker.value = '';
+            }
+        };
+
+        const renderSelectedStalls = () => {
+            if (!selectedList || !hiddenInputs) {
+                return;
+            }
+
+            selectedList.innerHTML = '';
+
+            Array.from(hiddenInputs.querySelectorAll('[data-stall-hidden-input]')).forEach((input) => {
+                const pill = document.createElement('span');
+                pill.className = 'inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white';
+                pill.dataset.selectedStallPill = input.value;
+
+                const label = document.createElement('span');
+                label.textContent = stallNames.get(input.value) || `Stall ${input.value}`;
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'rounded-full bg-white/15 px-1.5 text-white transition hover:bg-white/25';
+                removeButton.setAttribute('aria-label', `Remove ${label.textContent}`);
+                removeButton.textContent = 'x';
+                removeButton.addEventListener('click', () => {
+                    input.remove();
+                    renderSelectedStalls();
+                    refreshPickerOptions();
+                    updateSummary();
+                });
+
+                pill.append(label, removeButton);
+                selectedList.appendChild(pill);
+            });
+        };
+
+        const addSelectedStall = () => {
+            if (!picker?.value || !hiddenInputs) {
+                return;
+            }
+
+            const alreadySelected = hiddenInputs.querySelector(`[data-stall-hidden-input][value="${CSS.escape(picker.value)}"]`);
+
+            if (alreadySelected) {
+                picker.value = '';
+                return;
+            }
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'stall_ids[]';
+            input.value = picker.value;
+            input.dataset.stallHiddenInput = 'true';
+            hiddenInputs.appendChild(input);
+
+            picker.value = '';
+            renderSelectedStalls();
+            refreshPickerOptions();
+            updateSummary();
+        };
+
+        addButton?.addEventListener('click', addSelectedStall);
+        picker?.addEventListener('change', addSelectedStall);
+        renderSelectedStalls();
+        refreshPickerOptions();
         updateSummary();
     });
 
@@ -391,6 +494,64 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput?.addEventListener('input', updateSearch);
         updateSummary();
         updateSearch();
+    });
+
+    document.querySelectorAll('form[data-stall-confirm]').forEach((form) => {
+        let confirmed = false;
+
+        form.addEventListener('submit', (event) => {
+            if (confirmed) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const action = form.dataset.stallConfirm;
+            const checkedStalls = form.querySelectorAll('[data-stall-hidden-input]').length;
+            const checkedRequirements = form.querySelectorAll('[data-requirement-checkbox]:checked').length;
+            const config = action === 'open-vacancy'
+                ? {
+                    title: 'Open stall vacancy?',
+                    text: `This will open ${checkedStalls} ${checkedStalls === 1 ? 'stall' : 'stalls'} for applications with ${checkedRequirements} selected ${checkedRequirements === 1 ? 'requirement' : 'requirements'}.`,
+                    confirmButtonText: 'Yes, open vacancy',
+                    confirmButtonColor: '#059669',
+                    icon: 'question',
+                }
+                : {
+                    title: 'Create this stall?',
+                    text: 'Please confirm the stall dimensions, address, description, and uploaded photos before saving.',
+                    confirmButtonText: 'Yes, create stall',
+                    confirmButtonColor: '#0f172a',
+                    icon: 'question',
+                };
+
+            if (!window.Swal) {
+                if (window.confirm(config.title)) {
+                    confirmed = true;
+                    form.requestSubmit();
+                }
+
+                return;
+            }
+
+            window.Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonText: config.confirmButtonText,
+                cancelButtonText: 'Review again',
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#64748b',
+                focusCancel: true,
+                allowOutsideClick: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    confirmed = true;
+                    form.requestSubmit();
+                }
+            });
+        });
     });
 });
 </script>

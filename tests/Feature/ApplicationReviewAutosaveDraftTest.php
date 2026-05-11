@@ -113,6 +113,78 @@ class ApplicationReviewAutosaveDraftTest extends TestCase
         $this->assertSame('Please upload a clearer copy.', $requirement->fresh()->remarks);
     }
 
+    public function test_admin_can_mark_individual_requirement_as_needs_revision(): void
+    {
+        [$admin, $application, $requirement] = $this->createReviewFixture();
+
+        $response = $this->actingAs($admin)->patch(
+            route('admin.applications.review', $application),
+            [
+                'application_status' => 'Needs Revision',
+                'remarks' => 'Please revise the highlighted file.',
+                'requirements' => [
+                    [
+                        'id' => $requirement->id,
+                        'verification_status' => 'Needs Revision',
+                        'remarks' => 'Upload a clearer copy of this document.',
+                    ],
+                ],
+            ]
+        );
+
+        $response->assertRedirect(route('admin.applications.show', $application));
+
+        $requirement->refresh();
+
+        $this->assertSame('Needs Revision', $application->fresh()->application_status);
+        $this->assertSame('Needs Revision', $requirement->verification_status);
+        $this->assertSame('Upload a clearer copy of this document.', $requirement->remarks);
+        $this->assertSame($admin->employee->id, $requirement->verified_by_employee_id);
+        $this->assertNotNull($requirement->verification_date);
+    }
+
+    public function test_revision_resubmitted_notice_disappears_after_review(): void
+    {
+        [$admin, $application, $requirement] = $this->createReviewFixture();
+
+        $application->update([
+            'application_status' => 'Submitted',
+            'revision_count' => 1,
+            'revision_resubmitted_at' => now(),
+            'review_date' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.show', $application))
+            ->assertOk()
+            ->assertSee('Revision Resubmitted');
+        $this->actingAs($admin)
+            ->get(route('admin.applications.index'))
+            ->assertOk()
+            ->assertSee('Revision Resubmitted');
+
+        $this->actingAs($admin)->patch(route('admin.applications.review', $application), [
+            'application_status' => 'Qualified',
+            'remarks' => 'Revision reviewed and accepted.',
+            'requirements' => [
+                [
+                    'id' => $requirement->id,
+                    'verification_status' => 'Verified',
+                    'remarks' => null,
+                ],
+            ],
+        ])->assertRedirect(route('admin.applications.show', $application));
+
+        $this->actingAs($admin)
+            ->get(route('admin.applications.show', $application))
+            ->assertOk()
+            ->assertDontSee('Revision Resubmitted');
+        $this->actingAs($admin)
+            ->get(route('admin.applications.index', ['tab' => 'winners']))
+            ->assertOk()
+            ->assertDontSee('Revision Resubmitted');
+    }
+
     private function createReviewFixture(): array
     {
         $admin = User::createUserWithRole(

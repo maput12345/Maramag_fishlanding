@@ -1,5 +1,9 @@
 <!-- Profile Modal -->
 @if(request('modal') === 'profile')
+    @php
+        $profileUser = auth()->user();
+        $canEditProfileDetails = $profileUser->isAdmin() || $profileUser->isStaff() || $profileUser->isBroker() || $profileUser->isApplicant();
+    @endphp
     <x-app-modal
         title="Profile Settings"
         subtitle="Update your profile details and password options."
@@ -16,6 +20,7 @@
                 @csrf
                 @method('PUT')
 
+                @if($canEditProfileDetails)
                 <!-- Name Fields -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -111,6 +116,7 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+                @endif
                 @endif
 
                 <!-- Email Field (Read-only) -->

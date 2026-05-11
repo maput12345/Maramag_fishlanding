@@ -110,10 +110,17 @@ class ApplicationPortalController extends Controller
 
         $requirementDefinitions = $opening->requirementDefinitionMap();
         $requirementTypes = $opening->resolvedRequirementTypes();
+        $user = Auth::user();
+        $applicantProfile = $user->applicantProfile;
+        $latestApplication = $user
+            ->brokerApplications()
+            ->latest('submitted_at')
+            ->latest('id')
+            ->first();
 
         $opening->loadMissing('stall.stallImages');
 
-        return view('applications.create', compact('opening', 'requirementTypes', 'requirementDefinitions'));
+        return view('applications.create', compact('opening', 'requirementTypes', 'requirementDefinitions', 'applicantProfile', 'latestApplication'));
     }
 
     /**
@@ -138,21 +145,10 @@ class ApplicationPortalController extends Controller
                 : $this->validatedNaturalPersonNameParts($validated, $user);
             $contactNumber = $isJuridicalPerson
                 ? $validated['representative_contact_number']
-                : ($validated['contact_number'] ?? $user->contact_number);
+                : $validated['contact_number'];
             $address = $isJuridicalPerson
                 ? $validated['business_address']
-                : ($validated['address'] ?? $user->address);
-
-            if (!$isJuridicalPerson) {
-                $user->updateProfile([
-                    'first_name' => $nameParts['first_name'],
-                    'middle_name' => $nameParts['middle_name'],
-                    'last_name' => $nameParts['last_name'],
-                    'suffix' => $nameParts['suffix'],
-                    'contact_number' => $contactNumber,
-                    'address' => $address,
-                ]);
-            }
+                : $validated['address'];
 
             $application = BrokerApplication::create([
                 'user_id' => $user->id,
@@ -274,32 +270,17 @@ class ApplicationPortalController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($application, $validated, $request) {
-            /** @var User $user */
-            $user = Auth::user();
-            $nameParts = $this->applicantProfileNameParts($user);
-
-            $user->updateProfile([
-                'first_name' => $nameParts['first_name'],
-                'middle_name' => $nameParts['middle_name'],
-                'last_name' => $nameParts['last_name'],
-                'suffix' => $user->suffix,
-                'contact_number' => $validated['contact_number'],
-                'address' => $validated['address'],
-            ]);
+            $resubmittedAt = now();
 
             $application->update([
-                'first_name' => $nameParts['first_name'],
-                'middle_name' => $nameParts['middle_name'],
-                'last_name' => $nameParts['last_name'],
-                'suffix' => $user->suffix,
                 'business_name' => $validated['business_name'] ?? null,
                 'address' => $validated['address'],
                 'contact_number' => $validated['contact_number'],
                 'application_status' => 'Submitted',
                 'reviewed_by_employee_id' => null,
                 'review_date' => null,
-                'submitted_at' => now(),
-                'revision_resubmitted_at' => now(),
+                'submitted_at' => $resubmittedAt,
+                'revision_resubmitted_at' => $resubmittedAt,
                 'revision_count' => ((int) $application->revision_count) + 1,
             ]);
 
@@ -327,7 +308,7 @@ class ApplicationPortalController extends Controller
 
                 if ($hasReplacementFile) {
                     $updates['file_path'] = $replacementFile->store('broker-applications/' . $application->id, 'public');
-                    $updates['uploaded_at'] = now();
+                    $updates['uploaded_at'] = $resubmittedAt;
                 }
 
                 if ($hasReplacementFile || $requirement->verification_status !== 'Verified') {
@@ -371,11 +352,13 @@ class ApplicationPortalController extends Controller
 
     private function applicantProfileNameParts(User $user): array
     {
-        $fallbackNameParts = User::splitName($user->name);
+        $latestApplication = $user->latestBrokerApplication;
+        $applicantProfile = $user->applicantProfile;
+        $fallbackNameParts = User::splitName($applicantProfile?->name ?: ($latestApplication?->name ?: $user->name));
         $nameParts = User::extractNameParts([
-            'first_name' => $user->first_name,
-            'middle_name' => $user->middle_name,
-            'last_name' => $user->last_name,
+            'first_name' => $applicantProfile?->first_name ?? $latestApplication?->first_name,
+            'middle_name' => $applicantProfile?->middle_name ?? $latestApplication?->middle_name,
+            'last_name' => $applicantProfile?->last_name ?? $latestApplication?->last_name,
         ], $fallbackNameParts);
 
         $nameParts['first_name'] = $nameParts['first_name'] ?: ($fallbackNameParts['first_name'] ?? 'Applicant');
@@ -392,7 +375,7 @@ class ApplicationPortalController extends Controller
             'first_name' => trim((string) ($validated['first_name'] ?? $fallbackNameParts['first_name'])),
             'middle_name' => $this->nullableApplicationText($validated['middle_name'] ?? $fallbackNameParts['middle_name'] ?? null),
             'last_name' => trim((string) ($validated['last_name'] ?? $fallbackNameParts['last_name'])),
-            'suffix' => $this->nullableApplicationText($validated['suffix'] ?? $user->suffix),
+            'suffix' => $this->nullableApplicationText($validated['suffix'] ?? $user->applicantProfile?->suffix ?? $user->latestBrokerApplication?->suffix),
         ];
     }
 

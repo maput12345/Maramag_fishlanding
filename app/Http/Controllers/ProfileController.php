@@ -38,22 +38,23 @@ class ProfileController extends Controller
             $user->save();
         }
 
-        // Update profile data
-        $profileData = [
-            'first_name' => $request->first_name,
-            'middle_name' => $request->middle_name,
-            'last_name' => $request->last_name,
-            'suffix' => $request->suffix,
-            'contact_number' => $request->contact_number,
-            'address' => $request->address,
-        ];
+        if ($user->isAdmin() || $user->isStaff() || $user->isBroker() || $user->isApplicant()) {
+            $profileData = [
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name,
+                'last_name' => $request->last_name,
+                'suffix' => $request->suffix,
+                'contact_number' => $request->contact_number,
+                'address' => $request->address,
+            ];
 
-        // Add stall_name for brokers only
-        if ($user->isBroker() && $request->has('stall_name')) {
-            $profileData['stall_name'] = $request->stall_name;
+            // Add stall_name for brokers only
+            if ($user->isBroker() && $request->has('stall_name')) {
+                $profileData['stall_name'] = $request->stall_name;
+            }
+
+            $user->updateProfile($profileData);
         }
-
-        $user->updateProfile($profileData);
 
         // Redirect back to the referring page without modal parameter on success
         $referer = request()->header('referer');
