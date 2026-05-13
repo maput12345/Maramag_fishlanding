@@ -260,8 +260,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 
     <template id="sales-detail-row-template">
         <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6">
-            <div class="flex flex-wrap gap-4">
-                <div class="min-w-[200px] flex-1">
+            <div class="flex flex-wrap gap-3 xl:flex-nowrap xl:items-start">
+                <div class="w-full lg:w-52 lg:flex-none">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                     <select name="sales_details[INDEX][fish_type_id]"
                             class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
@@ -279,7 +279,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                     </select>
                 </div>
 
-                <div class="min-w-[200px] flex-1">
+                <div class="w-full lg:w-52 lg:flex-none">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Fish Box</label>
                     <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
                         <div class="fish-box-item">
@@ -291,24 +291,43 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                     </div>
                 </div>
 
-                <div class="min-w-[150px] flex-1">
+                <div class="w-full lg:w-36 lg:flex-none">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
-                    <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                           placeholder="0.00">
+                    <input type="text" name="sales_details[INDEX][unit_price]" inputmode="decimal"
+                           class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
+                           placeholder="0.00"
+                           readonly>
                 </div>
 
-                <div class="min-w-[120px] flex-1">
+                <div class="w-full lg:w-32 lg:flex-none">
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Discount Type</label>
+                    <select name="sales_details[INDEX][discount_mode]"
+                            class="discount-mode-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <option value="percent" selected>Percent</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                </div>
+
+                <div class="w-full lg:w-36 lg:flex-none">
+                    <label class="discount-value-label mb-2 block text-sm font-medium text-gray-700">Discount %</label>
+                    <input type="text" name="sales_details[INDEX][discount_value]" inputmode="decimal"
+                           class="discount-value-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <input type="hidden" name="sales_details[INDEX][discount_percent]" class="discount-percent-input">
+                    <input type="hidden" name="sales_details[INDEX][discount]" class="discount-input">
+                </div>
+
+                <div class="w-full lg:w-20 lg:flex-none">
                     <label class="mb-2 block text-sm font-medium text-gray-700">QTY</label>
                     <input type="number" name="sales_details[INDEX][quantity]" value="1" min="1"
                            class="quantity-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="1">
                 </div>
 
-                <div class="min-w-[150px] flex-1">
+                <div class="w-full lg:w-36 lg:flex-none">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
-                    <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
-                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-500"
+                    <input type="text" name="sales_details[INDEX][sub_total]" inputmode="decimal"
+                           class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                            readonly>
                 </div>
 
@@ -477,22 +496,51 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
         function paymentForm(config = {}) {
             return {
-                paidAmount: Number(config.initialPaidAmount ?? 0),
+                paidAmount: Number(config.initialPaidAmount ?? 0) > 0
+                    ? Number(config.initialPaidAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '',
                 maxPaymentAmount: Number(config.maxPaymentAmount ?? 0),
                 paymentError: '',
 
                 initializePaymentForm() {
-                    if (this.paidAmount > 0) {
+                    if (this.parseMoney(this.paidAmount) > 0) {
                         this.validatePaymentAmount();
                     }
                 },
 
+                parseMoney(value) {
+                    const normalizedValue = String(value ?? '').replace(/[₱,\s]/g, '');
+                    const parsedValue = parseFloat(normalizedValue);
+
+                    return Number.isFinite(parsedValue) ? parsedValue : 0;
+                },
+
+                formatMoney(value) {
+                    return (Number(value) || 0).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                },
+
+                formatPaymentAmount() {
+                    if (this.paidAmount === '') {
+                        return;
+                    }
+
+                    this.paidAmount = this.formatMoney(this.parseMoney(this.paidAmount));
+                    this.validatePaymentAmount();
+                },
+
+                normalizePaymentAmount() {
+                    this.paidAmount = this.parseMoney(this.paidAmount).toFixed(2);
+                },
+
                 validatePaymentAmount() {
                     this.paymentError = '';
-                    const currentAmount = Number(this.paidAmount) || 0;
+                    const currentAmount = this.parseMoney(this.paidAmount);
 
                     if (currentAmount > this.maxPaymentAmount) {
-                        this.paymentError = 'Payment amount cannot exceed the remaining balance of ₱' + this.maxPaymentAmount.toFixed(2);
+                        this.paymentError = 'Payment amount cannot exceed the remaining balance of ₱' + this.formatMoney(this.maxPaymentAmount);
                         return false;
                     }
 

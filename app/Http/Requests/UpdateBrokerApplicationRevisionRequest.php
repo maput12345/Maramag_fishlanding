@@ -62,7 +62,7 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
 
                 $requirement = $requirements->get($requirementId);
 
-                if (!$requirement || strcasecmp((string) $requirement->verification_status, 'Verified') === 0) {
+                if (!$requirement || !$this->requiresApplicantAction($requirement->verification_status)) {
                     continue;
                 }
 
@@ -72,7 +72,7 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
             }
 
             $hasRequirementForRevision = $requirements
-                ->contains(fn ($requirement) => strcasecmp((string) $requirement->verification_status, 'Verified') !== 0);
+                ->contains(fn ($requirement) => $this->requiresApplicantAction($requirement->verification_status));
 
             if (!$hasRequirementForRevision) {
                 $validator->errors()->add('requirements', 'There are no requirements currently open for revision.');
@@ -82,5 +82,10 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
                 $validator->errors()->add('requirements', 'Please upload at least one replacement file before resubmitting your revision.');
             }
         });
+    }
+
+    private function requiresApplicantAction(?string $verificationStatus): bool
+    {
+        return in_array($verificationStatus, ['Needs Revision', 'Rejected'], true);
     }
 }

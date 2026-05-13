@@ -13,6 +13,7 @@
     <meta name="flash-info" content="{{ session('info') }}">
 
     <title>{{ config('app.name', 'POS System') }} - Admin</title>
+    @include('layouts.partials.favicons')
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

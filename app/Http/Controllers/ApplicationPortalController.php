@@ -26,11 +26,12 @@ class ApplicationPortalController extends Controller
             return $redirect;
         }
 
-        $openings = ApplicationOpening::with(['stall.stallImages'])
+        $openings = ApplicationOpening::with(['openingBatch', 'stall.stallImages'])
             ->availableForApplication()
             ->withCount('brokerApplications')
-            ->orderBy('start_date')
-            ->get();
+            ->get()
+            ->sortBy('start_date')
+            ->values();
 
         $applications = $user->brokerApplications()
             ->with([
@@ -46,7 +47,7 @@ class ApplicationPortalController extends Controller
 
         $primaryOpening = $openings->first();
         $currentApplication = $applications
-            ->whereNotIn('application_status', ['Rejected', 'Not Selected'])
+            ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
             ->first();
 
         return view('applications.index', compact('openings', 'applications', 'primaryOpening', 'currentApplication'));
@@ -100,7 +101,7 @@ class ApplicationPortalController extends Controller
 
         $alreadyApplied = Auth::user()
             ->brokerApplications()
-            ->whereNotIn('application_status', ['Rejected', 'Not Selected'])
+            ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
             ->exists();
 
         if ($alreadyApplied) {
@@ -170,6 +171,16 @@ class ApplicationPortalController extends Controller
                 'contact_number' => $contactNumber,
                 'application_status' => 'Submitted',
                 'submitted_at' => now(),
+            ]);
+
+            $user->loadMissing('applicantProfile');
+            $user->updateProfile([
+                'first_name' => $nameParts['first_name'],
+                'middle_name' => $nameParts['middle_name'],
+                'last_name' => $nameParts['last_name'],
+                'suffix' => $nameParts['suffix'] ?? null,
+                'contact_number' => $contactNumber,
+                'address' => $address,
             ]);
 
             foreach ($requirementTypes as $requirementType) {
@@ -284,6 +295,18 @@ class ApplicationPortalController extends Controller
                 'revision_count' => ((int) $application->revision_count) + 1,
             ]);
 
+            /** @var User $user */
+            $user = Auth::user();
+            $user->loadMissing('applicantProfile');
+            $user->updateProfile([
+                'first_name' => $application->first_name,
+                'middle_name' => $application->middle_name,
+                'last_name' => $application->last_name,
+                'suffix' => $application->suffix,
+                'contact_number' => $validated['contact_number'],
+                'address' => $validated['address'],
+            ]);
+
             $requirements = $application->requirements()
                 ->get()
                 ->keyBy('id');
@@ -299,6 +322,12 @@ class ApplicationPortalController extends Controller
                 $fileInput = 'requirements.' . $requirement->id . '.file';
                 $replacementFile = $requirementPayload['file'] ?? data_get($request->allFiles(), $fileInput);
                 $hasReplacementFile = $replacementFile && $replacementFile->isValid();
+                $requiresApplicantAction = $this->requirementRequiresApplicantAction($requirement->verification_status);
+
+                if (!$requiresApplicantAction && !$hasReplacementFile) {
+                    continue;
+                }
+
                 $updates = [
                     'document_number' => $requirementPayload['document_number'] ?? null,
                     'issuing_office' => $requirementPayload['issuing_office'] ?? null,
@@ -311,7 +340,7 @@ class ApplicationPortalController extends Controller
                     $updates['uploaded_at'] = $resubmittedAt;
                 }
 
-                if ($hasReplacementFile || $requirement->verification_status !== 'Verified') {
+                if ($hasReplacementFile || $requiresApplicantAction) {
                     $updates['verification_status'] = 'Pending';
                     $updates['verified_by_employee_id'] = null;
                     $updates['verification_date'] = null;
@@ -348,6 +377,11 @@ class ApplicationPortalController extends Controller
         }
 
         return null;
+    }
+
+    private function requirementRequiresApplicantAction(?string $verificationStatus): bool
+    {
+        return in_array($verificationStatus, ['Needs Revision', 'Rejected'], true);
     }
 
     private function applicantProfileNameParts(User $user): array

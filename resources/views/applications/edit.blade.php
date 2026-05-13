@@ -99,16 +99,17 @@
                         @php
                             $requirementKey = 'requirements.' . $requirement->id;
                             $isVerified = strcasecmp((string) $requirement->verification_status, 'Verified') === 0;
+                            $requiresApplicantAction = in_array((string) $requirement->verification_status, ['Needs Revision', 'Rejected'], true);
                         @endphp
 
-                        <article class="portal-requirement-card {{ $isVerified ? '' : 'border-orange-200 bg-orange-50/40' }}">
+                        <article class="portal-requirement-card {{ $requiresApplicantAction ? 'border-orange-200 bg-orange-50/40' : '' }}">
                             <div class="portal-requirement-card__header">
                                 <div>
                                     <div class="portal-requirement-card__badges">
                                         <x-status-badge :status="$requirement->verification_status" />
-                                        @unless($isVerified)
+                                        @if($requiresApplicantAction)
                                             <span class="portal-status-badge portal-status-badge--warning">Action Required</span>
-                                        @endunless
+                                        @endif
                                     </div>
                                     <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
                                 </div>
@@ -122,7 +123,7 @@
 
                             <input type="hidden" name="requirements[{{ $requirement->id }}][id]" value="{{ $requirement->id }}">
 
-                            @unless($isVerified)
+                            @if($requiresApplicantAction)
                                 @if($requirement->remarks)
                                     <div class="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4 text-base text-orange-700">
                                         <div class="flex items-start gap-3">
@@ -149,7 +150,11 @@
                                         @enderror
                                     </div>
                                 </div>
-                            @endunless
+                            @elseif($requirement->remarks)
+                                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-base text-slate-600">
+                                    {{ $requirement->remarks }}
+                                </div>
+                            @endif
                         </article>
                     @endforeach
                 </div>

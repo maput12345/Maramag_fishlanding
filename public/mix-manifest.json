@@ -2,16 +2,16 @@
     "/js/app.js": "/js/app.js?id=82c4c40ebf268022d928cad30cb7b45a",
     "/js/user.js": "/js/user.js?id=57dc71485b4524398a4c610ff9aafdbf",
     "/js/inventory.js": "/js/inventory.js?id=2ae7dd592f55b48a4a7b3b7f047c2e70",
-    "/js/qr-code.js": "/js/qr-code.js?id=c162c04713ecde931f4a5c808960adc3",
+    "/js/qr-code.js": "/js/qr-code.js?id=a0085a4b94d9539bd77512c5f0ae289c",
     "/js/qr-scanner.js": "/js/qr-scanner.js?id=eb082a31eebd70adacc1ce1179e76830",
     "/js/qr-backend-handler.js": "/js/qr-backend-handler.js?id=7037ce10dc81327a0da311863aee1328",
     "/js/print-receipt.js": "/js/print-receipt.js?id=65b97fad1d91b57815debafedf0b6659",
-    "/js/sales-qr-scanner.js": "/js/sales-qr-scanner.js?id=5fac2448f6acea3f0e6870f940ca893a",
-    "/js/sales-form.js": "/js/sales-form.js?id=8a4a378e364ab2f97423ffe63b270fa5",
-    "/js/sales-page.js": "/js/sales-page.js?id=15bfe95d5bfe8d01b777c351cf31a1c2",
-    "/js/remote-sales-scanner.js": "/js/remote-sales-scanner.js?id=9e1e7a16318b5175ea8ccd05fe1f3d29",
+    "/js/sales-qr-scanner.js": "/js/sales-qr-scanner.js?id=ebb8f6939a913b0de5d68f5d27b02b8f",
+    "/js/sales-form.js": "/js/sales-form.js?id=748f76b0b8009dcb2869b417c4629ee4",
+    "/js/sales-page.js": "/js/sales-page.js?id=4e48f5efba4f30d2b8eed506191e87b4",
+    "/js/remote-sales-scanner.js": "/js/remote-sales-scanner.js?id=b56e72fb4c54f02f4ad8893b6c056477",
     "/js/remote-sales-phone-scanner.js": "/js/remote-sales-phone-scanner.js?id=4adf8579c6819383b30af55884cded87",
     "/css/filter-layout.css": "/css/filter-layout.css?id=196d1ffb077902dadc0bde71bd4dca01",
     "/css/admin.css": "/css/admin.css?id=a8f20cd98864b2df06900ea214d07932",
-    "/css/app.css": "/css/app.css?id=f2e814a8e909b147e4a37ea6e20d9274"
+    "/css/app.css": "/css/app.css?id=1311e5af510e130253debf6d2f359efa"
 }

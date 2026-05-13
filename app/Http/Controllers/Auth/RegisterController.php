@@ -69,8 +69,11 @@ class RegisterController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'suffix' => ['nullable', 'string', 'max:50'],
-            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'confirmed', 'unique:User'],
+            'email' => ['required', 'string', 'email:rfc', 'max:255', 'unique:User'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already registered.',
         ]);
 
         $validator->after(function ($validator) {

@@ -259,7 +259,7 @@
             event.preventDefault();
             closeCurrentModal(modalCloseTrigger.dataset.closeUrl || getSalesBaseUrl());
         }
-    });
+    }, true);
 
     document.addEventListener('submit', (event) => {
         if (!isSalesPageActive()) {

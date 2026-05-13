@@ -133,16 +133,17 @@ class FishTypesController extends Controller
 
         $currentFishType = FishType::findOrFail($id);
         $isChangingFishType = mb_strtolower($currentFishType->name) !== $normalizedName;
+        $isAssignmentLocked = $currentFishType->isUsed($brokerId) || (int) $assignment->prices_count > 0;
 
-        if ($isChangingFishType && ($currentFishType->isUsed($brokerId) || (int) $assignment->prices_count > 0)) {
+        if ($isChangingFishType && $isAssignmentLocked) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
                 ->withInput()
-                ->with('error', 'This fish is already used in purchases or prices. Add the new fish instead to keep history accurate.');
+                ->with('error', 'This fish already has purchases or prices. Add the new fish instead so old history stays accurate.');
         }
 
         $targetFishType = $currentFishType;
 
-        if ($isChangingFishType) {
+        if ($isChangingFishType && !$isAssignmentLocked) {
             $targetFishType = FishType::whereRaw('LOWER(name) = ?', [$normalizedName])->first();
 
             if (!$targetFishType) {
@@ -161,7 +162,7 @@ class FishTypesController extends Controller
 
         $assignment->update([
             'fish_type_id' => $targetFishType->id,
-            'display_name' => $targetFishType->name,
+            'display_name' => $fishName,
             'display_description' => $description,
         ]);
 

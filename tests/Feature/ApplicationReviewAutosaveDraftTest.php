@@ -143,6 +143,38 @@ class ApplicationReviewAutosaveDraftTest extends TestCase
         $this->assertNotNull($requirement->verification_date);
     }
 
+    public function test_verified_requirement_clears_existing_remarks(): void
+    {
+        [$admin, $application, $requirement] = $this->createReviewFixture();
+
+        $requirement->update([
+            'verification_status' => 'Needs Revision',
+            'remarks' => 'Old correction note should disappear.',
+        ]);
+
+        $response = $this->actingAs($admin)->patch(
+            route('admin.applications.review', $application),
+            [
+                'application_status' => 'Qualified',
+                'remarks' => 'Requirement accepted.',
+                'requirements' => [
+                    [
+                        'id' => $requirement->id,
+                        'verification_status' => 'Verified',
+                        'remarks' => 'Admin forgot to delete this note.',
+                    ],
+                ],
+            ]
+        );
+
+        $response->assertRedirect(route('admin.applications.show', $application));
+
+        $requirement->refresh();
+
+        $this->assertSame('Verified', $requirement->verification_status);
+        $this->assertNull($requirement->remarks);
+    }
+
     public function test_revision_resubmitted_notice_disappears_after_review(): void
     {
         [$admin, $application, $requirement] = $this->createReviewFixture();

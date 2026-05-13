@@ -14,6 +14,17 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         'mode' => 'create',
         'detailIndex' => count($salesDetails ?? []),
     ];
+    $buyerSectionInitiallyVisible = old('buyer_first_name') !== null
+        || old('buyer_middle_name') !== null
+        || old('buyer_last_name') !== null
+        || old('buyer_contact') !== null
+        || old('initial_paid_amount') !== null
+        || old('initial_payment_method') !== null
+        || $errors->has('buyer_first_name')
+        || $errors->has('buyer_last_name')
+        || $errors->has('buyer_contact')
+        || $errors->has('initial_paid_amount')
+        || $errors->has('initial_payment_method');
     $printReceiptScriptUrl = asset('js/print-receipt.js') . '?v=' . filemtime(public_path('js/print-receipt.js'));
     $qrScannerLegacyScriptUrl = asset('js/qr-scanner-legacy.min.js') . '?v=' . filemtime(public_path('js/qr-scanner-legacy.min.js'));
     $salesQrScannerScriptUrl = asset('js/sales-qr-scanner.js') . '?v=' . filemtime(public_path('js/sales-qr-scanner.js'));
@@ -24,6 +35,73 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 @extends('layouts.broker')
 
 @section('content')
+    <style>
+        .transaction-buyer-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(248, 250, 252, 0.72);
+            backdrop-filter: blur(2px);
+            padding: 1rem;
+        }
+
+        .transaction-buyer-modal.is-hidden {
+            display: none;
+        }
+
+        .transaction-buyer-panel {
+            width: min(46rem, 100%);
+            max-height: min(42rem, calc(100vh - 2rem));
+            overflow-y: auto;
+            border: 1px solid #d8e1ef;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+        }
+
+        .transaction-buyer-body {
+            padding: 1.25rem;
+        }
+
+        .transaction-buyer-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.875rem;
+        }
+
+        @media (min-width: 768px) {
+            .transaction-buyer-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .transaction-buyer-field {
+            height: 2.875rem !important;
+            border-radius: 0.875rem !important;
+            padding: 0 1rem !important;
+        }
+
+        .transaction-buyer-actions {
+            position: sticky;
+            bottom: 0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            border-top: 1px solid #eef2f7;
+            background: #fff;
+            padding: 1rem 1.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .transaction-buyer-actions {
+                flex-direction: column-reverse;
+            }
+        }
+    </style>
+
     <div
         id="sales-page-root"
         class="relative w-full content-spacing"
@@ -31,7 +109,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         data-sales-base-url="{{ $transactionUrl }}"
     >
         <div id="sales-page-fragment" data-sales-form-root>
-            <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Transaction</h1>
                 </div>
@@ -48,32 +126,34 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     Broker sales are read-only until an admin explicitly enables support actions.
                 </div>
             @else
-                <section class="rounded-xl bg-white p-6 shadow-lg">
+                <section class="rounded-xl bg-white p-4 shadow-lg">
                     <script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 
                     <form action="{{ route('broker.sales.store') }}"
                           method="POST"
                           data-sales-async-form
+                          data-transaction-step-form
+                          data-buyer-section-visible="{{ $buyerSectionInitiallyVisible ? 'true' : 'false' }}"
                           data-sales-after-save-url="{{ $transactionUrl }}"
-                          class="space-y-6">
+                          class="space-y-4"
+                          novalidate>
                         @csrf
                         <input type="hidden" name="after_save" value="transaction">
                         <input type="hidden" id="sales_date" name="sales_date" value="{{ old('sales_date', date('Y-m-d')) }}">
                         <input type="hidden" id="total_amount" name="total_amount" value="{{ old('total_amount', '') }}">
 
-                        <div class="space-y-4">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="sales-details-card space-y-3">
+                            <div class="sales-details-header flex flex-col gap-3 bg-white sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">
-                                        Sales Details <span class="text-red-500">*</span>
+                                        Transaction <span class="text-red-500">*</span>
                                     </label>
-                                    <p class="mt-1 text-xs text-gray-500">Price per box auto-fills from your current broker fish price list when available.</p>
                                 </div>
                                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
                                     <button type="button" id="add-sales-detail-btn"
                                             class="app-button app-button--dark h-12 w-full px-5 text-sm sm:w-auto">
                                         <x-heroicon-o-plus class="h-4 w-4" />
-                                        <span>Add Sales Detail</span>
+                                        <span>Add Fish</span>
                                     </button>
                                     <button type="button" id="scan-qr-btn"
                                             class="app-button app-button--dark h-12 w-full px-5 text-sm sm:w-auto">
@@ -88,11 +168,13 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                 </div>
                             </div>
 
-                            <div class="space-y-4" id="sales-details-container">
+                            <div class="sales-details-scroll-area space-y-3 pr-2"
+                                 id="sales-details-container"
+                                 style="max-height: min(32rem, calc(100vh - 22rem)); overflow-y: auto; overscroll-behavior: contain;">
                                 @foreach($salesDetails as $index => $detail)
                                     <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6" data-index="{{ $index }}">
-                                        <div class="flex flex-wrap gap-4">
-                                            <div class="min-w-[200px] flex-1">
+                                        <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(10rem,1.45fr)_minmax(10rem,1.45fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_5.5rem_minmax(8rem,1fr)_2.75rem] xl:items-start">
+                                            <div class="min-w-0">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                                                 <select name="sales_details[{{ $index }}][fish_type_id]"
                                                         class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
@@ -111,7 +193,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                 </select>
                                             </div>
 
-                                            <div class="min-w-[200px] flex-1">
+                                            <div class="min-w-0">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Fish Box</label>
                                                 <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
                                                     <div class="fish-box-item">
@@ -125,16 +207,45 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                 </div>
                                             </div>
 
-                                            <div class="min-w-[150px] flex-1">
+                                            <div class="min-w-0">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
-                                               <input type="number" name="sales_details[{{ $index }}][unit_price]"
-                                                      value="{{ $detail['unit_price'] ?? '' }}"
-                                                      step="0.01" min="0"
-                                                       class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                                       placeholder="0.00">
+                                               <input type="text" name="sales_details[{{ $index }}][unit_price]"
+                                                      value="{{ isset($detail['unit_price']) && $detail['unit_price'] !== '' ? number_format((float) $detail['unit_price'], 2) : '' }}"
+                                                      inputmode="decimal"
+                                                       class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
+                                                       placeholder="0.00"
+                                                       readonly>
                                             </div>
 
-                                            <div class="min-w-[120px] flex-1">
+                                            <div class="min-w-0">
+                                                <label class="mb-2 block text-sm font-medium text-gray-700">Discount Type</label>
+                                                <select name="sales_details[{{ $index }}][discount_mode]"
+                                                        class="discount-mode-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                                                    <option value="percent" {{ ($detail['discount_mode'] ?? 'percent') === 'percent' ? 'selected' : '' }}>Percent</option>
+                                                    <option value="amount" {{ ($detail['discount_mode'] ?? '') === 'amount' ? 'selected' : '' }}>Amount</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                @php
+                                                    $discountMode = $detail['discount_mode'] ?? 'percent';
+                                                    $discountPercent = isset($detail['discount_percent']) && $detail['discount_percent'] !== ''
+                                                        ? (float) $detail['discount_percent']
+                                                        : ((isset($detail['discount'], $detail['unit_price']) && (float) $detail['unit_price'] > 0) ? (((float) $detail['discount'] / (float) $detail['unit_price']) * 100) : null);
+                                                    $discountAmount = isset($detail['discount']) && $detail['discount'] !== '' ? (float) $detail['discount'] : null;
+                                                    $discountValue = $discountMode === 'amount' ? $discountAmount : $discountPercent;
+                                                @endphp
+                                                <label class="discount-value-label mb-2 block text-sm font-medium text-gray-700">{{ $discountMode === 'amount' ? 'Discount Amount' : 'Discount %' }}</label>
+                                                <input type="text" name="sales_details[{{ $index }}][discount_value]"
+                                                       value="{{ $discountValue !== null ? number_format($discountValue, 2) : '' }}"
+                                                       inputmode="decimal"
+                                                       class="discount-value-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                       placeholder="0.00">
+                                                <input type="hidden" name="sales_details[{{ $index }}][discount_percent]" class="discount-percent-input" value="{{ $discountPercent !== null ? number_format($discountPercent, 2, '.', '') : '' }}">
+                                                <input type="hidden" name="sales_details[{{ $index }}][discount]" class="discount-input" value="{{ $discountAmount !== null ? number_format($discountAmount, 2, '.', '') : '' }}">
+                                            </div>
+
+                                            <div class="min-w-0">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">QTY</label>
                                                 <input type="number" name="sales_details[{{ $index }}][quantity]"
                                                        value="{{ $detail['quantity'] ?? '1' }}"
@@ -143,16 +254,16 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                        placeholder="1">
                                             </div>
 
-                                            <div class="min-w-[150px] flex-1">
+                                            <div class="min-w-0">
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
-                                               <input type="number" name="sales_details[{{ $index }}][sub_total]"
-                                                      value="{{ $detail['sub_total'] ?? '' }}"
-                                                      step="0.01" min="0"
+                                               <input type="text" name="sales_details[{{ $index }}][sub_total]"
+                                                      value="{{ isset($detail['sub_total']) && $detail['sub_total'] !== '' ? number_format((float) $detail['sub_total'], 2) : '' }}"
+                                                      inputmode="decimal"
                                                        class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                                                        readonly>
                                             </div>
 
-                                            <div class="flex items-end">
+                                            <div class="flex items-end justify-center xl:pt-7">
                                                 <button type="button"
                                                         class="remove-detail-btn rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
                                                         aria-label="Remove sales detail">
@@ -167,102 +278,166 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                 @endforeach
                             </div>
 
-                            <div class="rounded-xl bg-blue-50 p-6">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-lg font-semibold text-gray-900">TOTAL:</span>
-                                    <span class="text-right text-2xl font-bold tabular-nums text-gray-900" id="total-amount-display">₱0.00</span>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div class="rounded-2xl border border-gray-200 bg-white p-6">
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <label for="buyer_first_name" class="mb-2 block text-sm font-medium text-gray-700">
-                                        First Name <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" id="buyer_first_name" name="buyer_first_name"
-                                           value="{{ old('buyer_first_name', '') }}"
-                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter first name"
-                                           required>
-                                </div>
-
-                                <div>
-                                    <label for="buyer_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
-                                    <input type="text" id="buyer_middle_name" name="buyer_middle_name"
-                                           value="{{ old('buyer_middle_name', '') }}"
-                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Optional">
-                                </div>
-
-                                <div>
-                                    <label for="buyer_last_name" class="mb-2 block text-sm font-medium text-gray-700">
-                                        Last Name <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" id="buyer_last_name" name="buyer_last_name"
-                                           value="{{ old('buyer_last_name', '') }}"
-                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter last name"
-                                           required>
-                                </div>
-
-                                <div>
-                                    <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">
-                                        Contact Number <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" id="buyer_contact" name="buyer_contact"
-                                           value="{{ old('buyer_contact', '') }}"
-                                           class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                           placeholder="Enter contact number"
-                                           required>
-                                </div>
-                            </div>
-
-
-
-                            <input type="hidden" id="initial_payment_date" name="initial_payment_date" value="{{ old('initial_payment_date', date('Y-m-d')) }}">
-
-                            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">Paid Amount</label>
-                                   <div class="currency-input-group">
-                                       <span class="currency-input-symbol">₱</span>
-                                       <input type="number" id="initial_paid_amount" name="initial_paid_amount"
-                                              value="{{ old('initial_paid_amount', '') }}"
-                                              step="0.01" min="0.01"
-                                              data-currency-input="true"
-                                              class="currency-input-field"
-                                              placeholder="0.00">
-                                   </div>
-                                    <div class="mt-2 text-xs text-gray-500">
-                                        Maximum payment: ₱<span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
+                            <div class="rounded-xl bg-blue-50 p-4">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div class="flex items-center justify-between gap-4 sm:flex-1">
+                                        <span class="text-lg font-semibold text-gray-900">TOTAL:</span>
+                                        <span class="text-right text-2xl font-bold tabular-nums text-gray-900" id="total-amount-display">₱0.00</span>
                                     </div>
-                                    <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
+                                    <button type="submit"
+                                            data-transaction-step-submit
+                                            class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-green-600 px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 sm:w-auto"
+                                            style="min-width: 11rem;">
+                                        {{ $buyerSectionInitiallyVisible ? 'Confirm Transaction' : 'Save Transaction' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="{{ $buyerSectionInitiallyVisible ? '' : 'is-hidden' }} transaction-buyer-modal"
+                             data-buyer-info-section
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="buyer-info-modal-title">
+                            <div class="transaction-buyer-panel">
+                                <div class="transaction-buyer-body">
+                                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <h2 id="buyer-info-modal-title" class="text-lg font-semibold text-gray-900">Buyer Information</h2>
+                                        <p class="mt-1 text-xs text-gray-500">Complete these details to confirm the full transaction.</p>
+                                    </div>
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <div class="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-gray-900">
+                                            Total: <span id="buyer-total-amount-display" class="tabular-nums">₱0.00</span>
+                                        </div>
+                                        <button type="button"
+                                                data-buyer-info-cancel
+                                                class="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50">
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label for="initial_payment_method" class="mb-2 block text-sm font-medium text-gray-700">Payment Method</label>
-                                    <select id="initial_payment_method" name="initial_payment_method"
-                                            class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Select Payment Method</option>
-                                        <option value="Cash" {{ old('initial_payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                                        <option value="GCash" {{ old('initial_payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                                        <option value="Bank Transfer" {{ old('initial_payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                        <option value="Check" {{ old('initial_payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
-                                        <option value="Other" {{ old('initial_payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
-                                    </select>
+                                <div class="transaction-buyer-grid">
+                                    <div>
+                                        <label for="buyer_first_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                            First Name <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="buyer_first_name" name="buyer_first_name"
+                                               value="{{ old('buyer_first_name', '') }}"
+                                               data-buyer-final-field
+                                               class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="Enter first name"
+                                               {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                    </div>
+
+                                    <div>
+                                        <label for="buyer_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
+                                        <input type="text" id="buyer_middle_name" name="buyer_middle_name"
+                                               value="{{ old('buyer_middle_name', '') }}"
+                                               data-buyer-final-field
+                                               class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="Optional"
+                                               {{ $buyerSectionInitiallyVisible ? '' : 'disabled' }}>
+                                    </div>
+
+                                    <div>
+                                        <label for="buyer_last_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                            Last Name <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="buyer_last_name" name="buyer_last_name"
+                                               value="{{ old('buyer_last_name', '') }}"
+                                               data-buyer-final-field
+                                               class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="Enter last name"
+                                               {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                    </div>
+
+                                    <div>
+                                        <label for="buyer_contact" class="mb-2 block text-sm font-medium text-gray-700">
+                                            Contact Number <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="buyer_contact" name="buyer_contact"
+                                               value="{{ old('buyer_contact', '') }}"
+                                               inputmode="numeric"
+                                               maxlength="11"
+                                               pattern="09[0-9]{9}"
+                                               data-buyer-final-field
+                                               class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="09XXXXXXXXX"
+                                               {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                    </div>
+                                </div>
+
+
+
+                                <input type="hidden" id="initial_payment_date" name="initial_payment_date" value="{{ old('initial_payment_date', date('Y-m-d')) }}">
+
+                                <div class="transaction-buyer-grid mt-4">
+                                    <div>
+                                        <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">
+                                            Paid Amount <span class="text-red-500">*</span>
+                                        </label>
+                                       <div class="currency-input-group">
+                                           <span class="currency-input-symbol">₱</span>
+                                           <input type="text" id="initial_paid_amount" name="initial_paid_amount"
+                                                  value="{{ old('initial_paid_amount') !== null ? number_format((float) old('initial_paid_amount'), 2) : '' }}"
+                                                  inputmode="decimal"
+                                                  data-currency-input="true"
+                                                  data-buyer-final-field
+                                                  class="currency-input-field transaction-buyer-field"
+                                                  placeholder="0.00"
+                                                  {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                       </div>
+                                        <div class="mt-2 text-xs text-gray-500">
+                                            Maximum payment: ₱<span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
+                                        </div>
+                                        <div id="initial-payment-error" class="mt-2 hidden text-sm text-red-600"></div>
+                                    </div>
+
+                                    <div>
+                                        <label for="initial_payment_method" class="mb-2 block text-sm font-medium text-gray-700">
+                                            Payment Method <span class="text-red-500">*</span>
+                                        </label>
+                                        <select id="initial_payment_method" name="initial_payment_method"
+                                                data-buyer-final-field
+                                                class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                            <option value="">Select Payment Method</option>
+                                            <option value="Cash" {{ old('initial_payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                                            <option value="GCash" {{ old('initial_payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
+                                            <option value="Bank Transfer" {{ old('initial_payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                                            <option value="Check" {{ old('initial_payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
+                                            <option value="Other" {{ old('initial_payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                </div>
+                                <div class="transaction-buyer-actions">
+                                    <button type="button"
+                                            data-buyer-info-cancel
+                                            class="inline-flex h-12 items-center justify-center rounded-xl border border-gray-200 bg-white px-6 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                            data-transaction-step-submit
+                                            class="inline-flex h-12 items-center justify-center rounded-xl bg-green-600 px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
+                                            style="min-width: 11rem;">
+                                        Confirm Transaction
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end gap-3 border-t border-gray-100 pt-4">
-                            <button type="submit"
-                                    class="inline-flex h-12 items-center justify-center rounded-xl bg-green-600 px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
-                                    style="min-width: 9.5rem;">
-                                Save Transaction
-                            </button>
+                        <div class="hidden"
+                             data-transaction-action-bar>
+                            <div class="flex w-[calc(100vw-2rem)] max-w-md flex-col gap-2 rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-xl backdrop-blur sm:w-auto sm:max-w-none sm:flex-row sm:items-center">
+                                <p class="hidden text-sm text-gray-500 sm:block" data-transaction-step-hint>
+                                    {{ $buyerSectionInitiallyVisible ? 'Review buyer details, then confirm.' : 'Save items first, then enter buyer information.' }}
+                                </p>
+                            </div>
                         </div>
                     </form>
                 </section>
@@ -276,8 +451,8 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
     <template id="sales-detail-row-template">
         <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6">
-            <div class="flex flex-wrap gap-4">
-                <div class="min-w-[200px] flex-1">
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(10rem,1.45fr)_minmax(10rem,1.45fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_5.5rem_minmax(8rem,1fr)_2.75rem] xl:items-start">
+                <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                     <select name="sales_details[INDEX][fish_type_id]"
                             class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
@@ -293,7 +468,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                         @endforeach
                     </select>
                 </div>
-                <div class="min-w-[200px] flex-1">
+                <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Fish Box</label>
                     <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
                         <div class="fish-box-item">
@@ -304,25 +479,42 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                         </div>
                     </div>
                 </div>
-                <div class="min-w-[150px] flex-1">
+                <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
-                    <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                           class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                           placeholder="0.00">
+                    <input type="text" name="sales_details[INDEX][unit_price]" inputmode="decimal"
+                           class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
+                           placeholder="0.00"
+                           readonly>
                 </div>
-                <div class="min-w-[120px] flex-1">
+                <div class="min-w-0">
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Discount Type</label>
+                    <select name="sales_details[INDEX][discount_mode]"
+                            class="discount-mode-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        <option value="percent" selected>Percent</option>
+                        <option value="amount">Amount</option>
+                    </select>
+                </div>
+                <div class="min-w-0">
+                    <label class="discount-value-label mb-2 block text-sm font-medium text-gray-700">Discount %</label>
+                    <input type="text" name="sales_details[INDEX][discount_value]" inputmode="decimal"
+                           class="discount-value-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <input type="hidden" name="sales_details[INDEX][discount_percent]" class="discount-percent-input">
+                    <input type="hidden" name="sales_details[INDEX][discount]" class="discount-input">
+                </div>
+                <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">QTY</label>
                     <input type="number" name="sales_details[INDEX][quantity]" value="1" min="1"
                            class="quantity-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                            placeholder="1">
                 </div>
-                <div class="min-w-[150px] flex-1">
+                <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
-                    <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
+                    <input type="text" name="sales_details[INDEX][sub_total]" inputmode="decimal"
                            class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                            readonly>
                 </div>
-                <div class="flex items-end">
+                <div class="flex items-end justify-center xl:pt-7">
                     <button type="button" class="remove-detail-btn rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Remove sales detail">
                         <x-heroicon-o-trash class="h-6 w-6" />
                     </button>
@@ -441,6 +633,8 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                     button.querySelector('span').textContent = 'Loading...';
                 }
 
+                await ensureSalesQrScannerReady();
+
                 if (typeof window.openRemoteSalesScannerSession !== 'function') {
                     await loadBrokerTransactionScript('remoteSalesScanner', assets.remoteSalesScanner);
                 }
@@ -487,6 +681,152 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             }
         }
 
+        function initializeTransactionBuyerStep(root = getActiveSalesFormRoot()) {
+            const form = root.querySelector('[data-transaction-step-form]');
+
+            if (!form || form.dataset.transactionStepBound === 'true') {
+                return;
+            }
+
+            form.dataset.transactionStepBound = 'true';
+
+            const buyerSection = form.querySelector('[data-buyer-info-section]');
+            const buyerFields = Array.from(form.querySelectorAll('[data-buyer-final-field]'));
+            const actionButtons = Array.from(form.querySelectorAll('[data-transaction-step-submit]'));
+            const cancelButtons = Array.from(form.querySelectorAll('[data-buyer-info-cancel]'));
+            const stepHint = form.querySelector('[data-transaction-step-hint]');
+            const buyerTotalDisplay = form.querySelector('#buyer-total-amount-display');
+            const totalAmountDisplay = form.querySelector('#total-amount-display');
+            const requiredBuyerFieldIds = new Set([
+                'buyer_first_name',
+                'buyer_last_name',
+                'buyer_contact',
+                'initial_paid_amount',
+                'initial_payment_method',
+            ]);
+
+            const showMessage = (message) => {
+                let summary = form.querySelector('[data-transaction-step-error]');
+
+                if (!summary) {
+                    summary = document.createElement('div');
+                    summary.setAttribute('data-transaction-step-error', 'true');
+                    summary.className = 'rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+                    form.prepend(summary);
+                }
+
+                summary.textContent = message;
+
+                if (window.toastr) {
+                    toastr.error(message);
+                }
+            };
+
+            const clearMessage = () => {
+                form.querySelector('[data-transaction-step-error]')?.remove();
+            };
+
+            const hasSalesItem = () => {
+                return Array.from(form.querySelectorAll('.sales-detail-row')).some((row) => {
+                    const fishTypeSelect = row.querySelector('.fish-type-select');
+                    return fishTypeSelect && fishTypeSelect.value;
+                });
+            };
+
+            const syncBuyerTotal = () => {
+                if (buyerTotalDisplay && totalAmountDisplay) {
+                    buyerTotalDisplay.textContent = totalAmountDisplay.textContent || '₱0.00';
+                }
+            };
+
+            const setBuyerStepVisible = (visible, options = {}) => {
+                form.dataset.buyerSectionVisible = visible ? 'true' : 'false';
+
+                if (buyerSection) {
+                    buyerSection.classList.toggle('is-hidden', !visible);
+                }
+
+                buyerFields.forEach((field) => {
+                    field.disabled = !visible;
+                    field.required = visible && requiredBuyerFieldIds.has(field.id);
+                });
+
+                actionButtons.forEach((button) => {
+                    button.textContent = visible ? 'Confirm Transaction' : 'Save Transaction';
+                });
+
+                if (stepHint) {
+                    stepHint.textContent = visible
+                        ? 'Review buyer details, then confirm.'
+                        : 'Save items first, then enter buyer information.';
+                }
+
+                syncBuyerTotal();
+
+                if (visible && options.focus !== false) {
+                    window.requestAnimationFrame(() => {
+                        form.querySelector('#buyer_first_name')?.focus({ preventScroll: true });
+                    });
+                }
+            };
+
+            if (form.dataset.buyerSectionVisible === 'true') {
+                setBuyerStepVisible(true, { focus: false });
+            } else {
+                setBuyerStepVisible(false, { focus: false });
+            }
+
+            if (totalAmountDisplay && window.MutationObserver) {
+                new MutationObserver(syncBuyerTotal).observe(totalAmountDisplay, {
+                    childList: true,
+                    characterData: true,
+                    subtree: true,
+                });
+            }
+
+            form.addEventListener('submit', function(event) {
+                if (form.dataset.buyerSectionVisible !== 'true') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+
+                    if (!hasSalesItem()) {
+                        showMessage('Please add at least one fish item before saving.');
+                        return;
+                    }
+
+                    clearMessage();
+                    setBuyerStepVisible(true);
+                    return;
+                }
+
+                clearMessage();
+
+                if (!hasSalesItem()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    showMessage('Please add at least one fish item before saving.');
+                    return;
+                }
+
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    form.reportValidity();
+                }
+            }, true);
+
+            cancelButtons.forEach((button) => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    clearMessage();
+                    setBuyerStepVisible(false, { focus: false });
+                });
+            });
+        }
+
         function initializeSalesFormWhenReady(attempt = 0) {
             const root = getActiveSalesFormRoot();
             const config = typeof initializeSalesForm === 'function' ? getCurrentSalesFormConfig(root) : null;
@@ -520,10 +860,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             if (remoteScannerButton && !remoteScannerButton.dataset.remoteScannerLazyBound) {
                 remoteScannerButton.dataset.remoteScannerLazyBound = 'true';
                 remoteScannerButton.addEventListener('click', function(event) {
-                    if (typeof window.openRemoteSalesScannerSession === 'function') {
-                        return;
-                    }
-
                     event.preventDefault();
                     event.stopImmediatePropagation();
                     openRemoteSalesScanner(remoteScannerButton);
@@ -531,6 +867,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             }
 
             initializeSalesFormWhenReady();
+            initializeTransactionBuyerStep(root);
             if (typeof window.bindRemoteSalesScannerButtons === 'function') {
                 window.bindRemoteSalesScannerButtons();
             }

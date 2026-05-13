@@ -60,7 +60,7 @@
                     </div>
                 </div>
                 <div>
-                    <label for="stall_address" class="block text-sm font-medium text-slate-700">Address</label>
+                    <label for="stall_address" class="block text-sm font-medium text-slate-700">Location</label>
                     <input id="stall_address" name="address" type="text" value="{{ old('address') }}" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" placeholder="Enter stall location or market area" required>
                     @error('address')
                         <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>

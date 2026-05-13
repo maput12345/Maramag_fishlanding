@@ -287,7 +287,7 @@
                             <td class="px-4 py-4">
                                 @if($isResubmitted)
                                     <span class="submission-type-badge submission-type-badge--resubmitted">Revision Resubmitted</span>
-                                @elseif($application->application_status === 'Submitted')
+                                @elseif($application->application_status === 'Submitted' && !$application->review_date)
                                     <span class="submission-type-badge submission-type-badge--new">New Submission</span>
                                 @else
                                     <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Reviewed</span>
@@ -301,6 +301,10 @@
                                 @if($isResubmitted)
                                     <div class="mt-1 text-xs font-semibold text-orange-700">
                                         Resubmitted {{ optional($application->revision_resubmitted_at)->format('M d, Y h:i A') }}
+                                    </div>
+                                @elseif($application->isRevisionResubmission())
+                                    <div class="mt-1 text-xs font-semibold text-slate-500">
+                                        Resubmission reviewed {{ optional($application->review_date)->format('M d, Y h:i A') }}
                                     </div>
                                 @endif
                             </td>

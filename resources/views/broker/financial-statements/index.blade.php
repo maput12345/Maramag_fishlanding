@@ -185,11 +185,14 @@ use Carbon\Carbon;
                         <p class="text-lg font-semibold text-fuchsia-900">₱{{ number_format($statement['loss_on_sale'], 2) }}</p>
                     </div>
 
-                    <div class="flex items-start justify-between rounded-2xl bg-slate-900 px-4 py-4 text-white">
+                    <div class="flex items-start justify-between gap-4 rounded-2xl bg-slate-900 px-4 py-4 text-white">
                         <div>
                             <p class="text-sm font-semibold">Net Income</p>
                         </div>
-                        <p class="text-xl font-semibold">₱{{ number_format($statement['net_income'], 2) }}</p>
+                        <span
+                            class="shrink-0 text-right text-xl font-semibold tabular-nums"
+                            style="display: block; min-width: max-content; color: #ffffff !important; opacity: 1 !important; visibility: visible !important;"
+                        >₱{{ number_format($statement['net_income'], 2) }}</span>
                     </div>
                 </div>
 

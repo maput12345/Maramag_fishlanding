@@ -112,7 +112,7 @@ class SalesManagementController extends Controller
         }
 
         $salesController = new SalesController();
-        $data = $salesController->getIndexData($request);
+        $data = $salesController->getTransactionData($request);
 
         return view('broker.sales.transaction', $data);
     }

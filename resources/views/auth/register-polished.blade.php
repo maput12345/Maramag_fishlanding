@@ -9,7 +9,7 @@
         background:
             radial-gradient(circle at 18% 16%, rgba(29, 78, 216, 0.14), transparent 24rem),
             linear-gradient(180deg, rgba(7, 21, 37, 0.88), rgba(7, 21, 37, 0.84)),
-            url("{{ asset('image/background.png') }}") center / cover fixed no-repeat !important;
+            url("{{ asset('image/background.webp') }}?v={{ filemtime(public_path('image/background.webp')) }}") center / cover fixed no-repeat !important;
     }
 
     .login-stage {
@@ -37,11 +37,38 @@
         border-color: rgba(255, 255, 255, 0.18) !important;
         box-shadow: 0 24px 70px rgba(2, 6, 23, 0.32) !important;
     }
+
+    .auth-home-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        border-radius: 999px;
+        background: #ffffff;
+        padding: 0.55rem 0.9rem;
+        color: #0f172a;
+        font-size: 0.875rem;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .auth-home-link:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
 </style>
 
 <div class="login-stage">
     <section class="login-panel-wrap">
         <div class="login-card">
+            <a href="{{ route('public.home') }}" class="auth-home-link">
+                <x-heroicon-o-home class="mr-2 h-4 w-4" />
+                Back to Home
+            </a>
+
             <div class="login-card-header">
                 <h2>Create an applicant account</h2>
                 <p>Register to apply for a broker stall at Maramag Fish Landing.</p>
@@ -86,15 +113,20 @@
 
                 <div>
                     <label for="email" class="login-label">Email Address</label>
-                    <input id="email" type="email" class="login-input @error('email') border-red-300 @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
+                    <input
+                        id="email"
+                        type="email"
+                        class="login-input @error('email') border-red-300 @enderror"
+                        name="email"
+                        value="{{ old('email') }}"
+                        required
+                        autocomplete="email"
+                        oninvalid="this.setCustomValidity(this.validity.typeMismatch ? 'Please enter a valid email address.' : '')"
+                        oninput="this.setCustomValidity('')"
+                    >
                     @error('email')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                </div>
-
-                <div>
-                    <label for="email-confirm" class="login-label">Confirm Email Address</label>
-                    <input id="email-confirm" type="email" class="login-input" name="email_confirmation" value="{{ old('email_confirmation') }}" required autocomplete="email">
                 </div>
 
                 <div>

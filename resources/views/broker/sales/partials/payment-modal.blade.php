@@ -77,6 +77,7 @@
                                   initialPaidAmount: {{ (float) old('paid_amount', 0) }}
                               })"
                               x-init="initializePaymentForm()"
+                              @submit="normalizePaymentAmount()"
                               data-sales-async-form>
                             @csrf
 
@@ -88,16 +89,18 @@
                                 </label>
                                 <div class="currency-input-group">
                                     <span class="currency-input-symbol">₱</span>
-                                    <input type="number" id="paid_amount" name="paid_amount" required
-                                           step="0.01" min="0.01" :max="maxPaymentAmount"
+                                    <input type="text" id="paid_amount" name="paid_amount" required
+                                           inputmode="decimal"
                                            data-currency-input="true"
-                                           x-model.number="paidAmount"
+                                           x-model="paidAmount"
                                            @input="validatePaymentAmount()"
+                                           @change="formatPaymentAmount()"
+                                           @blur="formatPaymentAmount()"
                                            class="currency-input-field"
                                            placeholder="0.00">
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500">
-                                    Maximum payment: ₱<span class="inline-block min-w-[4rem] text-right tabular-nums" x-text="maxPaymentAmount.toFixed(2)"></span>
+                                    Maximum payment: ₱<span class="inline-block min-w-[4rem] text-right tabular-nums" x-text="formatMoney(maxPaymentAmount)"></span>
                                 </div>
                                 <div x-show="paymentError" class="mt-1 text-sm text-red-600" x-text="paymentError"></div>
                                 @error('paid_amount')
@@ -144,7 +147,7 @@
                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
                                     Cancel
                                 </button>
-                                <button type="submit" :disabled="paymentError || paidAmount <= 0"
+                                <button type="submit" :disabled="paymentError || parseMoney(paidAmount) <= 0"
                                         class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
                                     Add Payment
                                 </button>

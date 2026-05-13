@@ -19,10 +19,20 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             <h2 class="text-xl font-semibold text-gray-900">Fish Boxes List</h2>
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            <label class="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm sm:w-auto">
+                <span class="whitespace-nowrap font-medium">QR Size</span>
+                <select id="bulk-qr-size"
+                        class="app-select min-w-28 border-0 bg-transparent py-0 pl-1 pr-7 text-sm font-semibold text-gray-900 focus:ring-0">
+                    <option value="150">Small</option>
+                    <option value="180" selected>Medium</option>
+                    <option value="220">Large</option>
+                </select>
+            </label>
             <button type="button"
                     class="bulk-qr-print-btn app-button app-button--dark w-full sm:w-auto px-4 py-2 text-sm"
                     title="Print all fish boxes that match the current filters"
                     data-bulk-qr-source="bulk-qr-boxes-data"
+                    data-bulk-qr-size-source="bulk-qr-size"
                     data-filter-summary="{{ $bulkQrFilterSummary }}"
                     @disabled(($bulkQrFishBoxes ?? collect())->isEmpty())>
                 <x-heroicon-o-printer class="w-4 h-4" />
@@ -41,7 +51,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     @csrf
                     <button type="submit" class="app-button app-button--primary w-full sm:w-auto px-4 py-2 text-sm">
                         <x-heroicon-o-arrow-uturn-left class="w-4 h-4" />
-                        <span class="hidden sm:inline">Clear Returned Boxes</span>
+                        <span class="hidden sm:inline">Returned Boxes</span>
                         <span class="sm:hidden">Clear Returned</span>
                     </button>
                 </form>

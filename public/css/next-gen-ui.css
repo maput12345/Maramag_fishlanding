@@ -1212,8 +1212,10 @@ details[open] > .app-user-trigger svg:last-child {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: 0;
     border-radius: inherit;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%);
+    pointer-events: none;
 }
 
 .chart-column:hover .chart-column__bar {
@@ -1223,12 +1225,13 @@ details[open] > .app-user-trigger svg:last-child {
 
 .chart-column__tooltip {
     position: absolute;
+    z-index: 2;
     left: 50%;
     top: -2.4rem;
     transform: translateX(-50%) translateY(0.2rem);
     border-radius: 0.8rem;
     background: rgba(15, 23, 42, 0.9);
-    color: #f8fafc;
+    color: #f8fafc !important;
     padding: 0.4rem 0.6rem;
     font-size: 0.72rem;
     font-weight: 600;
@@ -4314,6 +4317,31 @@ body {
 [data-money] {
     color: var(--ui-text);
     font-variant-numeric: tabular-nums;
+}
+
+.metric-card__row {
+    align-items: flex-start;
+}
+
+.metric-card__row > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.metric-card__value {
+    max-width: 100%;
+    line-height: 1.08;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+.metric-card__value--money {
+    white-space: nowrap;
+    font-size: clamp(1.45rem, 1.6vw, 1.85rem);
+}
+
+.metric-card__icon {
+    flex: 0 0 auto;
 }
 
 .numeric-cell,

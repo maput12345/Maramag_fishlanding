@@ -30,7 +30,7 @@
         background:
             radial-gradient(circle at 18% 16%, rgba(29, 78, 216, 0.14), transparent 24rem),
             linear-gradient(180deg, rgba(7, 21, 37, 0.88), rgba(7, 21, 37, 0.84)),
-            url("{{ asset('image/background.png') }}") center / cover fixed no-repeat !important;
+            url("{{ asset('image/background.webp') }}?v={{ filemtime(public_path('image/background.webp')) }}") center / cover fixed no-repeat !important;
     }
 
     .login-showcase-card {
@@ -39,12 +39,39 @@
         box-shadow: 0 24px 70px rgba(2, 6, 23, 0.32) !important;
         backdrop-filter: blur(14px);
     }
+
+    .auth-home-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        border-radius: 999px;
+        background: #ffffff;
+        padding: 0.55rem 0.9rem;
+        color: #0f172a;
+        font-size: 0.875rem;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .auth-home-link:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
 </style>
 
 <div class="login-stage login-stage--split" x-data="{ previewOpen: false }">
     <div class="login-showcase-card">
         <section class="login-form-panel">
 
+
+            <a href="{{ route('public.home') }}" class="auth-home-link">
+                <x-heroicon-o-home class="mr-2 h-4 w-4" />
+                Back to Home
+            </a>
 
             <div class="login-form-header">
                 <h1>Log In</h1>
@@ -123,7 +150,7 @@
             <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-center text-sm text-slate-700 shadow-sm">
                 <p class="font-semibold text-slate-900">Looking for a vacant stall?</p>
                 <div class="mt-4 flex flex-col items-stretch gap-2">
-                    @if($hasAvailableStall ?? false)
+                    @if($hasAvailableStall)
                         <a href="{{ route('register') }}" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-700 transition hover:bg-slate-50">
                             Apply here!
                         </a>

@@ -146,6 +146,82 @@ class SalesController extends Controller
         );
     }
 
+    /**
+     * Get only the data needed by the dedicated transaction page.
+     *
+     * This avoids loading sales lists, summaries, and full FishBox model JSON
+     * just to render the create transaction form.
+     */
+    public function getTransactionData(Request $request): array
+    {
+        $userId = Auth::id();
+        $brokerId = Broker::getBrokerIdByUserId($userId);
+
+        $fishBoxes = FishBox::getAvailableForSale($brokerId);
+        $allFishTypes = FishType::getFishTypeByBrokerId($brokerId);
+        $availableFishTypeIds = $fishBoxes->pluck('fish_type_id')->unique()->filter()->toArray();
+        $fishTypes = $this->prepareFishTypesForForm($allFishTypes->whereIn('id', $availableFishTypeIds));
+        $fishPriceMap = BrokerFishTypeAssignment::query()
+            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->with([
+                'latestPrice' => function ($query) {
+                    $query->select([
+                        'FishPriceRecord.id',
+                        'FishPriceRecord.broker_fish_type_id',
+                        'FishPriceRecord.price',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->get()
+            ->filter(fn (BrokerFishTypeAssignment $assignment): bool => $assignment->latestPrice !== null)
+            ->mapWithKeys(function (BrokerFishTypeAssignment $assignment): array {
+                return [
+                    (string) $assignment->fish_type_id => (float) $assignment->latestPrice->price,
+                ];
+            })
+            ->all();
+
+        $fishBoxes = $fishBoxes->map(function (FishBox $fishBox): array {
+            return [
+                'id' => $fishBox->id,
+                'name' => $fishBox->name,
+                'fish_type_id' => $fishBox->fish_type_id,
+            ];
+        })->values();
+
+        $editingSales = null;
+        $viewingSales = null;
+        $saleForPayment = null;
+        $printingSales = $this->getModalSales($request, 'print', 'print', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments', 'broker.user', 'broker']);
+        $salesDetails = $this->prepareSalesDetailsForForm($request, $editingSales);
+        $sales = collect();
+        $salesSummary = [];
+        $salesStatuses = SalesStatusConstant::getAllStatuses();
+        $salesStatusesWithDisplayNames = collect($salesStatuses)->mapWithKeys(function ($status) {
+            return [$status => SalesStatusConstant::getDisplayName($status)];
+        });
+        $salesStatusesWithColorClasses = collect($salesStatuses)->mapWithKeys(function ($status) {
+            return [$status => SalesStatusConstant::getStatusColorClasses($status)];
+        });
+
+        return compact(
+            'sales',
+            'fishBoxes',
+            'fishTypes',
+            'editingSales',
+            'viewingSales',
+            'salesStatuses',
+            'salesStatusesWithDisplayNames',
+            'salesStatusesWithColorClasses',
+            'saleForPayment',
+            'printingSales',
+            'salesDetails',
+            'salesSummary',
+            'fishPriceMap'
+        );
+    }
+
 
     public function getAnalyticsData(Request $request): array
     {
@@ -596,6 +672,14 @@ class SalesController extends Controller
                     'item' => $detail->item,
                     'item_description' => $detail->item_description ?? '',
                     'unit_price' => $detail->unit_price ?? '',
+                    'discount_mode' => 'percent',
+                    'discount' => $detail->discount ?? '',
+                    'discount_percent' => ((float) ($detail->unit_price ?? 0) > 0)
+                        ? round(((float) ($detail->discount ?? 0) / (float) $detail->unit_price) * 100, 2)
+                        : '',
+                    'discount_value' => ((float) ($detail->unit_price ?? 0) > 0)
+                        ? round(((float) ($detail->discount ?? 0) / (float) $detail->unit_price) * 100, 2)
+                        : '',
                     'quantity' => $detail->quantity ?? 1,
                     'sub_total' => $detail->sub_total ?? '',
                 ];
@@ -610,6 +694,10 @@ class SalesController extends Controller
                 'item' => '',
                 'item_description' => '',
                 'unit_price' => '',
+                'discount_mode' => 'percent',
+                'discount' => '',
+                'discount_percent' => '',
+                'discount_value' => '',
                 'quantity' => '1',
                 'sub_total' => ''
             ]

@@ -109,11 +109,12 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
-        $applicationOpenings = ApplicationOpening::with(['stall', 'requirementTypes'])
+        $applicationOpenings = ApplicationOpening::with(['openingBatch', 'stall', 'requirementTypes'])
             ->availableForApplication()
             ->withCount('brokerApplications')
-            ->orderBy('start_date')
-            ->get();
+            ->get()
+            ->sortBy('start_date')
+            ->values();
 
         return view('auth.login-polished', [
             'hasAvailableStall' => $applicationOpenings->isNotEmpty(),

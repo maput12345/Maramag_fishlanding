@@ -11,6 +11,7 @@
     <meta name="flash-info" content="{{ session('info') }}">
 
     <title>{{ config('app.name', 'POS System') }} - Applicant</title>
+    @include('layouts.partials.favicons')
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">

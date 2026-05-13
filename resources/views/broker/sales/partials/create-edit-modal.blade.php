@@ -128,8 +128,8 @@ $salesFormConfig = [
                     <div class="space-y-4" id="sales-details-container">
                         @foreach($salesDetails as $index => $detail)
                             <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6" data-index="{{ $index }}">
-                                <div class="flex flex-wrap gap-4">
-                                    <div class="min-w-[200px] flex-1">
+                                <div class="flex flex-wrap gap-3 xl:flex-nowrap xl:items-start">
+                                    <div class="w-full lg:w-52 lg:flex-none">
                                         <label class="mb-2 block text-sm font-medium text-gray-700">Fish</label>
                                         <select name="sales_details[{{ $index }}][fish_type_id]"
                                                 class="fish-type-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
@@ -148,7 +148,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                         </select>
                                     </div>
 
-                                    <div class="min-w-[200px] flex-1">
+                                    <div class="w-full lg:w-52 lg:flex-none">
                                         <label class="mb-2 block text-sm font-medium text-gray-700">Fish Box</label>
                                         <div class="fish-boxes-container max-h-32 space-y-2 overflow-y-auto">
                                             @if(is_array($detail['box_id']) && count($detail['box_id']) > 0)
@@ -175,16 +175,45 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                         </div>
                                     </div>
 
-                                    <div class="min-w-[150px] flex-1">
+                                    <div class="w-full lg:w-36 lg:flex-none">
                                         <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
-                                        <input type="number" name="sales_details[{{ $index }}][unit_price]"
-                                               value="{{ $detail['unit_price'] ?? '' }}"
-                                               step="0.01" min="0"
-                                               class="unit-price-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                               placeholder="0.00">
+                                        <input type="text" name="sales_details[{{ $index }}][unit_price]"
+                                               value="{{ isset($detail['unit_price']) && $detail['unit_price'] !== '' ? number_format((float) $detail['unit_price'], 2) : '' }}"
+                                               inputmode="decimal"
+                                               class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
+                                               placeholder="0.00"
+                                               readonly>
                                     </div>
 
-                                    <div class="min-w-[120px] flex-1">
+                                    <div class="w-full lg:w-32 lg:flex-none">
+                                        <label class="mb-2 block text-sm font-medium text-gray-700">Discount Type</label>
+                                        <select name="sales_details[{{ $index }}][discount_mode]"
+                                                class="discount-mode-select h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                                            <option value="percent" {{ ($detail['discount_mode'] ?? 'percent') === 'percent' ? 'selected' : '' }}>Percent</option>
+                                            <option value="amount" {{ ($detail['discount_mode'] ?? '') === 'amount' ? 'selected' : '' }}>Amount</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="w-full lg:w-36 lg:flex-none">
+                                        @php
+                                            $discountMode = $detail['discount_mode'] ?? 'percent';
+                                            $discountPercent = isset($detail['discount_percent']) && $detail['discount_percent'] !== ''
+                                                ? (float) $detail['discount_percent']
+                                                : ((isset($detail['discount'], $detail['unit_price']) && (float) $detail['unit_price'] > 0) ? (((float) $detail['discount'] / (float) $detail['unit_price']) * 100) : null);
+                                            $discountAmount = isset($detail['discount']) && $detail['discount'] !== '' ? (float) $detail['discount'] : null;
+                                            $discountValue = $discountMode === 'amount' ? $discountAmount : $discountPercent;
+                                        @endphp
+                                        <label class="discount-value-label mb-2 block text-sm font-medium text-gray-700">{{ $discountMode === 'amount' ? 'Discount Amount' : 'Discount %' }}</label>
+                                        <input type="text" name="sales_details[{{ $index }}][discount_value]"
+                                               value="{{ $discountValue !== null ? number_format($discountValue, 2) : '' }}"
+                                               inputmode="decimal"
+                                               class="discount-value-input h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="0.00">
+                                        <input type="hidden" name="sales_details[{{ $index }}][discount_percent]" class="discount-percent-input" value="{{ $discountPercent !== null ? number_format($discountPercent, 2, '.', '') : '' }}">
+                                        <input type="hidden" name="sales_details[{{ $index }}][discount]" class="discount-input" value="{{ $discountAmount !== null ? number_format($discountAmount, 2, '.', '') : '' }}">
+                                    </div>
+
+                                    <div class="w-full lg:w-20 lg:flex-none">
                                         <label class="mb-2 block text-sm font-medium text-gray-700">QTY</label>
                                         <input type="number" name="sales_details[{{ $index }}][quantity]"
                                                value="{{ $detail['quantity'] ?? '1' }}"
@@ -193,11 +222,11 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                placeholder="1">
                                     </div>
 
-                                    <div class="min-w-[150px] flex-1">
+                                    <div class="w-full lg:w-36 lg:flex-none">
                                         <label class="mb-2 block text-sm font-medium text-gray-700">Sub Total</label>
-                                        <input type="number" name="sales_details[{{ $index }}][sub_total]"
-                                               value="{{ $detail['sub_total'] ?? '' }}"
-                                               step="0.01" min="0"
+                                        <input type="text" name="sales_details[{{ $index }}][sub_total]"
+                                               value="{{ isset($detail['sub_total']) && $detail['sub_total'] !== '' ? number_format((float) $detail['sub_total'], 2) : '' }}"
+                                               inputmode="decimal"
                                                class="sub-total-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-white px-4 text-right text-sm tabular-nums text-gray-500"
                                                readonly>
                                     </div>
@@ -294,8 +323,11 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                         </label>
                         <input type="text" id="buyer_contact" name="buyer_contact"
                                value="{{ old('buyer_contact', request('modal') === 'edit' && $editingSales ? $editingSales->buyer_contact : '') }}"
+                               inputmode="numeric"
+                               maxlength="11"
+                               pattern="09[0-9]{9}"
                                class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter contact number"
+                               placeholder="09XXXXXXXXX"
                                required>
                         @error('buyer_contact')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -312,9 +344,9 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                             </label>
                             <div class="currency-input-group">
                                 <span class="currency-input-symbol">₱</span>
-                                <input type="number" id="initial_paid_amount" name="initial_paid_amount"
-                                       value="{{ old('initial_paid_amount', '') }}"
-                                       step="0.01" min="0.01"
+                                <input type="text" id="initial_paid_amount" name="initial_paid_amount"
+                                       value="{{ old('initial_paid_amount') !== null ? number_format((float) old('initial_paid_amount'), 2) : '' }}"
+                                       inputmode="decimal"
                                        data-currency-input="true"
                                        class="currency-input-field"
                                        placeholder="0.00">

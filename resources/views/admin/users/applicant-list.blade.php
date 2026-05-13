@@ -51,7 +51,7 @@
 
 <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
     <p class="font-semibold">Archive policy</p>
-    <p class="mt-1">When all stalls in a selection round are awarded, non-winner applicant-only accounts are deactivated here. Their application records stay available for LEEO history and audit.</p>
+    <p class="mt-1">Not Selected applications stay visible for LEEO history and audit. Applicant logins remain active unless an admin manually uses Archive Login.</p>
 </div>
 
 <!-- Applicant Archive List -->

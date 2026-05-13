@@ -30,7 +30,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk();
-        $response->assertSee('View Stalls and Requirements');
+        $response->assertDontSee('View Stalls and Requirements');
         $response->assertSee('Application Requirements');
         $response->assertSee('Barangay Clearance and Community Tax Certificate');
         $response->assertSee('No vacant stall available');
@@ -45,7 +45,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk();
-        $response->assertSee('View Stalls and Requirements');
+        $response->assertDontSee('View Stalls and Requirements');
         $response->assertSee('Apply here!');
         $response->assertSee('href="' . route('register') . '"', false);
         $response->assertDontSee('No vacant stall available');
@@ -67,7 +67,6 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
                 'first_name' => 'Blocked',
                 'last_name' => 'Applicant',
                 'email' => 'blocked-applicant@example.com',
-                'email_confirmation' => 'blocked-applicant@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
             ]);
@@ -90,7 +89,6 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
             'last_name' => 'Applicant',
             'suffix' => 'Jr.',
             'email' => 'new-applicant@gmail.com',
-            'email_confirmation' => 'new-applicant@gmail.com',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
@@ -120,12 +118,13 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
                 'first_name' => 'Invalid',
                 'last_name' => 'Domain',
                 'email' => 'invalid-domain@example.invalid',
-                'email_confirmation' => 'invalid-domain@example.invalid',
                 'password' => 'password',
                 'password_confirmation' => 'password',
             ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors([
+            'email' => 'Please enter a valid email address.',
+        ]);
         $this->assertGuest();
         $this->assertDatabaseMissing('User', [
             'email' => 'invalid-domain@example.invalid',
@@ -177,7 +176,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $this->assertNotNull($applicant->fresh()->email_verified_at);
     }
 
-    public function test_registration_rejects_mismatched_email_confirmation(): void
+    public function test_registration_rejects_invalid_email_format_with_clear_message(): void
     {
         $this->createAvailableOpening();
 
@@ -186,16 +185,17 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
             ->post('/register', [
                 'first_name' => 'Typo',
                 'last_name' => 'Applicant',
-                'email' => 'typed-email@gmail.com',
-                'email_confirmation' => 'different-email@gmail.com',
+                'email' => 'not-an-email',
                 'password' => 'password',
                 'password_confirmation' => 'password',
             ]);
 
-        $response->assertSessionHasErrors('email');
+        $response->assertSessionHasErrors([
+            'email' => 'Please enter a valid email address.',
+        ]);
         $this->assertGuest();
         $this->assertDatabaseMissing('User', [
-            'email' => 'typed-email@gmail.com',
+            'email' => 'not-an-email',
         ]);
     }
 
@@ -269,7 +269,7 @@ class ApplicationAvailabilityRegistrationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk();
-        $response->assertSee('View Stalls and Requirements');
+        $response->assertDontSee('View Stalls and Requirements');
         $response->assertSee('Available Stalls');
         $response->assertSee('Application Requirements');
         $response->assertSee('Stall A-1');

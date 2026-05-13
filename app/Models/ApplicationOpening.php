@@ -34,11 +34,16 @@ class ApplicationOpening extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'bidding_date' => 'date',
-        'bidding_time' => 'datetime:H:i',
     ];
+
+    protected array $pendingScheduleAttributes = [];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $opening): void {
+            $opening->persistPendingScheduleAttributes();
+        });
+    }
 
     /**
      * Get the stall receiving applications.
@@ -51,6 +56,61 @@ class ApplicationOpening extends Model
     public function openingBatch(): BelongsTo
     {
         return $this->belongsTo(OpeningBatch::class, 'opening_batch_id');
+    }
+
+    public function getStartDateAttribute($value)
+    {
+        return $this->scheduleDateAttribute('start_date', $value);
+    }
+
+    public function setStartDateAttribute($value): void
+    {
+        $this->pendingScheduleAttributes['start_date'] = $value;
+        unset($this->attributes['start_date']);
+    }
+
+    public function getEndDateAttribute($value)
+    {
+        return $this->scheduleDateAttribute('end_date', $value);
+    }
+
+    public function setEndDateAttribute($value): void
+    {
+        $this->pendingScheduleAttributes['end_date'] = $value;
+        unset($this->attributes['end_date']);
+    }
+
+    public function getBiddingDateAttribute($value)
+    {
+        return $this->scheduleDateAttribute('bidding_date', $value);
+    }
+
+    public function setBiddingDateAttribute($value): void
+    {
+        $this->pendingScheduleAttributes['bidding_date'] = $value;
+        unset($this->attributes['bidding_date']);
+    }
+
+    public function getBiddingTimeAttribute($value)
+    {
+        return $this->scheduleDateAttribute('bidding_time', $value);
+    }
+
+    public function setBiddingTimeAttribute($value): void
+    {
+        $this->pendingScheduleAttributes['bidding_time'] = $value;
+        unset($this->attributes['bidding_time']);
+    }
+
+    public function getBiddingLocationAttribute($value): ?string
+    {
+        return $this->openingBatch?->bidding_location ?? $value;
+    }
+
+    public function setBiddingLocationAttribute($value): void
+    {
+        $this->pendingScheduleAttributes['bidding_location'] = $value;
+        unset($this->attributes['bidding_location']);
     }
 
     /**
@@ -96,8 +156,11 @@ class ApplicationOpening extends Model
     {
         return $query
             ->where('opening_status', 'Open')
-            ->whereDate('start_date', '<=', now()->toDateString())
-            ->whereDate('end_date', '>=', now()->toDateString());
+            ->whereHas('openingBatch', function (Builder $batchQuery) {
+                $batchQuery
+                    ->whereDate('start_date', '<=', now()->toDateString())
+                    ->whereDate('end_date', '>=', now()->toDateString());
+            });
     }
 
     /**
@@ -192,5 +255,45 @@ class ApplicationOpening extends Model
                     );
             })
             ->values();
+    }
+
+    protected function scheduleDateAttribute(string $attribute, $fallback)
+    {
+        $value = $this->openingBatch?->{$attribute} ?? $fallback;
+
+        return $value ? $this->asDateTime($value) : null;
+    }
+
+    protected function persistPendingScheduleAttributes(): void
+    {
+        if ($this->pendingScheduleAttributes === []) {
+            return;
+        }
+
+        $schedule = $this->pendingScheduleAttributes;
+        $this->pendingScheduleAttributes = [];
+
+        if (!$this->opening_batch_id) {
+            $batch = OpeningBatch::create([
+                'opened_by_employee_id' => $this->opened_by_employee_id,
+                'start_date' => $schedule['start_date'] ?? now()->toDateString(),
+                'end_date' => $schedule['end_date'] ?? ($schedule['start_date'] ?? now()->toDateString()),
+                'bidding_date' => $schedule['bidding_date'] ?? ($schedule['start_date'] ?? now()->toDateString()),
+                'bidding_time' => $schedule['bidding_time'] ?? '09:00',
+                'bidding_location' => $schedule['bidding_location'] ?? 'Maramag Fish Landing',
+            ]);
+
+            $this->opening_batch_id = $batch->id;
+            $this->setRelation('openingBatch', $batch);
+
+            return;
+        }
+
+        $batch = $this->openingBatch()->first();
+
+        if ($batch) {
+            $batch->update($schedule);
+            $this->setRelation('openingBatch', $batch->fresh());
+        }
     }
 }

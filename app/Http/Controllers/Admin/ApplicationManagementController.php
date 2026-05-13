@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Constants\RoleStatusConstant;
-use App\Constants\UserStatusConstant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewBrokerApplicationRequest;
 use App\Mail\BrokerApplicationQualifiedForBidding;
@@ -23,7 +22,6 @@ use App\Models\RequirementType;
 use App\Models\Role;
 use App\Models\Stall;
 use App\Models\StallImage;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -157,6 +155,7 @@ class ApplicationManagementController extends Controller
                 'submitted_at',
                 'revision_resubmitted_at',
                 'revision_count',
+                'review_date',
             ])
             ->with([
                 'user:id,email',
@@ -246,7 +245,8 @@ class ApplicationManagementController extends Controller
             'openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location',
             'openingBatch.applicationOpenings:id,opening_batch_id,stall_id',
             'openingBatch.applicationOpenings.stall:id,stall_number',
-            'applicationOpening:id,stall_id,opening_batch_id,start_date,end_date,bidding_date,bidding_time,bidding_location',
+            'applicationOpening:id,stall_id,opening_batch_id',
+            'applicationOpening.openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location',
             'applicationOpening.stall:id,stall_number',
             'requirements:id,application_id,requirement_type_id,file_path,document_number,issuing_office,verification_status,remarks,uploaded_at',
             'requirements.requirementType:id,requirement_name',
@@ -475,11 +475,6 @@ class ApplicationManagementController extends Controller
                         'stall_id' => $stall->id,
                         'opening_batch_id' => $openingBatch->id,
                         'opened_by_employee_id' => $employee->id,
-                        'start_date' => $validated['start_date'],
-                        'end_date' => $validated['end_date'],
-                        'bidding_date' => $validated['bidding_date'],
-                        'bidding_time' => $validated['bidding_time'],
-                        'bidding_location' => $validated['bidding_location'],
                         'opening_status' => 'Open',
                     ]);
 
@@ -528,17 +523,19 @@ class ApplicationManagementController extends Controller
      */
     public function updateOpening(UpdateApplicationOpeningRequest $request, ApplicationOpening $opening): RedirectResponse
     {
+        $opening->loadMissing('openingBatch');
         $originalBiddingDate = optional($opening->bidding_date)->toDateString();
         $originalBiddingTime = optional($opening->bidding_time)->format('H:i');
         $originalBiddingLocation = $opening->bidding_location;
 
-        $opening->update([
+        $opening->openingBatch?->update([
             'bidding_date' => $request->input('bidding_date'),
             'bidding_time' => $request->input('bidding_time'),
             'bidding_location' => $request->input('bidding_location'),
         ]);
 
-        $updatedBiddingDate = optional($opening->fresh()->bidding_date)->toDateString();
+        $opening = $opening->fresh(['openingBatch']);
+        $updatedBiddingDate = optional($opening->bidding_date)->toDateString();
         $updatedBiddingTime = optional($opening->bidding_time)->format('H:i');
         $updatedBiddingLocation = $opening->bidding_location;
         $qualifiedApplicantsNotified = 0;
@@ -548,7 +545,8 @@ class ApplicationManagementController extends Controller
                 ->where('application_status', 'Qualified')
                 ->with([
                     'user:id,email',
-                    'applicationOpening:id,stall_id,start_date,bidding_date,bidding_time,bidding_location',
+                    'applicationOpening:id,stall_id,opening_batch_id',
+                    'applicationOpening.openingBatch:id,start_date,bidding_date,bidding_time,bidding_location',
                     'applicationOpening.stall:id,stall_number',
                 ])
                 ->get();
@@ -661,7 +659,7 @@ class ApplicationManagementController extends Controller
                     'verification_status' => $status,
                     'verified_by_employee_id' => $status === 'Pending' ? null : $employee->id,
                     'verification_date' => $status === 'Pending' ? null : now(),
-                    'remarks' => $requirementPayload['remarks'] ?? null,
+                    'remarks' => $status === 'Verified' ? null : ($requirementPayload['remarks'] ?? null),
                 ]);
             }
 
@@ -680,7 +678,8 @@ class ApplicationManagementController extends Controller
         if ($shouldSendQualifiedEmail) {
             $application->refresh()->load([
                 'user:id,email',
-                'applicationOpening:id,stall_id,start_date,bidding_date,bidding_time,bidding_location',
+                'applicationOpening:id,stall_id,opening_batch_id',
+                'applicationOpening.openingBatch:id,start_date,bidding_date,bidding_time,bidding_location',
                 'applicationOpening.stall:id,stall_number',
             ]);
 
@@ -698,7 +697,6 @@ class ApplicationManagementController extends Controller
     {
         $employee = $this->resolveCurrentEmployee();
         $notSelectedApplicantCount = 0;
-        $archivedApplicantAccountCount = 0;
 
         if (!$employee) {
             return redirect()->route('admin.applications.show', $application)
@@ -742,7 +740,7 @@ class ApplicationManagementController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($application, $employee, $validated, &$notSelectedApplicantCount, &$archivedApplicantAccountCount) {
+            DB::transaction(function () use ($application, $employee, $validated, &$notSelectedApplicantCount) {
                 $opening = $application->applicationOpening;
 
                 if (!$opening) {
@@ -819,10 +817,6 @@ class ApplicationManagementController extends Controller
                     ApplicationReviewDraft::query()
                         ->whereIn('broker_application_id', $notSelectedApplications->pluck('id'))
                         ->delete();
-
-                    $archivedApplicantAccountCount = $this->archiveFinalizedApplicantAccounts(
-                        $notSelectedApplications->pluck('user_id')->unique()->values()
-                    );
                 }
 
                 $this->sendWinnerEmail($user->email, $broker, $selectedStall);
@@ -843,12 +837,6 @@ class ApplicationManagementController extends Controller
             $message .= ' ' . $notSelectedApplicantCount . ' remaining application'
                 . ($notSelectedApplicantCount === 1 ? ' was' : 's were')
                 . ' marked Not Selected.';
-        }
-
-        if ($archivedApplicantAccountCount > 0) {
-            $message .= ' ' . $archivedApplicantAccountCount . ' applicant-only account'
-                . ($archivedApplicantAccountCount === 1 ? ' was' : 's were')
-                . ' archived/deactivated.';
         }
 
         return redirect()->route('admin.applications.show', $application)
@@ -912,14 +900,10 @@ class ApplicationManagementController extends Controller
                             'id',
                             'stall_id',
                             'opening_batch_id',
-                            'start_date',
-                            'end_date',
-                            'bidding_date',
-                            'bidding_time',
-                            'bidding_location',
                             'opening_status',
                             'created_at',
                         ])
+                        ->with('openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location')
                         ->withCount(['brokerApplications', 'requirementTypes'])
                         ->latest();
                 },
@@ -940,15 +924,14 @@ class ApplicationManagementController extends Controller
             ->select([
                 'id',
                 'stall_id',
-                'start_date',
-                'end_date',
-                'bidding_date',
-                'bidding_time',
-                'bidding_location',
+                'opening_batch_id',
                 'opening_status',
                 'created_at',
             ])
-            ->with(['stall:id,stall_number,stall_status'])
+            ->with([
+                'openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location',
+                'stall:id,stall_number,stall_status',
+            ])
             ->withCount('brokerApplications')
             ->latest()
             ->get();
@@ -977,32 +960,6 @@ class ApplicationManagementController extends Controller
                 'query' => request()->query(),
             ]
         );
-    }
-
-    /**
-     * Deactivate applicant-only user accounts once all their applications are finalized.
-     */
-    private function archiveFinalizedApplicantAccounts(Collection $userIds): int
-    {
-        $terminalStatuses = ['Rejected', 'Winner', 'Not Selected'];
-
-        return User::query()
-            ->whereIn('id', $userIds->filter()->unique()->values())
-            ->where('status', UserStatusConstant::ACTIVE)
-            ->whereHas('roles', function ($roleQuery) {
-                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
-            })
-            ->whereDoesntHave('roles', function ($roleQuery) {
-                $roleQuery->whereIn('role_name', [
-                    RoleStatusConstant::ADMIN,
-                    RoleStatusConstant::STAFF,
-                    RoleStatusConstant::BROKER,
-                ]);
-            })
-            ->whereDoesntHave('brokerApplications', function ($applicationQuery) use ($terminalStatuses) {
-                $applicationQuery->whereNotIn('application_status', $terminalStatuses);
-            })
-            ->update(['status' => UserStatusConstant::DEACTIVATED]);
     }
 
     /**

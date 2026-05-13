@@ -239,9 +239,9 @@ $breadcrumbs = [
 {{-- Hidden template for new sales detail rows (used by JavaScript) --}}
 <template id="sales-detail-row-template">
     <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 sales-detail-row">
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-3 xl:flex-nowrap xl:items-start">
             <!-- Fish Type Selection -->
-            <div class="flex-1 min-w-[200px]">
+            <div class="w-full lg:w-52 lg:flex-none">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fish</label>
                 <select name="sales_details[INDEX][fish_type_id]"
                         class="fish-type-select w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -254,7 +254,7 @@ $breadcrumbs = [
             </div>
 
             <!-- Fish Box Selection (Auto-populated, disabled) -->
-            <div class="flex-1 min-w-[200px]">
+            <div class="w-full lg:w-52 lg:flex-none">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fish Box</label>
                 <div class="fish-boxes-container space-y-1 max-h-32 overflow-y-auto">
                     <div class="fish-box-item mb-1">
@@ -267,15 +267,36 @@ $breadcrumbs = [
             </div>
 
             <!-- Unit Price -->
-            <div class="flex-1 min-w-[150px]">
+            <div class="w-full lg:w-36 lg:flex-none">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Price per Box</label>
-                <input type="number" name="sales_details[INDEX][unit_price]" step="0.01" min="0"
-                       class="unit-price-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                <input type="text" name="sales_details[INDEX][unit_price]" inputmode="decimal"
+                       class="unit-price-input w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-right text-sm tabular-nums text-gray-500"
+                       placeholder="0.00"
+                       readonly>
+            </div>
+
+            <!-- Discount Type -->
+            <div class="w-full lg:w-32 lg:flex-none">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Discount Type</label>
+                <select name="sales_details[INDEX][discount_mode]"
+                        class="discount-mode-select w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                    <option value="percent" selected>Percent</option>
+                    <option value="amount">Amount</option>
+                </select>
+            </div>
+
+            <!-- Discount -->
+            <div class="w-full lg:w-36 lg:flex-none">
+                <label class="discount-value-label block text-sm font-medium text-gray-700 mb-2">Discount %</label>
+                <input type="text" name="sales_details[INDEX][discount_value]" inputmode="decimal"
+                       class="discount-value-input w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm tabular-nums focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                        placeholder="0.00">
+                <input type="hidden" name="sales_details[INDEX][discount_percent]" class="discount-percent-input">
+                <input type="hidden" name="sales_details[INDEX][discount]" class="discount-input">
             </div>
 
             <!-- Quantity -->
-            <div class="flex-1 min-w-[120px]">
+            <div class="w-full lg:w-20 lg:flex-none">
                 <label class="block text-sm font-medium text-gray-700 mb-2">QTY</label>
                 <input type="number" name="sales_details[INDEX][quantity]" value="1" min="1"
                        class="quantity-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -283,10 +304,10 @@ $breadcrumbs = [
             </div>
 
             <!-- Sub Total (Auto-calculated, disabled) -->
-            <div class="flex-1 min-w-[150px]">
+            <div class="w-full lg:w-36 lg:flex-none">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Sub Total</label>
-                <input type="number" name="sales_details[INDEX][sub_total]" step="0.01" min="0"
-                       class="sub-total-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 cursor-not-allowed"
+                <input type="text" name="sales_details[INDEX][sub_total]" inputmode="decimal"
+                       class="sub-total-input w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm tabular-nums bg-gray-100 cursor-not-allowed"
                        readonly>
             </div>
 
@@ -345,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function paymentForm() {
     return {
-        paidAmount: 0,
+        paidAmount: '',
         maxPaymentAmount: {{ $saleForPayment ? $saleForPayment->remaining_amount : 0 }},
         paymentError: '',
 
@@ -353,15 +374,43 @@ function paymentForm() {
             // Initialize form
         },
 
+        parseMoney(value) {
+            const normalizedValue = String(value ?? '').replace(/[₱,\s]/g, '');
+            const parsedValue = parseFloat(normalizedValue);
+
+            return Number.isFinite(parsedValue) ? parsedValue : 0;
+        },
+
+        formatMoney(value) {
+            return (Number(value) || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+        },
+
+        formatPaymentAmount() {
+            if (this.paidAmount === '') {
+                return;
+            }
+
+            this.paidAmount = this.formatMoney(this.parseMoney(this.paidAmount));
+            this.validatePaymentAmount();
+        },
+
+        normalizePaymentAmount() {
+            this.paidAmount = this.parseMoney(this.paidAmount).toFixed(2);
+        },
+
         validatePaymentAmount() {
             this.paymentError = '';
+            const currentAmount = this.parseMoney(this.paidAmount);
 
-            if (this.paidAmount > this.maxPaymentAmount) {
-                this.paymentError = 'Payment amount cannot exceed the remaining balance of ₱' + this.maxPaymentAmount.toFixed(2);
+            if (currentAmount > this.maxPaymentAmount) {
+                this.paymentError = 'Payment amount cannot exceed the remaining balance of ₱' + this.formatMoney(this.maxPaymentAmount);
                 return false;
             }
 
-            if (this.paidAmount <= 0) {
+            if (currentAmount <= 0) {
                 this.paymentError = 'Payment amount must be greater than 0';
                 return false;
             }

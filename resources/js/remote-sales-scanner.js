@@ -1,6 +1,7 @@
 import QRCodeStyling from 'qr-code-styling';
 
 (function () {
+    const SESSION_STORAGE_KEY = 'broker.remoteSalesScanner.activeSession';
     let activeSession = null;
     let pollTimer = null;
     let modal = null;
@@ -45,6 +46,49 @@ import QRCodeStyling from 'qr-code-styling';
 
     function toBrowserUrl(url) {
         return new URL(withAppBasePath(url), window.location.href).href;
+    }
+
+    function normalizeSession(session) {
+        if (!session || !session.token || !session.poll_url || !session.scanner_url) {
+            return null;
+        }
+
+        return {
+            ...session,
+            poll_url: toBrowserUrl(session.poll_url),
+            scanner_url: toBrowserUrl(session.scanner_url),
+        };
+    }
+
+    function saveSession(session) {
+        try {
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        } catch (error) {
+            console.warn('Unable to remember phone scanner session.', error);
+        }
+    }
+
+    function forgetSession() {
+        try {
+            sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        } catch (error) {
+            console.warn('Unable to clear remembered phone scanner session.', error);
+        }
+    }
+
+    function restoreSession() {
+        if (activeSession) {
+            return activeSession;
+        }
+
+        try {
+            activeSession = normalizeSession(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) || 'null'));
+        } catch (error) {
+            activeSession = null;
+            forgetSession();
+        }
+
+        return activeSession;
     }
 
     async function fetchJson(url, options = {}) {
@@ -243,6 +287,8 @@ import QRCodeStyling from 'qr-code-styling';
             }
         } catch (error) {
             setStatus(error.message || 'Phone scanner session stopped.', 'red');
+            activeSession = null;
+            forgetSession();
             stopPolling();
         }
     }
@@ -267,10 +313,13 @@ import QRCodeStyling from 'qr-code-styling';
             return;
         }
 
+        restoreSession();
         ensureModal();
         modal.classList.remove('hidden');
 
         if (activeSession) {
+            modal.querySelector('#remoteScannerUrl').value = activeSession.scanner_url;
+            renderQr(activeSession.scanner_url);
             setStatus('Waiting for phone scans...');
             startPolling();
             return;
@@ -279,17 +328,16 @@ import QRCodeStyling from 'qr-code-styling';
         setStatus('Creating phone scanner session...');
 
         try {
-            activeSession = await fetchJson(withAppBasePath(config.createUrl), {
+            activeSession = normalizeSession(await fetchJson(withAppBasePath(config.createUrl), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': getCsrfToken(),
                 },
-            });
+            }));
 
-            const scannerUrl = toBrowserUrl(activeSession.scanner_url);
-            activeSession.poll_url = toBrowserUrl(activeSession.poll_url);
-            modal.querySelector('#remoteScannerUrl').value = scannerUrl;
-            renderQr(scannerUrl);
+            saveSession(activeSession);
+            modal.querySelector('#remoteScannerUrl').value = activeSession.scanner_url;
+            renderQr(activeSession.scanner_url);
             setStatus('Waiting for phone scans...');
             startPolling();
         } catch (error) {
@@ -314,7 +362,18 @@ import QRCodeStyling from 'qr-code-styling';
         });
     }
 
-    document.addEventListener('DOMContentLoaded', bindButtons);
+    function resumeSessionIfPresent() {
+        if (!restoreSession()) {
+            return;
+        }
+
+        startPolling();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        bindButtons();
+        resumeSessionIfPresent();
+    });
     window.bindRemoteSalesScannerButtons = bindButtons;
     window.openRemoteSalesScannerSession = openSession;
 })();

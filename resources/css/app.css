@@ -39,7 +39,7 @@
 #toast-container.toast-top-right {
     top: 5rem !important; /* below navbar */
     right: 1rem !important;
-    z-index: 50 !important; /* similar to Tailwind z-50 */
+    z-index: 9999 !important; /* above scanner modals */
     pointer-events: none; /* container doesn't block UI */
 }
 
@@ -97,6 +97,27 @@ input[name*="balance" i],
 .money-cell {
     text-align: right !important;
     font-variant-numeric: tabular-nums;
+}
+
+/* Keep analytics metric cards stable when money values become very large. */
+.metric-card__row {
+    align-items: flex-start;
+}
+
+.metric-card__row > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.metric-card__value {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.08;
+}
+
+.metric-card__icon {
+    flex: 0 0 auto;
 }
 
 /* Theme accents (left bar) and text */

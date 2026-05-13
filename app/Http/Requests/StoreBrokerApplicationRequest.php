@@ -97,9 +97,12 @@ class StoreBrokerApplicationRequest extends FormRequest
                 $validator->errors()->add('opening', 'This application opening is outside the allowed date range.');
             }
 
+            $terminalApplicationStatuses = ['Rejected', 'Not Selected', 'Cancelled'];
+
             $sameOpeningAlreadySubmitted = $this->user()
                 ?->brokerApplications()
                 ->where('application_opening_id', $opening->id)
+                ->whereNotIn('application_status', $terminalApplicationStatuses)
                 ->exists();
 
             if ($sameOpeningAlreadySubmitted) {
@@ -108,7 +111,7 @@ class StoreBrokerApplicationRequest extends FormRequest
 
             $alreadyApplied = $this->user()
                 ?->brokerApplications()
-                ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
+                ->whereNotIn('application_status', $terminalApplicationStatuses)
                 ->exists();
 
             if ($alreadyApplied && !$sameOpeningAlreadySubmitted) {

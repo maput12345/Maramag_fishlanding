@@ -405,8 +405,16 @@ class SalesQRScanner {
         }
 
         const salesFormRoot = this.getActiveSalesFormRoot();
-        return Array.from(salesFormRoot.querySelectorAll('.fish-box-hidden-input'))
+        return Array.from(salesFormRoot.querySelectorAll('.fish-box-hidden-input, input[type="hidden"][name*="[box_id]"]'))
             .some((input) => String(input.value) === String(fishBoxId));
+    }
+
+    getNextRowIndex(container) {
+        const indexes = Array.from(container.querySelectorAll('.sales-detail-row'))
+            .map((row) => Number.parseInt(row.dataset.index, 10))
+            .filter(Number.isFinite);
+
+        return indexes.length > 0 ? Math.max(...indexes) + 1 : 0;
     }
 
     addFishBoxToSalesDetails(fishBox) {
@@ -441,7 +449,7 @@ class SalesQRScanner {
                 return;
             }
 
-            rowIndex = existingRows.length;
+            rowIndex = this.getNextRowIndex(container);
             const newRow = template.content.cloneNode(true).querySelector('.sales-detail-row');
             newRow.dataset.index = rowIndex;
 
@@ -453,6 +461,10 @@ class SalesQRScanner {
 
             container.appendChild(newRow);
             targetRow = container.querySelector(`.sales-detail-row[data-index="${rowIndex}"]`);
+
+            if (typeof window.bindSalesDetailRow === 'function') {
+                window.bindSalesDetailRow(targetRow);
+            }
         }
 
         if (!targetRow) {
@@ -533,9 +545,13 @@ class SalesQRScanner {
                             <span class="ml-2 text-xs">(Scanned)</span>
                         </div>
                     </div>
-                    <input type="hidden" name="sales_details[${rowIndex}][box_id][]" value="${fishBox.id}">
+                    <input type="hidden" name="sales_details[${rowIndex}][box_id][]" value="${fishBox.id}" class="fish-box-hidden-input">
                 </div>
             `;
+        }
+
+        if (typeof window.refreshSalesTotals === 'function') {
+            window.refreshSalesTotals();
         }
     }
 }

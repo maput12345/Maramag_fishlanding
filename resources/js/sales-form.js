@@ -38,11 +38,77 @@ function initializeSalesForm(config, scope = document) {
     const initialPaidAmountInput = root.querySelector('#initial_paid_amount');
     const initialPaymentMaxAmount = root.querySelector('#initial-payment-max-amount');
     const initialPaymentError = root.querySelector('#initial-payment-error');
+    const salesForm = root.querySelector('form[data-sales-async-form]');
 
     if (!container || !addBtn || !totalAmountDisplay) return;
     if (container.dataset.salesFormInitialized === 'true') return;
 
     container.dataset.salesFormInitialized = 'true';
+
+    const parseMoney = (value) => {
+        const normalizedValue = String(value ?? '').replace(/[₱,\s]/g, '');
+        const parsedValue = parseFloat(normalizedValue);
+
+        return Number.isFinite(parsedValue) ? parsedValue : 0;
+    };
+
+    const formatMoney = (value) => {
+        const numericValue = Number(value) || 0;
+
+        return numericValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    };
+
+    const normalizeMoneyValue = (value) => parseMoney(value).toFixed(2);
+    const roundMoney = (value) => Math.round((Number(value) || 0) * 100) / 100;
+    const formatPercent = (value) => {
+        const percent = clampDiscountPercent(value);
+
+        return `${Number.isInteger(percent) ? percent.toFixed(0) : percent.toFixed(2)}%`;
+    };
+
+    const formatMoneyInput = (input) => {
+        if (!input || input.value === '') {
+            return;
+        }
+
+        input.value = formatMoney(parseMoney(input.value));
+    };
+
+    const clampDiscountPercent = (value) => Math.min(100, Math.max(0, parseMoney(value)));
+
+    const normalizeSalesMoneyFields = () => {
+        root.querySelectorAll('.unit-price-input, .discount-input, .sub-total-input, #initial_paid_amount').forEach((input) => {
+            if (input && input.value !== '') {
+                input.value = normalizeMoneyValue(input.value);
+            }
+        });
+
+        root.querySelectorAll('.discount-value-input').forEach((input) => {
+            if (!input || input.value === '') {
+                return;
+            }
+
+            const row = input.closest('.sales-detail-row');
+            const mode = row?.querySelector('.discount-mode-select')?.value || 'percent';
+            input.value = mode === 'percent'
+                ? clampDiscountPercent(input.value).toFixed(2)
+                : normalizeMoneyValue(input.value);
+        });
+
+        root.querySelectorAll('.discount-percent-input').forEach((input) => {
+            if (input && input.value !== '') {
+                input.value = clampDiscountPercent(input.value).toFixed(2);
+            }
+        });
+    };
+
+    if (salesForm && salesForm.dataset.salesMoneyNormalizerBound !== 'true') {
+        salesForm.dataset.salesMoneyNormalizerBound = 'true';
+        salesForm.addEventListener('submit', normalizeSalesMoneyFields, { capture: true });
+    }
 
     root.querySelectorAll('.sales-detail-row').forEach((row) => {
         const fishTypeSelect = row.querySelector('.fish-type-select');
@@ -142,6 +208,8 @@ function initializeSalesForm(config, scope = document) {
 
         const fishTypeSelect = row.querySelector('.fish-type-select');
         const unitPriceInput = row.querySelector('.unit-price-input');
+        const discountModeSelect = row.querySelector('.discount-mode-select');
+        const discountValueInput = row.querySelector('.discount-value-input');
         const quantityInput = row.querySelector('.quantity-input');
 
         if (fishTypeSelect) {
@@ -163,7 +231,59 @@ function initializeSalesForm(config, scope = document) {
             };
 
             unitPriceInput.addEventListener('input', onUnitPriceChange);
-            unitPriceInput.addEventListener('change', onUnitPriceChange);
+            unitPriceInput.addEventListener('change', () => {
+                formatMoneyInput(unitPriceInput);
+                onUnitPriceChange();
+            });
+            unitPriceInput.addEventListener('blur', () => {
+                formatMoneyInput(unitPriceInput);
+            });
+        }
+
+        if (discountModeSelect) {
+            discountModeSelect.addEventListener('change', () => {
+                const previousMode = row.dataset.discountMode || 'percent';
+                const nextMode = discountModeSelect.value || 'percent';
+
+                if (previousMode !== nextMode) {
+                    discountModeSelect.value = previousMode;
+                    calculateSubTotal(discountModeSelect);
+                    discountModeSelect.value = nextMode;
+                    syncDiscountValueInput(row);
+                }
+
+                updateDiscountInputState(row);
+                calculateSubTotal(discountModeSelect);
+                updateTotalAmount();
+            });
+        }
+
+        if (discountValueInput) {
+            const onDiscountValueChange = () => {
+                calculateSubTotal(discountValueInput);
+                updateTotalAmount();
+            };
+
+            discountValueInput.addEventListener('input', onDiscountValueChange);
+            discountValueInput.addEventListener('change', () => {
+                const mode = row.querySelector('.discount-mode-select')?.value || 'percent';
+
+                if (mode === 'percent' && discountValueInput.value !== '') {
+                    discountValueInput.value = formatPercent(discountValueInput.value);
+                } else {
+                    formatMoneyInput(discountValueInput);
+                }
+                onDiscountValueChange();
+            });
+            discountValueInput.addEventListener('blur', () => {
+                const mode = row.querySelector('.discount-mode-select')?.value || 'percent';
+
+                if (mode === 'percent' && discountValueInput.value !== '') {
+                    discountValueInput.value = formatPercent(discountValueInput.value);
+                } else {
+                    formatMoneyInput(discountValueInput);
+                }
+            });
         }
 
         if (quantityInput) {
@@ -202,6 +322,40 @@ function initializeSalesForm(config, scope = document) {
         });
     };
 
+    const updateDiscountInputState = (row) => {
+        const mode = row.querySelector('.discount-mode-select')?.value || 'percent';
+        const discountValueInput = row.querySelector('.discount-value-input');
+        const discountValueLabel = row.querySelector('.discount-value-label');
+
+        if (discountValueLabel) {
+            discountValueLabel.textContent = mode === 'amount' ? 'Discount Amount' : 'Discount %';
+        }
+
+        if (discountValueInput) {
+            discountValueInput.placeholder = mode === 'amount' ? '0.00' : '0%';
+        }
+
+        row.dataset.discountMode = mode;
+    };
+
+    const syncDiscountValueInput = (row) => {
+        const mode = row.querySelector('.discount-mode-select')?.value || 'percent';
+        const discountValueInput = row.querySelector('.discount-value-input');
+
+        if (!discountValueInput) {
+            return;
+        }
+
+        if (mode === 'amount') {
+            const discountAmount = parseMoney(row.querySelector('.discount-input')?.value || 0);
+            discountValueInput.value = discountAmount > 0 ? formatMoney(discountAmount) : '';
+            return;
+        }
+
+        const discountPercent = parseMoney(row.querySelector('.discount-percent-input')?.value || 0);
+        discountValueInput.value = discountPercent > 0 ? formatPercent(discountPercent) : '';
+    };
+
     const applySuggestedPriceToRow = (row, options = {}) => {
         const {
             force = false,
@@ -231,13 +385,13 @@ function initializeSalesForm(config, scope = document) {
         }
 
         const suggestedPrice = getSuggestedPrice(row, fishTypeId);
-        const currentUnitPrice = parseFloat(unitPriceInput.value);
-        const hasCurrentUnitPrice = unitPriceInput.value !== '' && !Number.isNaN(currentUnitPrice);
+        const currentUnitPrice = parseMoney(unitPriceInput.value);
+        const hasCurrentUnitPrice = unitPriceInput.value !== '';
         const shouldPopulate = force || !hasCurrentUnitPrice || (overwriteZero && currentUnitPrice === 0);
 
         if (suggestedPrice !== null) {
             if (shouldPopulate) {
-                unitPriceInput.value = suggestedPrice.toFixed(2);
+                unitPriceInput.value = formatMoney(suggestedPrice);
             }
 
             calculateSubTotal(unitPriceInput);
@@ -266,6 +420,10 @@ function initializeSalesForm(config, scope = document) {
     // Update all rows fish box availability
     const updateAllRowsFishBoxAvailability = () => {
         root.querySelectorAll('.sales-detail-row').forEach(row => {
+            if (row.dataset.scanned === 'true') {
+                return;
+            }
+
             const fishTypeSelect = row.querySelector('.fish-type-select');
             if (fishTypeSelect && fishTypeSelect.value) handleFishTypeChange(fishTypeSelect, true);
         });
@@ -282,6 +440,7 @@ function initializeSalesForm(config, scope = document) {
         container.appendChild(newRow);
         hydrateSuggestedPriceOptions(newRow);
         bindRowEvents(newRow);
+        updateDiscountInputState(newRow);
         SALES_CONFIG.detailIndex++;
         updateTotalAmount();
     });
@@ -301,10 +460,23 @@ function initializeSalesForm(config, scope = document) {
         initialPaidAmountInput.addEventListener('input', () => {
             validateInitialPayment();
         });
+        initialPaidAmountInput.addEventListener('change', () => {
+            formatMoneyInput(initialPaidAmountInput);
+            validateInitialPayment();
+        });
+        initialPaidAmountInput.addEventListener('blur', () => {
+            formatMoneyInput(initialPaidAmountInput);
+        });
     }
 
     function handleQuantityChange(quantityInput) {
         const row = quantityInput.closest('.sales-detail-row');
+        if (row.dataset.scanned === 'true') {
+            calculateSubTotal(quantityInput);
+            updateTotalAmount();
+            return;
+        }
+
         let quantity = parseInt(quantityInput.value) || 1;
         const fishBoxesContainer = row.querySelector('.fish-boxes-container');
         const fishTypeSelect = row.querySelector('.fish-type-select');
@@ -333,6 +505,14 @@ function initializeSalesForm(config, scope = document) {
 
     function handleFishTypeChange(fishTypeSelect, skipUpdate = false) {
         const row = fishTypeSelect.closest('.sales-detail-row');
+        if (row.dataset.scanned === 'true' && row.querySelector('.fish-box-hidden-input')?.value) {
+            applySuggestedPriceToRow(row, {
+                overwriteZero: true,
+                showMissingPriceWarning: true,
+            });
+            return;
+        }
+
         const fishTypeId = fishTypeSelect.value;
         const fishBoxesContainer = row.querySelector('.fish-boxes-container');
         const itemInput = row.querySelector('.item-input');
@@ -390,24 +570,71 @@ function initializeSalesForm(config, scope = document) {
     function calculateSubTotal(input) {
         const row = input.closest('.sales-detail-row');
         const unitPriceInput = row.querySelector('.unit-price-input');
+        const discountModeSelect = row.querySelector('.discount-mode-select');
+        const discountValueInput = row.querySelector('.discount-value-input');
+        const discountPercentInput = row.querySelector('.discount-percent-input');
+        const discountInput = row.querySelector('.discount-input');
         const quantityInput = row.querySelector('.quantity-input');
         const subTotalInput = row.querySelector('.sub-total-input');
 
         if (!unitPriceInput || !quantityInput || !subTotalInput) return;
 
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const unitPrice = parseMoney(unitPriceInput.value);
+        const discountMode = discountModeSelect?.value || 'percent';
+        const rawDiscountValue = discountValueInput ? parseMoney(discountValueInput.value) : 0;
+        let discountPercent = discountMode === 'percent' ? clampDiscountPercent(rawDiscountValue) : 0;
+        let discount = 0;
         const quantity = parseInt(quantityInput.value) || 0;
-        subTotalInput.value = (unitPrice * quantity).toFixed(2);
+
+        if (discountMode === 'amount') {
+            discount = rawDiscountValue;
+
+            if (discount > unitPrice) {
+                discount = unitPrice;
+                if (discountValueInput) {
+                    discountValueInput.value = formatMoney(discount);
+                }
+            }
+
+            discountPercent = unitPrice > 0 ? roundMoney((discount / unitPrice) * 100) : 0;
+        } else {
+            discount = roundMoney(unitPrice * (discountPercent / 100));
+        }
+
+        if (discount > unitPrice) {
+            discount = unitPrice;
+        }
+
+        if (discountInput) {
+            discountInput.value = discount.toFixed(2);
+        }
+
+        if (discountPercentInput) {
+            discountPercentInput.value = discountPercent > 0 ? discountPercent.toFixed(2) : '';
+        }
+
+        subTotalInput.value = formatMoney(Math.max(0, unitPrice - discount) * quantity);
     }
 
     function updateTotalAmount() {
         const total = Array.from(root.querySelectorAll('.sub-total-input'))
-            .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+            .reduce((sum, input) => sum + parseMoney(input.value), 0);
 
-        totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
+        totalAmountDisplay.textContent = `₱${formatMoney(total)}`;
         if (totalAmountInput) totalAmountInput.value = total.toFixed(2);
         validateInitialPayment();
     }
+
+    window.refreshSalesTotals = () => {
+        root.querySelectorAll('.sales-detail-row').forEach((row) => {
+            const unitPriceInput = row.querySelector('.unit-price-input');
+            if (unitPriceInput) {
+                calculateSubTotal(unitPriceInput);
+            }
+        });
+
+        updateTotalAmount();
+    };
 
     function setInitialPaymentError(message = '') {
         if (!initialPaymentError || !initialPaidAmountInput) return;
@@ -422,22 +649,23 @@ function initializeSalesForm(config, scope = document) {
             return;
         }
 
-        const maxPaymentAmount = parseFloat(totalAmountInput?.value || 0) || 0;
-        const currentAmount = parseFloat(initialPaidAmountInput.value);
+        const maxPaymentAmount = parseMoney(totalAmountInput?.value || 0);
+        const currentAmount = parseMoney(initialPaidAmountInput.value);
+        const hasCurrentAmount = initialPaidAmountInput.value !== '';
 
         initialPaidAmountInput.max = maxPaymentAmount.toFixed(2);
 
         if (initialPaymentMaxAmount) {
-            initialPaymentMaxAmount.textContent = maxPaymentAmount.toFixed(2);
+            initialPaymentMaxAmount.textContent = formatMoney(maxPaymentAmount);
         }
 
-        if (Number.isNaN(currentAmount)) {
+        if (!hasCurrentAmount) {
             setInitialPaymentError('');
             return;
         }
 
         if (currentAmount > maxPaymentAmount) {
-            setInitialPaymentError(`Payment amount cannot exceed the remaining balance of ₱${maxPaymentAmount.toFixed(2)}`);
+            setInitialPaymentError(`Payment amount cannot exceed the remaining balance of ₱${formatMoney(maxPaymentAmount)}`);
             return;
         }
 
@@ -453,6 +681,7 @@ function initializeSalesForm(config, scope = document) {
     root.querySelectorAll('.sales-detail-row').forEach((row) => {
         hydrateSuggestedPriceOptions(row);
         bindRowEvents(row);
+        updateDiscountInputState(row);
         applySuggestedPriceToRow(row, {
             overwriteZero: salesFormMode === 'create',
         });
@@ -465,6 +694,17 @@ function initializeSalesForm(config, scope = document) {
 
         hydrateSuggestedPriceOptions(row);
         applySuggestedPriceToRow(row, options);
+    };
+
+    window.bindSalesDetailRow = (row) => {
+        if (!row) {
+            return;
+        }
+
+        hydrateSuggestedPriceOptions(row);
+        bindRowEvents(row);
+        updateDiscountInputState(row);
+        updateTotalAmount();
     };
 
     window.protectSalesAmountInput = protectAmountInput;

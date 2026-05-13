@@ -4,6 +4,7 @@
             ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
             ->exists();
     $isApplyMode = request()->routeIs('applications.create') || request('focus') === 'apply';
+    $isApplicantHome = request()->routeIs('applications.index') && !$isApplyMode;
     $applyUrl = route('applications.index', ['focus' => 'apply']) . '#open-stalls';
 @endphp
 
@@ -29,9 +30,9 @@
             <div>
                 <a href="{{ route('applications.index') }}"
                    class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
-                          {{ request()->routeIs('applications.index') ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                          {{ $isApplicantHome ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-squares-2x2 class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
-                               {{ request()->routeIs('applications.index') ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                               {{ $isApplicantHome ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
                     <span class="transition-all duration-200" x-show="sidebarOpen">Applicant Home</span>
                 </a>
             </div>

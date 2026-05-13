@@ -42,10 +42,11 @@ class PublicPageController extends Controller
 
     public function stalls(): View
     {
-        $openings = ApplicationOpening::with(['stall', 'requirementTypes'])
+        $openings = ApplicationOpening::with(['openingBatch', 'stall', 'requirementTypes'])
             ->availableForApplication()
-            ->orderBy('start_date')
-            ->get();
+            ->get()
+            ->sortBy('start_date')
+            ->values();
 
         return view('public.stalls', compact('openings'));
     }

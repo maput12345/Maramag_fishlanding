@@ -58,7 +58,9 @@ class ReviewBrokerApplicationRequest extends FormRequest
 
             $opening = $application->relationLoaded('applicationOpening')
                 ? $application->applicationOpening
-                : $application->applicationOpening()->first(['id', 'bidding_date', 'bidding_time', 'bidding_location']);
+                : $application->applicationOpening()
+                    ->with('openingBatch:id,bidding_date,bidding_time,bidding_location')
+                    ->first(['id', 'opening_batch_id']);
 
             if (!$opening?->bidding_date || !$opening?->bidding_time || blank($opening->bidding_location)) {
                 $validator->errors()->add(

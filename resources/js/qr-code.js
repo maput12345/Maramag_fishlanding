@@ -148,9 +148,28 @@ window.QRCodeModal = {
         }
     },
 
-    async renderBulkQrMarkup(qrData) {
+    getBulkQrPrintSize(button) {
+        const sizeSourceId = button.dataset.bulkQrSizeSource;
+        const sizeSource = sizeSourceId ? document.getElementById(sizeSourceId) : null;
+        const requestedSize = Number.parseInt(sizeSource?.value || '', 10);
+        const allowedSizes = [150, 180, 220];
+
+        return allowedSizes.includes(requestedSize) ? requestedSize : 180;
+    },
+
+    getBulkQrSizeLabel(size) {
+        const labels = {
+            150: 'Small',
+            180: 'Medium',
+            220: 'Large',
+        };
+
+        return labels[size] || 'Medium';
+    },
+
+    async renderBulkQrMarkup(qrData, size = 180) {
         const tempContainer = document.createElement('div');
-        const qrCode = this.createQRCode(qrData, 180);
+        const qrCode = this.createQRCode(qrData, size);
 
         qrCode.append(tempContainer);
         await new Promise((resolve) => {
@@ -173,6 +192,7 @@ window.QRCodeModal = {
         }
 
         const originalContent = button.innerHTML;
+        const qrSize = this.getBulkQrPrintSize(button);
         button.disabled = true;
         button.innerHTML = `
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -186,10 +206,10 @@ window.QRCodeModal = {
             const qrCards = await Promise.all(
                 fishBoxes.map(async (fishBox) => ({
                     ...fishBox,
-                    qrMarkup: await this.renderBulkQrMarkup(fishBox.qr_code),
+                    qrMarkup: await this.renderBulkQrMarkup(fishBox.qr_code, qrSize),
                 }))
             );
-            this.printDocument(this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || ''));
+            this.printDocument(this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize));
         } catch (error) {
             console.error('Bulk QR print failed.', error);
             this.notify('Bulk QR print could not be prepared. Please try again.', 'error');
@@ -235,11 +255,13 @@ window.QRCodeModal = {
         iframeDocument.close();
     },
 
-    buildBulkPrintDocument(fishBoxes, filterSummary) {
+    buildBulkPrintDocument(fishBoxes, filterSummary, qrSize = 180) {
         const generatedAt = new Intl.DateTimeFormat('en-US', {
             dateStyle: 'medium',
             timeStyle: 'short',
         }).format(new Date());
+        const gridColumns = qrSize <= 150 ? 4 : qrSize >= 220 ? 2 : 3;
+        const cardMinHeight = qrSize + 110;
 
         const filterLine = filterSummary
             ? `<p class="subtitle">${this.escapeHtml(filterSummary)}</p>`
@@ -312,7 +334,7 @@ window.QRCodeModal = {
 
                         .qr-grid {
                             display: grid;
-                            grid-template-columns: repeat(3, minmax(0, 1fr));
+                            grid-template-columns: repeat(${gridColumns}, minmax(0, 1fr));
                             gap: 16px;
                         }
 
@@ -320,7 +342,7 @@ window.QRCodeModal = {
                             border: 1px solid #cbd5e1;
                             border-radius: 18px;
                             padding: 18px;
-                            min-height: 290px;
+                            min-height: ${cardMinHeight}px;
                             display: flex;
                             flex-direction: column;
                             align-items: center;
@@ -329,16 +351,16 @@ window.QRCodeModal = {
                         }
 
                         .qr-card__code {
-                            width: 180px;
-                            height: 180px;
+                            width: ${qrSize}px;
+                            height: ${qrSize}px;
                             display: flex;
                             align-items: center;
                             justify-content: center;
                         }
 
                         .qr-card__code svg {
-                            width: 180px;
-                            height: 180px;
+                            width: ${qrSize}px;
+                            height: ${qrSize}px;
                         }
 
                         .qr-card__meta {
@@ -398,7 +420,7 @@ window.QRCodeModal = {
                             ${filterLine}
                             <div class="summary-row">
                                 <strong>Total Boxes: ${fishBoxes.length}</strong>
-                                <span>Generated: ${this.escapeHtml(generatedAt)}</span>
+                                <span>QR Size: ${this.escapeHtml(this.getBulkQrSizeLabel(qrSize))} (${qrSize}px) | Generated: ${this.escapeHtml(generatedAt)}</span>
                             </div>
                         </header>
 

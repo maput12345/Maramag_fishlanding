@@ -28,7 +28,7 @@ class ApplicantAccountArchivingTest extends TestCase
         URL::forceRootUrl('http://localhost');
     }
 
-    public function test_final_winner_selection_archives_remaining_applicant_only_accounts(): void
+    public function test_final_winner_selection_marks_remaining_applications_not_selected_without_archiving_accounts(): void
     {
         Mail::fake();
 
@@ -49,14 +49,14 @@ class ApplicantAccountArchivingTest extends TestCase
         $response->assertRedirect(route('admin.applications.show', $winnerApplication));
         $response->assertSessionHas('success', function (string $message) {
             return str_contains($message, '1 remaining application was marked Not Selected')
-                && str_contains($message, '1 applicant-only account was archived/deactivated');
+                && !str_contains($message, 'archived/deactivated');
         });
 
         $this->assertSame('Winner', $winnerApplication->fresh()->application_status);
         $this->assertSame(UserStatusConstant::ACTIVE, $winnerUser->fresh()->status);
         $this->assertTrue($winnerUser->fresh()->isBroker());
         $this->assertSame('Not Selected', $nonWinnerApplication->fresh()->application_status);
-        $this->assertSame(UserStatusConstant::DEACTIVATED, $nonWinnerUser->fresh()->status);
+        $this->assertSame(UserStatusConstant::ACTIVE, $nonWinnerUser->fresh()->status);
 
         $this->actingAs($winnerUser->fresh())
             ->get(route('applications.index'))
@@ -144,6 +144,7 @@ class ApplicantAccountArchivingTest extends TestCase
     {
         $applicant = User::create([
             'email' => $email,
+            'email_verified_at' => now(),
             'password' => 'password',
             'status' => UserStatusConstant::ACTIVE,
         ]);

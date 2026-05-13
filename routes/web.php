@@ -42,10 +42,10 @@ Route::post('/logout', function () {
     request()->session()->invalidate();
     request()->session()->regenerateToken();
     return redirect()->route('login')->with('message', 'You have been logged out successfully.');
-})->name('logout')->middleware('auth');
+})->name('logout')->middleware(['auth', 'prevent.back.history']);
 
 // Profile routes - available to all authenticated users
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'prevent.back.history'])->group(function () {
     Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
@@ -63,7 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin', 'prevent.back.history'])->group(function () {
     Route::get('/admin/dashboard', [App\Http\Controllers\AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
     // User Management routes - grouped by controller
@@ -118,7 +118,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 
 // Broker routes
-Route::middleware(['auth', 'broker'])->group(function () {
+Route::middleware(['auth', 'broker', 'prevent.back.history'])->group(function () {
     Route::get('/broker/dashboard', [BrokerDashboardController::class, 'index'])->name('broker.dashboard');
     Route::get('/broker/analytics', [SalesManagementController::class, 'analytics'])->name('broker.sales.analytics');
     Route::get('/broker/transaction', [SalesManagementController::class, 'transaction'])->name('broker.transaction');

@@ -13,6 +13,7 @@
     <meta name="flash-info" content="{{ session('info') }}">
 
     <title>{{ config('app.name', 'POS System') }} - Broker</title>
+    @include('layouts.partials.favicons')
 
     <!-- Compiled CSS -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">

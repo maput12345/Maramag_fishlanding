@@ -86,7 +86,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $this->assertSame(1, BrokerApplication::count());
     }
 
-    public function test_duplicate_submission_to_same_opening_returns_validation_error(): void
+    public function test_rejected_application_does_not_block_apply_page_or_new_submission_validation(): void
     {
         $applicant = $this->createApplicant();
         $opening = $this->createOpenOpening('12');
@@ -102,6 +102,10 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'submitted_at' => now(),
         ]);
 
+        $this->actingAs($applicant)
+            ->get('/applications/openings/' . $opening->getRouteKey())
+            ->assertOk();
+
         $response = $this->actingAs($applicant)->post('/applications/openings/' . $opening->getRouteKey(), [
             'applicant_type' => RequirementType::APPLICANT_TYPE_NATURAL,
             'first_name' => 'Second',
@@ -112,9 +116,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             'requirements' => [],
         ]);
 
-        $response->assertSessionHasErrors([
-            'opening' => 'You already submitted an application for this stall opening.',
-        ]);
+        $response->assertSessionDoesntHaveErrors('opening');
 
         $this->assertSame(1, BrokerApplication::count());
     }
@@ -220,7 +222,7 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
             ->get(route('admin.applications.show', $application))
             ->assertOk()
             ->assertSee('New revision file')
-            ->assertSee('Updated File');
+            ->assertSee('View File');
     }
 
     public function test_applicant_cannot_resubmit_revision_without_replacement_file(): void
@@ -283,6 +285,94 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $this->assertSame(0, $application->revision_count);
         $this->assertSame($oldPath, $requirement->file_path);
         $this->assertSame('Rejected', $requirement->verification_status);
+    }
+
+    public function test_pending_requirements_are_not_marked_action_required_during_revision(): void
+    {
+        Storage::fake('public');
+
+        $applicant = $this->createApplicant();
+        $opening = $this->createOpenOpening('12');
+
+        $application = BrokerApplication::create([
+            'user_id' => $applicant->id,
+            'application_opening_id' => $opening->id,
+            'first_name' => 'Needs',
+            'last_name' => 'Revision',
+            'address' => 'Old Address',
+            'contact_number' => '09171234567',
+            'application_status' => 'Needs Revision',
+            'remarks' => 'Please upload a clearer birth certificate.',
+            'submitted_at' => now()->subDay(),
+            'review_date' => now(),
+        ]);
+
+        $birthCertificate = RequirementType::create([
+            'requirement_name' => 'Certified True Copy of Birth Certificate',
+            'is_required' => true,
+        ]);
+
+        $barangayClearance = RequirementType::create([
+            'requirement_name' => 'Barangay Clearance and Community Tax Certificate',
+            'is_required' => true,
+        ]);
+
+        $birthPath = 'broker-applications/' . $application->id . '/birth-certificate.pdf';
+        $barangayPath = 'broker-applications/' . $application->id . '/barangay-clearance.pdf';
+
+        Storage::disk('public')->put($birthPath, 'old birth file');
+        Storage::disk('public')->put($barangayPath, 'pending barangay file');
+
+        $actionRequiredRequirement = $application->requirements()->create([
+            'requirement_type_id' => $birthCertificate->id,
+            'file_path' => $birthPath,
+            'document_number' => 'BIRTH-001',
+            'verification_status' => 'Needs Revision',
+            'remarks' => 'Need updated file.',
+            'uploaded_at' => now()->subDay(),
+        ]);
+
+        $pendingRequirement = $application->requirements()->create([
+            'requirement_type_id' => $barangayClearance->id,
+            'file_path' => $barangayPath,
+            'document_number' => 'BRGY-001',
+            'verification_status' => 'Pending',
+            'uploaded_at' => now()->subDay(),
+        ]);
+
+        $editResponse = $this->actingAs($applicant)->get('/applications/' . $application->getRouteKey() . '/edit');
+
+        $editResponse->assertOk();
+        $this->assertSame(1, substr_count($editResponse->getContent(), 'portal-status-badge portal-status-badge--warning">Action Required'));
+        $this->assertSame(1, substr_count($editResponse->getContent(), 'Replacement File'));
+
+        $response = $this->actingAs($applicant)->post('/applications/' . $application->getRouteKey(), [
+            '_method' => 'PATCH',
+            'business_name' => null,
+            'address' => 'New Address',
+            'contact_number' => '09170000000',
+            'requirements' => [
+                $actionRequiredRequirement->id => [
+                    'id' => $actionRequiredRequirement->id,
+                    'file' => UploadedFile::fake()->create('clear-birth-certificate.pdf', 100, 'application/pdf'),
+                    'document_number' => 'BIRTH-002',
+                ],
+                $pendingRequirement->id => [
+                    'id' => $pendingRequirement->id,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('applications.show', $application));
+
+        $actionRequiredRequirement->refresh();
+        $pendingRequirement->refresh();
+
+        $this->assertSame('Pending', $actionRequiredRequirement->verification_status);
+        $this->assertNull($actionRequiredRequirement->remarks);
+        $this->assertSame('Pending', $pendingRequirement->verification_status);
+        $this->assertSame('BRGY-001', $pendingRequirement->document_number);
+        $this->assertSame($barangayPath, $pendingRequirement->file_path);
     }
 
     public function test_applicant_cannot_resubmit_application_that_is_not_marked_needs_revision(): void
@@ -401,6 +491,14 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
 
         $this->assertNotNull($application);
         $this->assertSame($requiredDefinitions->count(), $application->requirements()->count());
+        $this->assertDatabaseHas('ApplicantProfile', [
+            'user_id' => $applicant->id,
+            'first_name' => 'Sample',
+            'middle_name' => 'N',
+            'last_name' => 'Applicant',
+            'contact_number' => '09171234567',
+            'address' => 'Maramag, Bukidnon',
+        ]);
 
         foreach ($application->requirements as $requirement) {
             $this->assertNotSame('', $requirement->file_path);
@@ -530,6 +628,13 @@ class BrokerApplicationRequirementProvisioningTest extends TestCase
         $this->assertSame('Market Road, Maramag, Bukidnon', $application->address);
         $this->assertNull($application->civil_status);
         $this->assertSame($requiredDefinitions->count(), $application->requirements()->count());
+        $this->assertDatabaseHas('ApplicantProfile', [
+            'user_id' => $applicant->id,
+            'first_name' => 'Rosa',
+            'last_name' => 'Santos',
+            'contact_number' => '09170000022',
+            'address' => 'Market Road, Maramag, Bukidnon',
+        ]);
     }
 
     private function createApplicant(): User

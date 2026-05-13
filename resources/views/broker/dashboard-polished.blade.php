@@ -37,7 +37,7 @@ $breadcrumbs = [
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Daily Collection</p>
-                    <p class="metric-card__value">₱{{ number_format($salesToday, 2) }}</p>
+                    <p class="metric-card__value metric-card__value--money">₱{{ number_format($salesToday, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-chart-pie />
@@ -49,7 +49,7 @@ $breadcrumbs = [
             <div class="metric-card__row">
                 <div>
                     <p class="metric-card__eyebrow">Outstanding Balance</p>
-                    <p class="metric-card__value">₱{{ number_format($salesBalance, 2) }}</p>
+                    <p class="metric-card__value metric-card__value--money">₱{{ number_format($salesBalance, 2) }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-currency-dollar />

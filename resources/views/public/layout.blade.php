@@ -21,7 +21,7 @@
         background:
             radial-gradient(circle at 18% 16%, rgba(29, 78, 216, 0.14), transparent 24rem),
             linear-gradient(180deg, rgba(7, 21, 37, 0.88), rgba(7, 21, 37, 0.84)),
-            url("{{ asset('image/background.png') }}") center / cover fixed no-repeat;
+            url("{{ asset('image/background.webp') }}?v={{ filemtime(public_path('image/background.webp')) }}") center / cover fixed no-repeat;
         color: var(--public-ink);
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
