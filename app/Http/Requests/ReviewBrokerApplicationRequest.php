@@ -42,6 +42,14 @@ class ReviewBrokerApplicationRequest extends FormRequest
                 }
             }
 
+            $requirementStatuses = collect($this->input('requirements', []))
+                ->filter(fn ($payload) => is_array($payload))
+                ->pluck('verification_status');
+            $allRequirementsVerified = $requirementStatuses->isNotEmpty()
+                && $requirementStatuses->every(fn ($status) => $status === 'Verified');
+            $willBeQualified = $this->input('application_status') !== 'Rejected'
+                && ($this->input('application_status') === 'Qualified' || $allRequirementsVerified);
+
             if (
                 $this->input('application_status') === 'Qualified'
                 && !$application->canBeQualified($this->input('requirements', []))
@@ -52,7 +60,14 @@ class ReviewBrokerApplicationRequest extends FormRequest
                 );
             }
 
-            if ($this->input('application_status') !== 'Qualified') {
+            if ($this->input('application_status') === 'Rejected' && blank($this->input('remarks'))) {
+                $validator->errors()->add(
+                    'remarks',
+                    'Enter LEEO remarks explaining why this application was rejected.'
+                );
+            }
+
+            if (!$willBeQualified) {
                 return;
             }
 

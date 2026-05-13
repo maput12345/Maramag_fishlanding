@@ -280,26 +280,24 @@ class SalesController extends Controller
 
         // Create sales with details using the model method
         $sale = SalesTransaction::createSalesWithDetails($salesData, $salesDetails, $brokerId, $initialPayment);
+        $transactionRedirectParameters = array_filter([
+            'pos' => $request->boolean('pos_mode') ? 1 : null,
+            'modal' => 'print',
+            'print' => $sale->id,
+            'auto_print' => 1,
+        ]);
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale created successfully!', [
                 'sale_id' => $sale->id,
                 'redirect_url' => $request->input('after_save') === 'transaction'
-                    ? route('broker.transaction', [
-                        'modal' => 'print',
-                        'print' => $sale->id,
-                        'auto_print' => 1,
-                    ])
+                    ? route('broker.transaction', $transactionRedirectParameters)
                     : route('broker.sales.sales'),
             ]);
         }
 
         if ($request->input('after_save') === 'transaction') {
-            return redirect()->route('broker.transaction', [
-                    'modal' => 'print',
-                    'print' => $sale->id,
-                    'auto_print' => 1,
-                ])
+            return redirect()->route('broker.transaction', $transactionRedirectParameters)
                 ->with('success', 'Sale created successfully!');
         }
 

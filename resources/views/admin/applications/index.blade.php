@@ -250,21 +250,33 @@
             </form>
         </div>
 
-        <div class="mt-6 overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Applicant</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Opening Batch</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Stalls</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Submission</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Submitted</th>
-                        <th class="px-4 py-3 text-left font-semibold text-slate-600">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @forelse($applications as $application)
+        <form action="{{ route('admin.applications.bulk-under-review') }}" method="POST" class="mt-6" data-bulk-under-review-form>
+            @csrf
+            <div class="mb-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-slate-600">Select submitted applications, then mark them as under review.</p>
+                <button type="submit" class="app-button app-button--primary w-full sm:w-auto">
+                    Mark Under Review
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">
+                                <input type="checkbox" data-bulk-under-review-select-all class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            </th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Applicant</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Opening Batch</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Stalls</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Submission</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Submitted</th>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-600">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @forelse($applications as $application)
                         @php
                             $batch = $application->openingBatch ?? $application->applicationOpening?->openingBatch;
                             $batchStalls = $batch
@@ -272,8 +284,17 @@
                                 : null;
                             $applicationStall = $application->applicationOpening?->stall?->display_name;
                             $isResubmitted = $application->hasPendingRevisionReview();
+                            $canBulkMarkUnderReview = $application->application_status === 'Submitted';
                         @endphp
                         <tr>
+                            <td class="px-4 py-4">
+                                <input type="checkbox"
+                                       name="application_ids[]"
+                                       value="{{ $application->id }}"
+                                       data-bulk-under-review-checkbox
+                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                       @disabled(! $canBulkMarkUnderReview)>
+                            </td>
                             <td class="px-4 py-4">
                                 <div class="font-semibold text-slate-900">{{ $application->name }}</div>
                                 <div class="text-xs text-slate-500">{{ $application->user?->email }}</div>
@@ -314,16 +335,34 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-slate-500">No applications found for the selected filter.</td>
+                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">No applications found for the selected filter.</td>
                         </tr>
                     @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        </form>
 
         <div class="mt-6">
             {{ $applications->withQueryString()->links() }}
         </div>
     </section>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAll = document.querySelector('[data-bulk-under-review-select-all]');
+    const checkboxes = Array.from(document.querySelectorAll('[data-bulk-under-review-checkbox]'))
+        .filter((checkbox) => !checkbox.disabled);
+
+    if (!selectAll) {
+        return;
+    }
+
+    selectAll.addEventListener('change', () => {
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = selectAll.checked;
+        });
+    });
+});
+</script>
 @endsection

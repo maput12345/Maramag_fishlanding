@@ -111,7 +111,10 @@
                                             <span class="portal-status-badge portal-status-badge--warning">Action Required</span>
                                         @endif
                                     </div>
-                                    <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
+                                    <h3 class="portal-requirement-card__title">{{ $requirement->display_name }}</h3>
+                                    @if($requirement->is_additional && $requirement->custom_description)
+                                        <p class="portal-requirement-card__description">{{ $requirement->custom_description }}</p>
+                                    @endif
                                 </div>
 
                                 @if($requirement->file_url)

@@ -15,6 +15,9 @@ class SubmittedRequirement extends Model
     protected $fillable = [
         'application_id',
         'requirement_type_id',
+        'custom_title',
+        'custom_description',
+        'is_additional',
         'verified_by_employee_id',
         'file_path',
         'document_number',
@@ -32,9 +35,10 @@ class SubmittedRequirement extends Model
         'expiry_date' => 'date',
         'verification_date' => 'datetime',
         'uploaded_at' => 'datetime',
+        'is_additional' => 'boolean',
     ];
 
-    protected $appends = ['file_url'];
+    protected $appends = ['file_url', 'display_name'];
 
     /**
      * Get the parent application.
@@ -66,5 +70,14 @@ class SubmittedRequirement extends Model
     public function getFileUrlAttribute(): ?string
     {
         return $this->file_path ? asset('storage/' . $this->file_path) : null;
+    }
+
+    /**
+     * Display custom applicant-specific requirements without a global type.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->custom_title
+            ?: ($this->requirementType?->requirement_name ?? 'Additional Requirement');
     }
 }

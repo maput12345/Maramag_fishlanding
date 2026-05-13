@@ -429,10 +429,9 @@ function initializeSalesForm(config, scope = document) {
         });
     };
 
-    // Add new sales detail
-    addBtn.addEventListener('click', () => {
+    const createSalesDetailRow = () => {
         const template = document.getElementById('sales-detail-row-template');
-        if (!template) return;
+        if (!template) return null;
 
         const newRow = template.content.cloneNode(true).querySelector('.sales-detail-row');
         newRow.dataset.index = SALES_CONFIG.detailIndex;
@@ -443,6 +442,12 @@ function initializeSalesForm(config, scope = document) {
         updateDiscountInputState(newRow);
         SALES_CONFIG.detailIndex++;
         updateTotalAmount();
+        return newRow;
+    };
+
+    // Add new sales detail
+    addBtn.addEventListener('click', () => {
+        createSalesDetailRow();
     });
 
     // Remove sales detail
@@ -707,8 +712,130 @@ function initializeSalesForm(config, scope = document) {
         updateTotalAmount();
     };
 
+    const selectFishTypeForRow = (row, fishTypeId) => {
+        if (!row || !fishTypeId) {
+            return;
+        }
+
+        const fishTypeSelect = row.querySelector('.fish-type-select');
+        const quantityInput = row.querySelector('.quantity-input');
+
+        if (!fishTypeSelect) {
+            return;
+        }
+
+        fishTypeSelect.value = String(fishTypeId);
+
+        if (quantityInput && !quantityInput.value) {
+            quantityInput.value = 1;
+        }
+
+        fishTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    const addFishTypeToSales = (fishTypeId) => {
+        let targetRow = Array.from(container.querySelectorAll('.sales-detail-row'))
+            .find((row) => {
+                const fishTypeSelect = row.querySelector('.fish-type-select');
+                const boxInput = row.querySelector('.fish-box-hidden-input');
+                return fishTypeSelect && !fishTypeSelect.value && !boxInput?.value;
+            });
+
+        if (!targetRow) {
+            targetRow = createSalesDetailRow();
+        }
+
+        selectFishTypeForRow(targetRow, fishTypeId);
+    };
+
+    const initializeFishQuickAdd = () => {
+        const quickAdd = root.querySelector('[data-fish-quick-add]');
+        const input = quickAdd?.querySelector('[data-fish-quick-add-input]');
+        const results = quickAdd?.querySelector('[data-fish-quick-add-results]');
+        const clearButton = quickAdd?.querySelector('[data-fish-quick-add-clear]');
+
+        if (!quickAdd || !input || !results || input.dataset.fishQuickAddBound === 'true') {
+            return;
+        }
+
+        input.dataset.fishQuickAddBound = 'true';
+
+        const hideResults = () => {
+            results.classList.add('hidden');
+            results.innerHTML = '';
+        };
+
+        const renderResults = () => {
+            const query = input.value.trim().toLowerCase();
+
+            if (query.length < 1) {
+                hideResults();
+                return;
+            }
+
+            const matches = (SALES_CONFIG.fishTypes || [])
+                .filter((fishType) => String(fishType.name || '').toLowerCase().includes(query))
+                .slice(0, 8);
+
+            if (matches.length === 0) {
+                results.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">No fish found.</div>';
+                results.classList.remove('hidden');
+                return;
+            }
+
+            results.innerHTML = matches.map((fishType) => {
+                const price = SALES_CONFIG.fishPrices?.[String(fishType.id)];
+                const priceLabel = price ? `₱${formatMoney(price)}` : 'No price set';
+
+                return `
+                    <button type="button"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition hover:bg-blue-50"
+                            data-fish-quick-add-option
+                            data-fish-type-id="${fishType.id}">
+                        <span class="font-semibold text-slate-900">${escapeHtml(fishType.name || 'Unnamed fish')}</span>
+                        <span class="text-xs font-semibold text-slate-500">${escapeHtml(priceLabel)}</span>
+                    </button>
+                `;
+            }).join('');
+            results.classList.remove('hidden');
+        };
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        input.addEventListener('input', renderResults);
+        input.addEventListener('focus', renderResults);
+        results.addEventListener('click', (event) => {
+            const option = event.target.closest('[data-fish-quick-add-option]');
+            if (!option) {
+                return;
+            }
+
+            addFishTypeToSales(option.dataset.fishTypeId);
+            input.value = '';
+            hideResults();
+            input.focus();
+        });
+        clearButton?.addEventListener('click', () => {
+            input.value = '';
+            hideResults();
+            input.focus();
+        });
+        document.addEventListener('click', (event) => {
+            if (!quickAdd.contains(event.target)) {
+                hideResults();
+            }
+        });
+    };
+
     window.protectSalesAmountInput = protectAmountInput;
 
+    initializeFishQuickAdd();
     updateTotalAmount();
 }
 

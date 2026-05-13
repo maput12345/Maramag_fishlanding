@@ -203,6 +203,82 @@ class ApplicationManagementController extends Controller
     }
 
     /**
+     * Move selected submitted applications into active LEEO review.
+     */
+    public function bulkMarkUnderReview(Request $request): RedirectResponse
+    {
+        $employee = $this->resolveCurrentEmployee();
+
+        abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
+
+        $validated = $request->validate([
+            'application_ids' => ['required', 'array', 'min:1'],
+            'application_ids.*' => ['integer', 'exists:BrokerApplication,id'],
+        ], [
+            'application_ids.required' => 'Select at least one submitted application.',
+        ]);
+
+        $updatedCount = BrokerApplication::query()
+            ->whereIn('id', $validated['application_ids'])
+            ->where('application_status', 'Submitted')
+            ->update([
+                'application_status' => 'Under Review',
+                'reviewed_by_employee_id' => $employee->id,
+                'review_date' => now(),
+                'updated_at' => now(),
+            ]);
+
+        if ($updatedCount === 0) {
+            return back()->with('info', 'No submitted applications were available to mark as under review.');
+        }
+
+        return back()->with('success', $updatedCount . ' application' . ($updatedCount === 1 ? '' : 's') . ' marked as under review.');
+    }
+
+    /**
+     * Request an applicant-specific extra document during review.
+     */
+    public function storeAdditionalRequirement(Request $request, BrokerApplication $application): RedirectResponse
+    {
+        $employee = $this->resolveCurrentEmployee();
+
+        abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
+
+        $validated = $request->validate([
+            'custom_title' => ['required', 'string', 'max:255'],
+            'custom_description' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'custom_title.required' => 'Enter the additional requirement name.',
+        ]);
+
+        DB::transaction(function () use ($application, $employee, $validated) {
+            SubmittedRequirement::create([
+                'application_id' => $application->id,
+                'requirement_type_id' => null,
+                'custom_title' => $validated['custom_title'],
+                'custom_description' => $validated['custom_description'] ?? null,
+                'is_additional' => true,
+                'file_path' => '',
+                'verification_status' => 'Needs Revision',
+                'verified_by_employee_id' => $employee->id,
+                'verification_date' => now(),
+                'remarks' => $validated['custom_description'] ?? 'Please upload this additional requirement.',
+                'uploaded_at' => null,
+            ]);
+
+            $application->update([
+                'application_status' => 'Needs Revision',
+                'reviewed_by_employee_id' => $employee->id,
+                'review_date' => now(),
+                'remarks' => $validated['custom_description'] ?? 'Please upload the additional requested requirement.',
+            ]);
+        });
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('success', 'Additional requirement requested from the applicant.');
+    }
+
+    /**
      * Show the stall management workspace.
      */
     public function stallsIndex(): View
@@ -635,16 +711,21 @@ class ApplicationManagementController extends Controller
     public function review(ReviewBrokerApplicationRequest $request, BrokerApplication $application): RedirectResponse
     {
         $employee = $this->resolveCurrentEmployee();
+        $finalApplicationStatus = $this->resolveFinalApplicationStatus(
+            $request->input('application_status'),
+            $request->input('requirements', [])
+        );
         $shouldSendQualifiedEmail = $application->application_status !== 'Qualified'
-            && $request->input('application_status') === 'Qualified';
+            && $finalApplicationStatus === 'Qualified';
 
         abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
 
-        DB::transaction(function () use ($request, $application, $employee) {
+        DB::transaction(function () use ($request, $application, $employee, $finalApplicationStatus) {
             $requirements = $application->requirements()
                 ->select(['id', 'application_id'])
                 ->get()
                 ->keyBy('id');
+            $applicationRemarks = $request->input('remarks');
 
             foreach ($request->input('requirements', []) as $requirementPayload) {
                 /** @var SubmittedRequirement $requirement */
@@ -655,19 +736,25 @@ class ApplicationManagementController extends Controller
                 }
 
                 $status = $requirementPayload['verification_status'];
+                if ($finalApplicationStatus === 'Rejected' && $status === 'Pending') {
+                    $status = 'Rejected';
+                }
+
                 $requirement->update([
                     'verification_status' => $status,
                     'verified_by_employee_id' => $status === 'Pending' ? null : $employee->id,
                     'verification_date' => $status === 'Pending' ? null : now(),
-                    'remarks' => $status === 'Verified' ? null : ($requirementPayload['remarks'] ?? null),
+                    'remarks' => $status === 'Verified'
+                        ? null
+                        : (($requirementPayload['remarks'] ?? null) ?: ($status === 'Rejected' ? $applicationRemarks : null)),
                 ]);
             }
 
             $application->update([
-                'application_status' => $request->input('application_status'),
+                'application_status' => $finalApplicationStatus,
                 'reviewed_by_employee_id' => $employee->id,
                 'review_date' => now(),
-                'remarks' => $request->input('remarks'),
+                'remarks' => $applicationRemarks,
             ]);
 
             ApplicationReviewDraft::query()
@@ -688,6 +775,34 @@ class ApplicationManagementController extends Controller
 
         return redirect()->route('admin.applications.show', $application)
             ->with('success', 'Application review saved successfully.');
+    }
+
+    /**
+     * Keep the overall application status aligned with requirement decisions.
+     */
+    private function resolveFinalApplicationStatus(string $requestedStatus, array $requirementPayloads): string
+    {
+        if ($requestedStatus === 'Rejected') {
+            return 'Rejected';
+        }
+
+        $statuses = collect($requirementPayloads)
+            ->filter(fn ($payload) => is_array($payload))
+            ->pluck('verification_status');
+
+        if ($statuses->contains('Rejected')) {
+            return 'Rejected';
+        }
+
+        if ($statuses->contains('Needs Revision')) {
+            return 'Needs Revision';
+        }
+
+        if ($statuses->isNotEmpty() && $statuses->every(fn ($status) => $status === 'Verified')) {
+            return 'Qualified';
+        }
+
+        return $requestedStatus === 'Qualified' ? 'Under Review' : $requestedStatus;
     }
 
     /**

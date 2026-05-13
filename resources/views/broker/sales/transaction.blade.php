@@ -3,9 +3,14 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
     $breadcrumbs = [
-        ['title' => 'Transaction'],
+        ['title' => 'Cashier Transaction'],
     ];
-    $transactionUrl = route('broker.transaction');
+    $isPosMode = request()->boolean('pos')
+        || request()->boolean('auto_print')
+        || $errors->any()
+        || old('after_save') === 'transaction';
+    $transactionUrl = route('broker.transaction', $isPosMode ? ['pos' => 1] : []);
+    $posLaunchUrl = route('broker.transaction', ['pos' => 1]);
     $salesBaseUrl = $transactionUrl;
     $salesFormConfig = [
         'fishBoxes' => $fishBoxes ?? [],
@@ -111,14 +116,16 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         <div id="sales-page-fragment" data-sales-form-root>
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Transaction</h1>
+                    <span class="dashboard-kicker">Cashier Terminal</span>
                 </div>
-                <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-end">
-                    <a href="{{ route('broker.sales.sales') }}" class="app-button app-button--secondary h-12 w-full px-4 text-sm sm:w-auto">
-                        <x-heroicon-o-banknotes class="h-4 w-4" />
-                        <span>Sales Records</span>
-                    </a>
-                </div>
+                @unless($isPosMode)
+                    <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-end">
+                        <a href="{{ $posLaunchUrl }}" class="app-button app-button--dark h-12 w-full px-4 text-sm sm:w-auto">
+                            <x-heroicon-o-calculator class="h-4 w-4" />
+                            <span>Open Cashier-Only</span>
+                        </a>
+                    </div>
+                @endunless
             </div>
 
             @if($brokerViewReadOnly)
@@ -139,6 +146,9 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                           novalidate>
                         @csrf
                         <input type="hidden" name="after_save" value="transaction">
+                        @if($isPosMode)
+                            <input type="hidden" name="pos_mode" value="1">
+                        @endif
                         <input type="hidden" id="sales_date" name="sales_date" value="{{ old('sales_date', date('Y-m-d')) }}">
                         <input type="hidden" id="total_amount" name="total_amount" value="{{ old('total_amount', '') }}">
 
@@ -166,6 +176,27 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                         <span>Phone Scanner</span>
                                     </button>
                                 </div>
+                            </div>
+
+                            <div class="relative rounded-2xl border border-blue-100 bg-blue-50/60 p-3" data-fish-quick-add>
+                                <label for="fish-quick-add-search" class="mb-1.5 block text-sm font-medium text-slate-700">
+                                    Search Fish to Add
+                                </label>
+                                <div class="flex flex-col gap-2 lg:flex-row">
+                                    <input id="fish-quick-add-search"
+                                           type="search"
+                                           class="h-12 min-w-0 flex-1 rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Type fish name, then select to add..."
+                                           autocomplete="off"
+                                           data-fish-quick-add-input>
+                                    <button type="button"
+                                            class="app-button app-button--secondary h-12 px-5 text-sm"
+                                            data-fish-quick-add-clear>
+                                        Clear
+                                    </button>
+                                </div>
+                                <div class="absolute left-3 right-3 top-full z-20 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+                                     data-fish-quick-add-results></div>
                             </div>
 
                             <div class="sales-details-scroll-area space-y-3 pr-2"

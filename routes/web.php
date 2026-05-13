@@ -15,6 +15,7 @@ use App\Http\Controllers\BrokerDashboardController;
 use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\SalesManagementController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\VerificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -35,6 +36,13 @@ Route::get('/services', [PublicPageController::class, 'services'])->name('public
 Route::get('/public/stalls', [PublicPageController::class, 'stalls'])->name('public.stalls');
 
 Auth::routes(['verify' => true]);
+
+Route::middleware(['auth', 'prevent.back.history'])->group(function () {
+    Route::get('/email/change', [VerificationController::class, 'editEmail'])
+        ->name('verification.email.edit');
+    Route::patch('/email/change', [VerificationController::class, 'updateEmail'])
+        ->name('verification.email.update');
+});
 
 // Custom logout route
 Route::post('/logout', function () {
@@ -97,6 +105,8 @@ Route::middleware(['auth', 'admin', 'prevent.back.history'])->group(function () 
 
     Route::controller(ApplicationManagementController::class)->prefix('admin/applications')->name('admin.applications.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::post('/bulk-under-review', 'bulkMarkUnderReview')->name('bulk-under-review');
+        Route::post('/{application}/additional-requirements', 'storeAdditionalRequirement')->name('additional-requirements.store');
         Route::get('/{application}', 'show')->name('show');
         Route::patch('/{application}/review-draft', 'saveReviewDraft')->name('review-draft');
         Route::patch('/{application}/review', 'review')->name('review');

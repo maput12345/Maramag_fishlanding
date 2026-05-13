@@ -53,6 +53,10 @@
                         <span>Edit Application</span>
                     </a>
                 </div>
+            @elseif($application->application_status === 'Rejected')
+                <div class="portal-inline-alert portal-inline-alert--error">
+                    This application was rejected by LEEO. Check the remarks below for the reason. Documents marked as not individually reviewed were not the specific rejection item.
+                </div>
             @endif
         </section>
 
@@ -170,13 +174,29 @@
 
             <div class="portal-requirement-grid">
                 @forelse($application->requirements as $requirement)
+                    @php
+                        $requirementStatus = $requirement->verification_status;
+                        $showOverallRejectionContext = $application->application_status === 'Rejected'
+                            && $requirementStatus === 'Pending';
+                        $requirementStatusLabel = $showOverallRejectionContext
+                            ? 'Not Individually Reviewed'
+                            : null;
+                        $requirementRemarks = $requirement->remarks;
+
+                        if ($showOverallRejectionContext && blank($requirementRemarks)) {
+                            $requirementRemarks = 'No document-specific issue recorded. See the LEEO remarks above for the rejection reason.';
+                        }
+                    @endphp
                     <article class="portal-requirement-card">
                         <div class="portal-requirement-card__header">
                             <div>
                                 <div class="portal-requirement-card__badges">
-                                    <x-status-badge :status="$requirement->verification_status" />
+                                    <x-status-badge :status="$showOverallRejectionContext ? 'N/A' : $requirementStatus" :label="$requirementStatusLabel" />
                                 </div>
-                                <h3 class="portal-requirement-card__title">{{ $requirement->requirementType?->requirement_name }}</h3>
+                                <h3 class="portal-requirement-card__title">{{ $requirement->display_name }}</h3>
+                                @if($requirement->is_additional && $requirement->custom_description)
+                                    <p class="portal-requirement-card__description">{{ $requirement->custom_description }}</p>
+                                @endif
                                 <p class="portal-requirement-card__description">
                                     Uploaded {{ optional($requirement->uploaded_at)->format('M d, Y h:i A') ?? 'N/A' }}
                                 </p>
@@ -192,7 +212,7 @@
                         <div class="portal-form-grid portal-form-grid--requirement">
                             <div class="portal-field portal-field--wide">
                                 <label class="portal-field__label">Requirement Remarks</label>
-                                <div class="portal-input portal-record-value portal-record-value--multiline">{{ $requirement->remarks ?: 'No remarks recorded.' }}</div>
+                                <div class="portal-input portal-record-value portal-record-value--multiline">{{ $requirementRemarks ?: 'No remarks recorded.' }}</div>
                             </div>
                         </div>
                     </article>

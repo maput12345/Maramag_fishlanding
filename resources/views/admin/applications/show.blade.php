@@ -19,6 +19,21 @@
 @endphp
 
 @section('content')
+<style>
+    .additional-requirement-row {
+        display: grid;
+        grid-template-columns: minmax(15rem, 1fr) minmax(18rem, 1.4fr) auto;
+        align-items: end;
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 900px) {
+        .additional-requirement-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <div class="space-y-8">
     <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <a href="{{ route('admin.applications.index') }}"
@@ -193,6 +208,39 @@
         <div class="app-section-heading">
             <h2 class="app-section-title">Requirement Verification</h2>
         </div>
+
+        <form action="{{ route('admin.applications.additional-requirements.store', $application) }}"
+              method="POST"
+              class="mt-6 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+            @csrf
+            <div class="additional-requirement-row">
+                <div>
+                    <label for="custom_title" class="block text-sm font-medium text-slate-700">Additional Requirement</label>
+                    <input id="custom_title"
+                           name="custom_title"
+                           type="text"
+                           value="{{ old('custom_title') }}"
+                           class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                           placeholder="e.g. Updated barangay clearance">
+                    @error('custom_title')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="custom_description" class="block text-sm font-medium text-slate-700">Instruction / Reason</label>
+                    <input id="custom_description"
+                           name="custom_description"
+                           type="text"
+                           value="{{ old('custom_description') }}"
+                           class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                           placeholder="Tell the applicant what to upload.">
+                </div>
+                <button type="submit" class="app-button app-button--primary h-11 whitespace-nowrap px-5 text-sm">
+                    Request Requirement
+                </button>
+            </div>
+        </form>
+
         <form
             action="{{ route('admin.applications.review', $application) }}"
             method="POST"
@@ -215,7 +263,12 @@
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="text-lg font-semibold text-slate-900">{{ $requirement->requirementType?->requirement_name }}</h3>
+                                <h3 class="text-lg font-semibold text-slate-900">{{ $requirement->display_name }}</h3>
+                                @if($requirement->is_additional)
+                                    <span class="mt-2 inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700 ring-1 ring-blue-200">
+                                        Additional request
+                                    </span>
+                                @endif
                                 @if($isNewRevisionFile)
                                     <span class="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700 ring-1 ring-orange-200">
                                         New revision file

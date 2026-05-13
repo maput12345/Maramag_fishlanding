@@ -117,6 +117,43 @@
         color: #0f172a;
     }
 
+    .verify-field {
+        display: grid;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .verify-label {
+        color: #334155;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .verify-input {
+        width: 100%;
+        border-radius: 0.875rem;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        padding: 0.875rem 1rem;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .verify-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+        outline: none;
+    }
+
+    .verify-error {
+        color: #b91c1c;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
     @media (max-width: 640px) {
         .login-stage {
             padding: 1rem;
@@ -165,21 +202,55 @@
                 </div>
             @endif
 
-            <div class="verify-actions">
-                <form method="POST" action="{{ route('verification.resend') }}">
+            @if($editingEmail ?? false)
+                <form method="POST" action="{{ route('verification.email.update') }}" class="verify-actions">
                     @csrf
-                    <button type="submit" class="login-submit">
-                        Resend Verification Email
-                    </button>
-                </form>
+                    @method('PATCH')
 
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="verify-secondary">
-                        Use Another Email
+                    <div class="verify-field">
+                        <label for="email" class="verify-label">Email Address</label>
+                        <input id="email"
+                               type="email"
+                               name="email"
+                               value="{{ old('email', auth()->user()->email) }}"
+                               class="verify-input"
+                               required
+                               autocomplete="email"
+                               autofocus>
+                        @error('email')
+                            <p class="verify-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button type="submit" class="login-submit">
+                        Update Email & Send Verification
                     </button>
+
+                    <a href="{{ route('verification.notice') }}" class="verify-secondary">
+                        Back to Verification
+                    </a>
                 </form>
-            </div>
+            @else
+                <div class="verify-actions">
+                    <form method="POST" action="{{ route('verification.resend') }}">
+                        @csrf
+                        <button type="submit" class="login-submit">
+                            Resend Verification Email
+                        </button>
+                    </form>
+
+                    <a href="{{ route('verification.email.edit') }}" class="verify-secondary">
+                        Use Another Email
+                    </a>
+
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="verify-secondary">
+                            Back to Login
+                        </button>
+                    </form>
+                </div>
+            @endif
 
         </div>
     </section>

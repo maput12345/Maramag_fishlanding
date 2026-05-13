@@ -9,6 +9,7 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class VerificationController extends Controller
 {
@@ -41,7 +42,55 @@ class VerificationController extends Controller
     {
         $this->middleware('auth')->except('verify');
         $this->middleware('signed')->only('verify');
-        $this->middleware('throttle:6,1')->only('verify', 'resend');
+        $this->middleware('throttle:6,1')->only('verify', 'resend', 'updateEmail');
+    }
+
+    /**
+     * Show the email correction form for users waiting on verification.
+     */
+    public function editEmail()
+    {
+        return view('auth.verify', ['editingEmail' => true]);
+    }
+
+    /**
+     * Update a typo in the pending verification email and send a new link.
+     */
+    public function updateEmail(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'email' => [
+                'required',
+                'string',
+                'email:rfc',
+                'max:255',
+                Rule::unique('User', 'email')->ignore($user->id),
+            ],
+        ], [
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already registered.',
+        ]);
+
+        $email = strtolower($validated['email']);
+        $emailWasChanged = $user->email !== $email;
+
+        if ($emailWasChanged) {
+            $user->forceFill([
+                'email' => $email,
+                'email_verified_at' => null,
+            ])->save();
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return redirect()->route('verification.notice')->with(
+            'status',
+            $emailWasChanged
+                ? 'Your email address was updated and a fresh verification link has been sent.'
+                : 'A fresh verification link has been sent to your email address.'
+        );
     }
 
     /**

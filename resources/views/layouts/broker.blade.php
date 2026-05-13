@@ -34,20 +34,27 @@
     $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
+    $isPosOnlyMode = request()->routeIs('broker.transaction') && request()->boolean('pos');
 @endphp
 <body class="shell-body theme-broker">
     <div class="shell-frame min-h-screen" x-data="{ reportsOpen: false, sidebarOpen: true }" @toggle-sidebar.window="sidebarOpen = !sidebarOpen">
-        <div class="shell-orb shell-orb-one"></div>
-        <div class="shell-orb shell-orb-two"></div>
+        @unless($isPosOnlyMode)
+            <div class="shell-orb shell-orb-one"></div>
+            <div class="shell-orb shell-orb-two"></div>
+        @endunless
         <!-- Sidebar Component -->
-        @include('layouts.partials.broker-sidebar')
+        @unless($isPosOnlyMode)
+            @include('layouts.partials.broker-sidebar')
+        @endunless
 
         <!-- Main Content -->
-        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden md:ml-64" :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'">
+        <div class="app-main-shell main-content min-h-screen flex-1 flex flex-col overflow-hidden {{ $isPosOnlyMode ? '' : 'md:ml-64' }}" @unless($isPosOnlyMode) :class="sidebarOpen ? 'md:ml-64' : 'md:ml-16'" @endunless>
             <!-- Navbar Component -->
-            @include('layouts.partials.broker-navbar')
+            @unless($isPosOnlyMode)
+                @include('layouts.partials.broker-navbar')
+            @endunless
 
-            @if($impersonatedBroker)
+            @if($impersonatedBroker && ! $isPosOnlyMode)
                 <div class="px-6 pt-4">
                     <div class="flex flex-col gap-4 rounded-2xl border {{ $brokerViewReadOnly ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50' }} px-5 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
                         <div>
@@ -95,19 +102,25 @@
             @endif
 
             <!-- Page Content -->
-            <main class="app-main flex-1 overflow-auto p-6 pb-24 md:pb-6">
+            <main class="app-main flex-1 overflow-auto {{ $isPosOnlyMode ? 'p-4' : 'p-6 pb-24 md:pb-6' }}">
                 @yield('content')
             </main>
 
             <!-- Desktop Footer -->
-            @include('layouts.partials.desktop-footer-polished')
+            @unless($isPosOnlyMode)
+                @include('layouts.partials.desktop-footer-polished')
+            @endunless
         </div>
 
         <!-- Mobile Footer Sidebar -->
-        @include('layouts.partials.broker-mobile-footer-sidebar-polished')
+        @unless($isPosOnlyMode)
+            @include('layouts.partials.broker-mobile-footer-sidebar-polished')
+        @endunless
 
         <!-- Profile Modal -->
-        @include('auth.profile')
+        @unless($isPosOnlyMode)
+            @include('auth.profile')
+        @endunless
     </div>
 </body>
 </html>
