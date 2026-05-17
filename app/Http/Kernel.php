@@ -65,6 +65,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'broker' => \App\Http\Middleware\BrokerMiddleware::class,
+        'not.cashier' => \App\Http\Middleware\RedirectCashierToPos::class,
         'prevent.back.history' => \App\Http\Middleware\PreventBackHistory::class,
     ];
 }

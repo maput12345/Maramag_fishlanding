@@ -39,40 +39,6 @@ use Carbon\Carbon;
                     </div>
                 </div>
             </div>
-
-            <div class="rounded-[24px] border border-white/10 bg-white/10 p-5 backdrop-blur">
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Daily Snapshot</p>
-                <dl class="mt-4 space-y-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <dt class="text-sm text-blue-100/80">Sales Revenue</dt>
-                            <dd class="text-xs text-blue-100/60">Recorded sale totals for the day</dd>
-                        </div>
-                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['sales'], 2) }}</div>
-                    </div>
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <dt class="text-sm text-blue-100/80">Gross Profit</dt>
-                            <dd class="text-xs text-blue-100/60">Sales less direct fish cost</dd>
-                        </div>
-                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['gross_profit'], 2) }}</div>
-                    </div>
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <dt class="text-sm text-blue-100/80">Collections</dt>
-                            <dd class="text-xs text-blue-100/60">Cash received on the day</dd>
-                        </div>
-                        <div class="text-right text-lg font-semibold">₱{{ number_format($statement['collections'], 2) }}</div>
-                    </div>
-                    <div class="flex items-start justify-between gap-4 border-t border-white/10 pt-4">
-                        <div>
-                            <dt class="text-sm text-blue-100/80">Net Income</dt>
-                            <dd class="text-xs text-blue-100/60">After expenses and loss adjustments</dd>
-                        </div>
-                        <div class="text-right text-2xl font-semibold">₱{{ number_format($statement['net_income'], 2) }}</div>
-                    </div>
-                </dl>
-            </div>
         </div>
     </section>
 
@@ -144,9 +110,23 @@ use Carbon\Carbon;
                 <div class="space-y-3">
                     <div class="flex items-start justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4">
                         <div>
-                            <p class="text-sm font-semibold text-emerald-900">Sales</p>
+                            <p class="text-sm font-semibold text-emerald-900">Gross Sales</p>
                         </div>
-                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['gross_sales'], 2) }}</p>
+                    </div>
+
+                    <div class="flex items-start justify-between rounded-2xl border border-orange-100 bg-orange-50 px-4 py-4">
+                        <div>
+                            <p class="text-sm font-semibold text-orange-900">Less: Sales Discounts</p>
+                        </div>
+                        <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['sales_discounts'], 2) }}</p>
+                    </div>
+
+                    <div class="flex items-start justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4">
+                        <div>
+                            <p class="text-sm font-semibold text-emerald-900">Net Sales</p>
+                        </div>
+                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['net_sales'], 2) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4">
@@ -323,7 +303,9 @@ use Carbon\Carbon;
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sale</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Buyer</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Boxes</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Sales</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Gross Sales</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Discount</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Net Sales</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Gross Profit</th>
                             </tr>
@@ -340,13 +322,15 @@ use Carbon\Carbon;
                                         <div class="text-xs text-gray-500">{{ $sale['commodities'] ?: 'No commodity label' }}</div>
                                     </td>
                                     <td class="px-4 py-4 text-right text-sm tabular-nums text-gray-900">{{ number_format($sale['sold_boxes']) }}</td>
-                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['sales'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['gross_sales'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-orange-700">₱{{ number_format($sale['sales_discounts'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['net_sales'], 2) }}</td>
                                     <td class="px-4 py-4 text-right text-sm font-medium tabular-nums text-gray-900">₱{{ number_format($sale['cost_of_sales'], 2) }}</td>
                                     <td class="px-4 py-4 text-right text-sm font-semibold tabular-nums text-blue-700">₱{{ number_format($sale['gross_profit'], 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-12">
+                                    <td colspan="8" class="px-4 py-12">
                                         <div class="empty-state">
                                             <x-heroicon-o-document-text class="heroicon" />
                                             <p class="text-sm">No sales were recorded for this business day.</p>
@@ -455,8 +439,20 @@ use Carbon\Carbon;
                 <div class="space-y-3">
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
-                            <span class="font-medium text-gray-900">Sales</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['sales'], 2) }}</span>
+                            <span class="font-medium text-gray-900">Gross Sales</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['gross_sales'], 2) }}</span>
+                        </div>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-medium text-gray-900">Less: Sales Discounts</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['sales_discounts'], 2) }}</span>
+                        </div>
+                    </div>
+                    <div class="rounded-lg bg-gray-50 p-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="font-medium text-gray-900">Net Sales</span>
+                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['net_sales'], 2) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">

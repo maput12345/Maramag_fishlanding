@@ -96,6 +96,7 @@ $salesFormConfig = [
             <form action="{{ request('modal') === 'create' ? route('broker.sales.store') : route('broker.sales.update', $editingSales->id ?? '') }}"
                   method="POST"
                   data-sales-async-form
+                  @if(request('modal') === 'create') data-sales-sync-submit @endif
                   @if(request('modal') === 'create') data-sales-after-save-url="{{ $nextTransactionUrl }}" @endif
                   class="space-y-6">
                 @csrf

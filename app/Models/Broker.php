@@ -288,7 +288,14 @@ class Broker extends Model
 
         $broker = self::where('user_id', $userId)->first();
 
-        return $broker ? $broker->id : null;
+        if ($broker) {
+            return $broker->id;
+        }
+
+        return BrokerStaff::query()
+            ->active()
+            ->where('user_id', $userId)
+            ->value('broker_id');
     }
 
     /**

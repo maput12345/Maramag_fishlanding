@@ -57,10 +57,9 @@ class ProfileController extends Controller
         }
 
         // Redirect back to the referring page without modal parameter on success
-        $referer = request()->header('referer');
-        if ($referer) {
-            // Remove modal parameter from referer URL
-            $cleanUrl = strtok($referer, '?');
+        $cleanUrl = $this->profileReturnUrl(request()->header('referer'));
+
+        if ($cleanUrl) {
             return redirect()->to($cleanUrl)->with('success', 'Profile updated successfully.');
         }
 
@@ -72,5 +71,37 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('applications.index')->with('success', 'Profile updated successfully.');
+    }
+
+    private function profileReturnUrl(?string $referer): ?string
+    {
+        if (!$referer) {
+            return null;
+        }
+
+        $parts = parse_url($referer);
+
+        if (!$parts || empty($parts['path'])) {
+            return null;
+        }
+
+        if (!empty($parts['host']) && $parts['host'] !== request()->getHost()) {
+            return null;
+        }
+
+        parse_str($parts['query'] ?? '', $query);
+        unset($query['modal']);
+
+        $target = $parts['path'];
+
+        if ($query !== []) {
+            $target .= '?' . http_build_query($query);
+        }
+
+        if (!empty($parts['fragment'])) {
+            $target .= '#' . $parts['fragment'];
+        }
+
+        return $target;
     }
 }

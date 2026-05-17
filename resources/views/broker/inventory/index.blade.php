@@ -45,25 +45,6 @@
 <meta name="fish-box-update-url" content="{{ route('broker.fish-boxes.return-via-qr') }}">
 
 <div class="relative w-full workspace-modal-host">
-                <!-- Page Header -->
-                <div class="mb-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h1 class="text-3xl font-bold text-gray-900">Inventory & Pricing</h1>
-                        </div>
-                        @unless($brokerViewReadOnly)
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                                <!-- Scan QR Button -->
-                                <button id="scanQRBtn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center justify-center space-x-2">
-                                    <x-heroicon-o-camera class="w-4 h-4" />
-                                    <span class="hidden sm:inline">Scan QR to Return</span>
-                                    <span class="sm:hidden">Scan QR</span>
-                                </button>
-                            </div>
-                        @endunless
-                    </div>
-                </div>
-
                 <!-- Tab Navigation -->
                 <div class="bg-white rounded-xl shadow-lg mb-6">
                     <div class="border-b border-gray-200">
@@ -108,7 +89,7 @@
 <script src="{{ asset('js/inventory.js') }}" defer></script>
 @if($currentTab === 'fishBoxes')
     <script src="{{ asset('js/inventory-async.js') }}" defer></script>
-    <script src="{{ asset('js/qr-code.js') }}" defer></script>
+    <script src="{{ asset('js/qr-code.js') }}?v={{ filemtime(public_path('js/qr-code.js')) }}" defer></script>
     <script src="{{ asset('js/qr-scanner-legacy.min.js') }}" defer></script>
     <script src="{{ asset('js/qr-backend-handler.js') }}" defer></script>
 @endif
@@ -316,7 +297,6 @@
                     await this.scanner.start();
                     this.showReadyState();
                 } catch (error) {
-                    console.error('Unable to start inventory QR scanner:', error);
                     this.showErrorState(this.getCameraErrorMessage(error));
                     throw error;
                 }
@@ -492,34 +472,66 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const scanQRBtn = document.getElementById('scanQRBtn');
+        const scanQRBtn = document.querySelector('[data-scan-qr-return-shortcut]');
+        const shouldAutoOpenScanner = new URLSearchParams(window.location.search).get('scan_return') === '1';
+        const canOpenScannerHere = @json($currentTab === 'fishBoxes');
 
-        if (!scanQRBtn || scanQRBtn.dataset.qrBound === 'true') {
+        if (!canOpenScannerHere || ((!scanQRBtn && !shouldAutoOpenScanner) || scanQRBtn?.dataset.qrBound === 'true')) {
             return;
         }
 
         window.qrScanner = window.qrScanner || createInventoryQrController();
-        scanQRBtn.dataset.qrBound = 'true';
 
-        scanQRBtn.addEventListener('click', async function () {
-            scanQRBtn.disabled = true;
+        async function openReturnScanner(event) {
+            event?.preventDefault();
+
+            if (scanQRBtn) {
+                scanQRBtn.setAttribute('aria-busy', 'true');
+                scanQRBtn.classList.add('pointer-events-none', 'opacity-75');
+            }
 
             try {
                 await window.qrScanner.openModalAndStart();
             } catch (error) {
-                console.error('Failed to initialize QR tools:', error);
                 const errorMessage = error && error.message
                     ? error.message
                     : 'QR Scanner could not be loaded. Please refresh and try again.';
                 if (window.toastr) {
                     window.toastr.error(errorMessage);
+                } else if (window.Swal) {
+                    window.Swal.fire({
+                        icon: 'error',
+                        title: 'QR Scanner',
+                        text: errorMessage,
+                        confirmButtonColor: '#dc2626',
+                    });
                 } else {
-                    window.alert(errorMessage);
+                    const notification = document.createElement('div');
+                    notification.textContent = errorMessage;
+                    notification.setAttribute('role', 'status');
+                    notification.style.cssText = 'position:fixed;right:1rem;top:1rem;z-index:9999;max-width:22rem;padding:0.85rem 1rem;border-radius:0.75rem;background:#991b1b;color:#fff;box-shadow:0 16px 36px rgba(15,23,42,0.22);font:600 0.875rem system-ui,sans-serif';
+                    document.body.appendChild(notification);
+                    window.setTimeout(() => notification.remove(), 2800);
                 }
             } finally {
-                scanQRBtn.disabled = false;
+                if (scanQRBtn) {
+                    scanQRBtn.removeAttribute('aria-busy');
+                    scanQRBtn.classList.remove('pointer-events-none', 'opacity-75');
+                }
             }
-        });
+        }
+
+        if (scanQRBtn) {
+            scanQRBtn.dataset.qrBound = 'true';
+            scanQRBtn.addEventListener('click', openReturnScanner);
+        }
+
+        if (shouldAutoOpenScanner) {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('scan_return');
+            window.history.replaceState({}, '', cleanUrl.toString());
+            window.setTimeout(() => openReturnScanner(), 250);
+        }
     });
 })();
 </script>

@@ -79,9 +79,19 @@ class SalesController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
         $userId = Auth::id();
+        $user = Auth::user();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        $sales = SalesTransaction::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+        if ($user?->isCashier()) {
+            $cashierDate = now()->toDateString();
+            $dateFrom = $cashierDate;
+            $dateTo = $cashierDate;
+            $sales = SalesTransaction::getPaginatedForCashier($search, $status, $brokerId, $userId, $cashierDate);
+            $salesSummary = SalesTransaction::getSummaryForCashier($search, $status, $brokerId, $userId, $cashierDate);
+        } else {
+            $sales = SalesTransaction::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+            $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+        }
         $fishBoxes = FishBox::getAvailableForSale($brokerId);
         $allFishTypes = FishType::getFishTypeByBrokerId($brokerId);
 
@@ -108,8 +118,6 @@ class SalesController extends Controller
                 ];
             })
             ->all();
-        $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
-
         $salesStatuses = SalesStatusConstant::getAllStatuses();
         $salesStatusesWithDisplayNames = collect($salesStatuses)->mapWithKeys(function ($status) {
             return [$status => SalesStatusConstant::getDisplayName($status)];
@@ -125,10 +133,10 @@ class SalesController extends Controller
         $printingSales = null;
 
         // Handle modal-specific sales retrieval
-        $editingSales = $this->getModalSales($request, 'edit', 'edit', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
-        $viewingSales = $this->getModalSales($request, 'show', 'show', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
+        $editingSales = $this->getModalSales($request, 'edit', 'edit', ['buyer', 'creator.employee', 'creator.roles', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
+        $viewingSales = $this->getModalSales($request, 'show', 'show', ['buyer', 'creator.employee', 'creator.roles', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments']);
         $saleForPayment = $this->getModalSales($request, 'payment', 'sale');
-        $printingSales = $this->getModalSales($request, 'print', 'print', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments', 'broker.user', 'broker']);
+        $printingSales = $this->getModalSales($request, 'print', 'print', ['buyer', 'creator.employee', 'creator.roles', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments', 'broker.user', 'broker']);
         // Handle fish boxes for editing mode - only include truly available fish boxes
         if ($editingSales) {
             $fishBoxes = $this->prepareFishBoxesForEdit($fishBoxes, $editingSales);
@@ -142,7 +150,8 @@ class SalesController extends Controller
             'fishBoxes', 'fishTypes', 'editingSales',
             'viewingSales', 'salesStatuses',
             'salesStatusesWithDisplayNames', 'salesStatusesWithColorClasses',
-            'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap'
+            'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap',
+            'dateFrom', 'dateTo'
         );
     }
 
@@ -267,7 +276,7 @@ class SalesController extends Controller
         // Prepare sales data
         $salesData = [
             'sales_date' => $validated['sales_date'],
-            'total_amount' => $validated['total_amount'],
+            'total_amount' => $validated['total_amount'] ?? 0,
             'buyer_first_name' => $validated['buyer_first_name'],
             'buyer_middle_name' => $validated['buyer_middle_name'] ?? null,
             'buyer_last_name' => $validated['buyer_last_name'],
@@ -290,6 +299,7 @@ class SalesController extends Controller
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Sale created successfully!', [
                 'sale_id' => $sale->id,
+                'force_redirect' => true,
                 'redirect_url' => $request->input('after_save') === 'transaction'
                     ? route('broker.transaction', $transactionRedirectParameters)
                     : route('broker.sales.sales'),
@@ -329,10 +339,19 @@ class SalesController extends Controller
                 ->with('error', 'You are not authorized to update this sale.');
         }
 
+        if (!$this->cashierCanModifySale($sale)) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('Cashier staff can only edit their own unpaid transactions from today.', 403);
+            }
+
+            return redirect()->route('broker.sales.sales')
+                ->with('error', 'Cashier staff can only edit their own unpaid transactions from today.');
+        }
+
         // Prepare sales data
         $salesData = [
             'sales_date' => $validated['sales_date'],
-            'total_amount' => $validated['total_amount'],
+            'total_amount' => $validated['total_amount'] ?? 0,
             'buyer_first_name' => $validated['buyer_first_name'],
             'buyer_middle_name' => $validated['buyer_middle_name'] ?? null,
             'buyer_last_name' => $validated['buyer_last_name'],
@@ -423,6 +442,15 @@ class SalesController extends Controller
 
             return redirect()->route('broker.sales.sales')
                 ->with('error', 'The selected sale does not belong to your broker account.');
+        }
+
+        if (!$this->cashierCanModifySale($sale)) {
+            if ($this->shouldReturnJson($request)) {
+                return $this->jsonErrorResponse('Cashier staff can only add payment to their own unpaid transactions from today.', 403);
+            }
+
+            return redirect()->route('broker.sales.sales')
+                ->with('error', 'Cashier staff can only add payment to their own unpaid transactions from today.');
         }
 
         DB::transaction(function () use ($validated, $sale) {
@@ -596,7 +624,27 @@ class SalesController extends Controller
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        return $sales->broker_id === $brokerId;
+        if ($sales->broker_id !== $brokerId) {
+            return false;
+        }
+
+        if (Auth::user()?->isCashier()) {
+            return $sales->created_by_user_id === $userId
+                && $sales->sales_date?->isSameDay(today());
+        }
+
+        return true;
+    }
+
+    private function cashierCanModifySale(SalesTransaction $sale): bool
+    {
+        if (!Auth::user()?->isCashier()) {
+            return true;
+        }
+
+        return $sale->created_by_user_id === Auth::id()
+            && $sale->sales_date?->isSameDay(today())
+            && $sale->status !== SalesStatusConstant::PAID;
     }
 
     /**

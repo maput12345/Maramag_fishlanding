@@ -16,24 +16,19 @@
     $hasPendingRevisionReview = $application->hasPendingRevisionReview();
     $submissionTimelineLabel = $hasPendingRevisionReview ? 'resubmitted' : 'submitted';
     $submissionTimelineDate = $hasPendingRevisionReview ? $application->revision_resubmitted_at : $application->submitted_at;
+    $editingAdditionalRequirement = null;
+
+    if (request('modal') === 'edit-additional-requirement') {
+        $editingAdditionalRequirementId = (int) request('requirement');
+        $editingAdditionalRequirement = $application->requirements
+            ->first(fn ($requirement) => (int) $requirement->id === $editingAdditionalRequirementId && $requirement->is_additional);
+    }
+
+    $shouldOpenAddRequirementModal = request('modal') === 'additional-requirement'
+        || (!$editingAdditionalRequirement && ($errors->has('custom_title') || $errors->has('custom_description')));
 @endphp
 
 @section('content')
-<style>
-    .additional-requirement-row {
-        display: grid;
-        grid-template-columns: minmax(15rem, 1fr) minmax(18rem, 1.4fr) auto;
-        align-items: end;
-        gap: 0.75rem;
-    }
-
-    @media (max-width: 900px) {
-        .additional-requirement-row {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-
 <div class="space-y-8">
     <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <a href="{{ route('admin.applications.index') }}"
@@ -205,41 +200,17 @@
     </section>
 
     <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div class="app-section-heading">
-            <h2 class="app-section-title">Requirement Verification</h2>
-        </div>
-
-        <form action="{{ route('admin.applications.additional-requirements.store', $application) }}"
-              method="POST"
-              class="mt-6 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-            @csrf
-            <div class="additional-requirement-row">
-                <div>
-                    <label for="custom_title" class="block text-sm font-medium text-slate-700">Additional Requirement</label>
-                    <input id="custom_title"
-                           name="custom_title"
-                           type="text"
-                           value="{{ old('custom_title') }}"
-                           class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-4 text-sm"
-                           placeholder="e.g. Updated barangay clearance">
-                    @error('custom_title')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="custom_description" class="block text-sm font-medium text-slate-700">Instruction / Reason</label>
-                    <input id="custom_description"
-                           name="custom_description"
-                           type="text"
-                           value="{{ old('custom_description') }}"
-                           class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-4 text-sm"
-                           placeholder="Tell the applicant what to upload.">
-                </div>
-                <button type="submit" class="app-button app-button--primary h-11 whitespace-nowrap px-5 text-sm">
-                    Request Requirement
-                </button>
+        <div class="app-section-heading flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+                <h2 class="app-section-title">Requirement Verification</h2>
+                <p class="app-section-description">Review submitted documents and request an additional item only when this applicant needs a specific follow-up.</p>
             </div>
-        </form>
+            <a href="{{ route('admin.applications.show', ['application' => $application, 'modal' => 'additional-requirement']) }}"
+               class="app-button app-button--primary shrink-0">
+                <x-heroicon-o-plus class="h-5 w-5" />
+                <span>Request Requirement</span>
+            </a>
+        </div>
 
         <form
             action="{{ route('admin.applications.review', $application) }}"
@@ -289,6 +260,25 @@
                                 <a href="{{ $requirement->file_url }}" target="_blank" rel="noopener" class="app-button app-button--secondary">
                                     View File
                                 </a>
+                            @endif
+                            @if($requirement->is_additional)
+                                <a href="{{ route('admin.applications.show', ['application' => $application, 'modal' => 'edit-additional-requirement', 'requirement' => $requirement->id]) }}"
+                                   class="app-button app-button--secondary">
+                                    <x-heroicon-o-pencil-square class="h-5 w-5" />
+                                    <span>Edit</span>
+                                </a>
+                                @if(!$requirement->file_path)
+                                    <button type="submit"
+                                            form="delete-additional-requirement-{{ $requirement->id }}"
+                                            class="app-button app-button--danger">
+                                        <x-heroicon-o-trash class="h-5 w-5" />
+                                        <span>Delete</span>
+                                    </button>
+                                @else
+                                    <button type="button" disabled class="app-button app-button--muted" aria-disabled="true">
+                                        Uploaded
+                                    </button>
+                                @endif
                             @endif
                             @php
                                 $selectedVerificationStatus = old(
@@ -347,8 +337,140 @@
                 </button>
             </div>
         </form>
+
+        @foreach($application->requirements->where('is_additional', true) as $additionalRequirement)
+            @unless($additionalRequirement->file_path)
+                <form id="delete-additional-requirement-{{ $additionalRequirement->id }}"
+                      action="{{ route('admin.applications.additional-requirements.destroy', [$application, $additionalRequirement]) }}"
+                      method="POST"
+                      class="hidden"
+                      data-swal="delete"
+                      data-record-name="{{ $additionalRequirement->display_name }}"
+                      data-swal-title="Delete additional request?"
+                      data-swal-text="This removes the extra requirement request for this applicant only. It will not affect the open vacancy checklist."
+                      data-swal-confirm="Yes, delete request">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endunless
+        @endforeach
     </section>
 </div>
+
+@if($shouldOpenAddRequirementModal)
+    <x-app-modal
+        title="Request Requirement"
+        subtitle="Add a document request for this applicant only. The applicant will see it as an item that needs revision."
+        :close-url="route('admin.applications.show', $application)"
+        max-width="md"
+        body-class="workspace-popup__body--soft"
+    >
+        <x-slot:icon>
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <x-heroicon-o-document-plus class="h-6 w-6" />
+            </span>
+        </x-slot:icon>
+
+        <form action="{{ route('admin.applications.additional-requirements.store', $application) }}"
+              method="POST"
+              class="space-y-5">
+            @csrf
+
+            <div>
+                <label for="custom_title" class="block text-sm font-semibold text-slate-800">Additional Requirement</label>
+                <input id="custom_title"
+                       name="custom_title"
+                       type="text"
+                       value="{{ old('custom_title') }}"
+                       class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                       placeholder="e.g. Updated barangay clearance"
+                       required
+                       autofocus>
+                @error('custom_title')
+                    <p class="mt-2 text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="custom_description" class="block text-sm font-semibold text-slate-800">Instruction / Reason</label>
+                <textarea id="custom_description"
+                          name="custom_description"
+                          rows="4"
+                          class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                          placeholder="Tell the applicant what to upload and why.">{{ old('custom_description') }}</textarea>
+                @error('custom_description')
+                    <p class="mt-2 text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" class="app-button app-button--secondary" @click="close()">
+                    Cancel
+                </button>
+                <button type="submit" class="app-button app-button--primary">
+                    Send Requirement Request
+                </button>
+            </div>
+        </form>
+    </x-app-modal>
+@endif
+
+@if($editingAdditionalRequirement)
+    <x-app-modal
+        title="Edit Requirement Request"
+        subtitle="Correct the request name or instruction for this applicant only."
+        :close-url="route('admin.applications.show', $application)"
+        max-width="md"
+        body-class="workspace-popup__body--soft"
+    >
+        <x-slot:icon>
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <x-heroicon-o-pencil-square class="h-6 w-6" />
+            </span>
+        </x-slot:icon>
+
+        <form action="{{ route('admin.applications.additional-requirements.update', [$application, $editingAdditionalRequirement]) }}"
+              method="POST"
+              class="space-y-5">
+            @csrf
+            @method('PATCH')
+
+            <div>
+                <label for="edit_custom_title" class="block text-sm font-semibold text-slate-800">Additional Requirement</label>
+                <input id="edit_custom_title"
+                       name="custom_title"
+                       type="text"
+                       value="{{ old('custom_title', $editingAdditionalRequirement->custom_title) }}"
+                       class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                       required
+                       autofocus>
+                @error('custom_title')
+                    <p class="mt-2 text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="edit_custom_description" class="block text-sm font-semibold text-slate-800">Instruction / Reason</label>
+                <textarea id="edit_custom_description"
+                          name="custom_description"
+                          rows="4"
+                          class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm">{{ old('custom_description', $editingAdditionalRequirement->custom_description) }}</textarea>
+                @error('custom_description')
+                    <p class="mt-2 text-sm font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" class="app-button app-button--secondary" @click="close()">
+                    Cancel
+                </button>
+                <button type="submit" class="app-button app-button--primary">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </x-app-modal>
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {

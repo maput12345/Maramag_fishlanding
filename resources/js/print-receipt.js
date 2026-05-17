@@ -4,7 +4,7 @@ class PrintReceipt {
         const receiptContent = document.getElementById(receiptElementId);
 
         if (!receiptContent) {
-            console.error('Receipt content not found');
+            PrintReceipt.notify('Receipt content could not be found.', 'error');
             return;
         }
 
@@ -14,7 +14,7 @@ class PrintReceipt {
         const printWindow = window.open('', '_blank', 'width=800,height=600');
 
         if (!printWindow) {
-            alert('Please allow popups to print the receipt');
+            PrintReceipt.notify('Please allow popups to print the receipt.', 'warning');
             return;
         }
 
@@ -199,6 +199,45 @@ class PrintReceipt {
 
             setTimeout(triggerPrint, 150);
         };
+    }
+
+    static notify(message, type = 'info') {
+        if (window.toastr && typeof window.toastr[type] === 'function') {
+            window.toastr[type](message);
+            return;
+        }
+
+        if (window.Swal) {
+            window.Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: type,
+                title: message,
+                showConfirmButton: false,
+                timer: 2400,
+                timerProgressBar: true,
+            });
+            return;
+        }
+
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.setAttribute('role', 'status');
+        notification.style.cssText = [
+            'position:fixed',
+            'right:1rem',
+            'top:1rem',
+            'z-index:9999',
+            'max-width:22rem',
+            'padding:0.85rem 1rem',
+            'border-radius:0.75rem',
+            'background:#0f172a',
+            'color:#fff',
+            'box-shadow:0 16px 36px rgba(15,23,42,0.22)',
+            'font:600 0.875rem system-ui,sans-serif',
+        ].join(';');
+        document.body.appendChild(notification);
+        window.setTimeout(() => notification.remove(), 2800);
     }
 }
 

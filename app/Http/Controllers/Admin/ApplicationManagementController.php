@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\OpeningStatusConstant;
 use App\Constants\RoleStatusConstant;
+use App\Constants\RequirementVerificationStatusConstant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewBrokerApplicationRequest;
+use App\Mail\BrokerApplicationNeedsRevision;
 use App\Mail\BrokerApplicationQualifiedForBidding;
+use App\Mail\BrokerApplicationRejected;
 use App\Http\Requests\StoreApplicationOpeningRequest;
 use App\Http\Requests\StoreRequirementTypeRequest;
 use App\Http\Requests\StoreStallRequest;
@@ -50,15 +55,15 @@ class ApplicationManagementController extends Controller
         $applicationStatusTabs = [
             'ongoing_review' => [
                 'label' => 'Ongoing Review',
-                'statuses' => ['Pending', 'For Review', 'Submitted', 'Under Review', 'Needs Revision', 'Qualified'],
+                'statuses' => ApplicationStatusConstant::ongoingReviewStatuses(),
             ],
             'winners' => [
                 'label' => 'Winners',
-                'statuses' => ['Winner', 'Approved'],
+                'statuses' => ApplicationStatusConstant::winnerStatuses(),
             ],
             'not_selected' => [
                 'label' => 'Not Selected',
-                'statuses' => ['Not Selected', 'Rejected'],
+                'statuses' => ApplicationStatusConstant::notSelectedStatuses(),
             ],
         ];
         $activeApplicationTab = $request->get('tab', 'ongoing_review');
@@ -92,7 +97,7 @@ class ApplicationManagementController extends Controller
                 $query->whereDate('submitted_at', $applicationDate);
             })
             ->when($submissionType === 'new', function ($query) {
-                $query->where('application_status', 'Submitted')
+                $query->where('application_status', ApplicationStatusConstant::SUBMITTED)
                     ->where(function ($newQuery) {
                         $newQuery
                             ->whereNull('revision_resubmitted_at')
@@ -100,14 +105,14 @@ class ApplicationManagementController extends Controller
                     });
             })
             ->when($submissionType === 'resubmitted', function ($query) {
-                $query->where('application_status', 'Submitted')
+                $query->where('application_status', ApplicationStatusConstant::SUBMITTED)
                     ->whereNotNull('revision_resubmitted_at')
                     ->where('revision_count', '>', 0);
             });
 
         $submissionSummary = [
             'new' => (clone $filteredApplicationsQuery)
-                ->where('application_status', 'Submitted')
+                ->where('application_status', ApplicationStatusConstant::SUBMITTED)
                 ->where(function ($query) {
                     $query
                         ->whereNull('revision_resubmitted_at')
@@ -115,15 +120,15 @@ class ApplicationManagementController extends Controller
                 })
                 ->count(),
             'resubmitted' => (clone $filteredApplicationsQuery)
-                ->where('application_status', 'Submitted')
+                ->where('application_status', ApplicationStatusConstant::SUBMITTED)
                 ->whereNotNull('revision_resubmitted_at')
                 ->where('revision_count', '>', 0)
                 ->count(),
             'needs_review' => (clone $filteredApplicationsQuery)
-                ->where('application_status', 'Submitted')
+                ->where('application_status', ApplicationStatusConstant::SUBMITTED)
                 ->count(),
             'qualified' => (clone $filteredApplicationsQuery)
-                ->where('application_status', 'Qualified')
+                ->where('application_status', ApplicationStatusConstant::QUALIFIED)
                 ->count(),
         ];
 
@@ -220,9 +225,9 @@ class ApplicationManagementController extends Controller
 
         $updatedCount = BrokerApplication::query()
             ->whereIn('id', $validated['application_ids'])
-            ->where('application_status', 'Submitted')
+            ->where('application_status', ApplicationStatusConstant::SUBMITTED)
             ->update([
-                'application_status' => 'Under Review',
+                'application_status' => ApplicationStatusConstant::UNDER_REVIEW,
                 'reviewed_by_employee_id' => $employee->id,
                 'review_date' => now(),
                 'updated_at' => now(),
@@ -259,7 +264,7 @@ class ApplicationManagementController extends Controller
                 'custom_description' => $validated['custom_description'] ?? null,
                 'is_additional' => true,
                 'file_path' => '',
-                'verification_status' => 'Needs Revision',
+                'verification_status' => RequirementVerificationStatusConstant::NEEDS_REVISION,
                 'verified_by_employee_id' => $employee->id,
                 'verification_date' => now(),
                 'remarks' => $validated['custom_description'] ?? 'Please upload this additional requirement.',
@@ -267,7 +272,7 @@ class ApplicationManagementController extends Controller
             ]);
 
             $application->update([
-                'application_status' => 'Needs Revision',
+                'application_status' => ApplicationStatusConstant::NEEDS_REVISION,
                 'reviewed_by_employee_id' => $employee->id,
                 'review_date' => now(),
                 'remarks' => $validated['custom_description'] ?? 'Please upload the additional requested requirement.',
@@ -276,6 +281,56 @@ class ApplicationManagementController extends Controller
 
         return redirect()->route('admin.applications.show', $application)
             ->with('success', 'Additional requirement requested from the applicant.');
+    }
+
+    /**
+     * Correct an applicant-specific extra document request.
+     */
+    public function updateAdditionalRequirement(Request $request, BrokerApplication $application, SubmittedRequirement $requirement): RedirectResponse
+    {
+        $employee = $this->resolveCurrentEmployee();
+
+        abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
+        $this->abortUnlessApplicantSpecificRequirement($application, $requirement);
+
+        $validated = $request->validate([
+            'custom_title' => ['required', 'string', 'max:255'],
+            'custom_description' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'custom_title.required' => 'Enter the additional requirement name.',
+        ]);
+
+        $requirement->update([
+            'custom_title' => $validated['custom_title'],
+            'custom_description' => $validated['custom_description'] ?? null,
+            'remarks' => $validated['custom_description'] ?? 'Please upload this additional requirement.',
+            'verified_by_employee_id' => $employee->id,
+            'verification_date' => now(),
+        ]);
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('success', 'Additional requirement updated.');
+    }
+
+    /**
+     * Remove an applicant-specific extra document request before a file is uploaded.
+     */
+    public function destroyAdditionalRequirement(BrokerApplication $application, SubmittedRequirement $requirement): RedirectResponse
+    {
+        $employee = $this->resolveCurrentEmployee();
+
+        abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
+        $this->abortUnlessApplicantSpecificRequirement($application, $requirement);
+
+        if ($requirement->file_path) {
+            return redirect()->route('admin.applications.show', $application)
+                ->with('error', 'This additional requirement already has an uploaded file. Edit the title or instruction instead of deleting the record.');
+        }
+
+        $requirement->delete();
+
+        return redirect()->route('admin.applications.show', $application)
+            ->with('success', 'Additional requirement deleted.');
     }
 
     /**
@@ -324,7 +379,7 @@ class ApplicationManagementController extends Controller
             'applicationOpening:id,stall_id,opening_batch_id',
             'applicationOpening.openingBatch:id,start_date,end_date,bidding_date,bidding_time,bidding_location',
             'applicationOpening.stall:id,stall_number',
-            'requirements:id,application_id,requirement_type_id,file_path,document_number,issuing_office,verification_status,remarks,uploaded_at',
+            'requirements:id,application_id,requirement_type_id,custom_title,custom_description,is_additional,file_path,document_number,issuing_office,verification_status,remarks,uploaded_at',
             'requirements.requirementType:id,requirement_name',
             'reviewedBy:id,first_name,middle_name,last_name,suffix',
             'selectedBy:id,first_name,middle_name,last_name,suffix',
@@ -367,7 +422,7 @@ class ApplicationManagementController extends Controller
 
             $stall = Stall::create([
                 'stall_number' => $nextStallNumber,
-                'stall_status' => 'Vacant',
+                'stall_status' => OpeningStatusConstant::STALL_VACANT,
                 'length_meters' => $validated['length_meters'],
                 'width_meters' => $validated['width_meters'],
                 'area_sqm' => round((float) $validated['length_meters'] * (float) $validated['width_meters'], 2),
@@ -437,7 +492,7 @@ class ApplicationManagementController extends Controller
             }
         });
 
-        return redirect()->route('admin.stalls.overview')
+        return redirect()->back()
             ->with('success', $stall->display_name . ' photos updated successfully.');
     }
 
@@ -465,7 +520,7 @@ class ApplicationManagementController extends Controller
 
         Storage::disk('public')->delete($deletedImagePath);
 
-        return redirect()->route('admin.stalls.overview')
+        return redirect()->back()
             ->with('success', $stall->display_name . ' photo removed successfully.');
     }
 
@@ -487,6 +542,59 @@ class ApplicationManagementController extends Controller
 
         return redirect()->route('admin.stalls.requirements.index')
             ->with('success', 'Requirement added to the master list.');
+    }
+
+    /**
+     * Correct a reusable requirement in the LEEO requirement master list.
+     */
+    public function updateRequirementType(Request $request, RequirementType $requirementType): RedirectResponse
+    {
+        $validated = $request->validate([
+            'requirement_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('RequirementType', 'requirement_name')->ignore($requirementType->id),
+            ],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'audience' => [
+                'required',
+                Rule::in([
+                    RequirementType::APPLICANT_TYPE_NATURAL,
+                    RequirementType::APPLICANT_TYPE_JURIDICAL,
+                    RequirementType::APPLICANT_TYPE_BOTH,
+                ]),
+            ],
+            'is_required' => ['nullable', 'boolean'],
+        ]);
+
+        $requirementType->update([
+            'requirement_name' => $validated['requirement_name'],
+            'description' => $validated['description'] ?? null,
+            'audience' => $validated['audience'],
+            'is_required' => $request->boolean('is_required'),
+        ]);
+
+        return redirect()->route('admin.stalls.requirements.index')
+            ->with('success', 'Requirement updated successfully.');
+    }
+
+    /**
+     * Remove an unused reusable requirement from the LEEO requirement master list.
+     */
+    public function destroyRequirementType(RequirementType $requirementType): RedirectResponse
+    {
+        $requirementType->loadCount(['openingRequirements', 'applicationRequirements']);
+
+        if ($requirementType->opening_requirements_count > 0 || $requirementType->application_requirements_count > 0) {
+            return redirect()->route('admin.stalls.requirements.index')
+                ->with('error', 'This requirement is already used by a vacancy or application. Edit it instead of deleting it.');
+        }
+
+        $requirementType->delete();
+
+        return redirect()->route('admin.stalls.requirements.index')
+            ->with('success', 'Requirement deleted successfully.');
     }
 
     /**
@@ -529,7 +637,7 @@ class ApplicationManagementController extends Controller
 
                 $stalls = Stall::query()
                     ->whereIn('id', $selectedStallIds)
-                    ->where('stall_status', 'Vacant')
+                    ->where('stall_status', OpeningStatusConstant::STALL_VACANT)
                     ->lockForUpdate()
                     ->get();
 
@@ -551,11 +659,11 @@ class ApplicationManagementController extends Controller
                         'stall_id' => $stall->id,
                         'opening_batch_id' => $openingBatch->id,
                         'opened_by_employee_id' => $employee->id,
-                        'opening_status' => 'Open',
+                        'opening_status' => OpeningStatusConstant::OPEN,
                     ]);
 
                     $opening->requirementTypes()->sync($requirementSyncPayload);
-                    $stall->update(['stall_status' => 'Open for Application']);
+                    $stall->update(['stall_status' => OpeningStatusConstant::STALL_OPEN_FOR_APPLICATION]);
                 }
             });
         } catch (\RuntimeException $exception) {
@@ -574,20 +682,24 @@ class ApplicationManagementController extends Controller
     public function updateOpeningStatus(Request $request, ApplicationOpening $opening): RedirectResponse
     {
         $request->validate([
-            'opening_status' => ['required', 'in:Vacant,Occupied,Cancelled'],
+            'opening_status' => ['required', Rule::in([
+                OpeningStatusConstant::STALL_VACANT,
+                OpeningStatusConstant::STALL_OCCUPIED,
+                OpeningStatusConstant::CANCELLED,
+            ])],
         ]);
 
         $selectedStatus = $request->input('opening_status');
 
-        if ($selectedStatus === 'Occupied') {
-            $opening->update(['opening_status' => 'Completed']);
-            $opening->stall()->update(['stall_status' => 'Occupied']);
-        } elseif ($selectedStatus === 'Cancelled') {
-            $opening->update(['opening_status' => 'Cancelled']);
-            $opening->stall()->update(['stall_status' => 'Vacant']);
+        if ($selectedStatus === OpeningStatusConstant::STALL_OCCUPIED) {
+            $opening->update(['opening_status' => OpeningStatusConstant::COMPLETED]);
+            $opening->stall()->update(['stall_status' => OpeningStatusConstant::STALL_OCCUPIED]);
+        } elseif ($selectedStatus === OpeningStatusConstant::CANCELLED) {
+            $opening->update(['opening_status' => OpeningStatusConstant::CANCELLED]);
+            $opening->stall()->update(['stall_status' => OpeningStatusConstant::STALL_VACANT]);
         } else {
-            $opening->update(['opening_status' => 'Open']);
-            $opening->stall()->update(['stall_status' => 'Open for Application']);
+            $opening->update(['opening_status' => OpeningStatusConstant::OPEN]);
+            $opening->stall()->update(['stall_status' => OpeningStatusConstant::STALL_OPEN_FOR_APPLICATION]);
         }
 
         return redirect()->route('admin.stalls.overview')
@@ -618,7 +730,7 @@ class ApplicationManagementController extends Controller
 
         if ($originalBiddingDate !== $updatedBiddingDate || $originalBiddingTime !== $updatedBiddingTime || $originalBiddingLocation !== $updatedBiddingLocation) {
             $qualifiedApplications = $opening->brokerApplications()
-                ->where('application_status', 'Qualified')
+                ->where('application_status', ApplicationStatusConstant::QUALIFIED)
                 ->with([
                     'user:id,email',
                     'applicationOpening:id,stall_id,opening_batch_id',
@@ -654,11 +766,11 @@ class ApplicationManagementController extends Controller
         abort_if(!$employee, 403, 'Only LEEO employee accounts can autosave application reviews.');
 
         $validated = $request->validate([
-            'application_status' => ['nullable', Rule::in(['Under Review', 'Needs Revision', 'Rejected', 'Qualified'])],
+            'application_status' => ['nullable', Rule::in(ApplicationStatusConstant::reviewStatuses())],
             'remarks' => ['nullable', 'string', 'max:2000'],
             'requirements' => ['nullable', 'array'],
             'requirements.*.id' => ['required_with:requirements', 'integer'],
-            'requirements.*.verification_status' => ['nullable', Rule::in(['Pending', 'Verified', 'Needs Revision', 'Rejected'])],
+            'requirements.*.verification_status' => ['nullable', Rule::in(RequirementVerificationStatusConstant::all())],
             'requirements.*.remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -670,7 +782,7 @@ class ApplicationManagementController extends Controller
             ->map(function (array $requirementPayload) {
                 return [
                     'id' => (int) $requirementPayload['id'],
-                    'verification_status' => $requirementPayload['verification_status'] ?? 'Pending',
+                    'verification_status' => $requirementPayload['verification_status'] ?? RequirementVerificationStatusConstant::PENDING,
                     'remarks' => $requirementPayload['remarks'] ?? null,
                 ];
             })
@@ -715,8 +827,13 @@ class ApplicationManagementController extends Controller
             $request->input('application_status'),
             $request->input('requirements', [])
         );
-        $shouldSendQualifiedEmail = $application->application_status !== 'Qualified'
-            && $finalApplicationStatus === 'Qualified';
+        $previousApplicationStatus = $application->application_status;
+        $shouldSendQualifiedEmail = $previousApplicationStatus !== ApplicationStatusConstant::QUALIFIED
+            && $finalApplicationStatus === ApplicationStatusConstant::QUALIFIED;
+        $shouldSendNeedsRevisionEmail = $previousApplicationStatus !== ApplicationStatusConstant::NEEDS_REVISION
+            && $finalApplicationStatus === ApplicationStatusConstant::NEEDS_REVISION;
+        $shouldSendRejectedEmail = $previousApplicationStatus !== ApplicationStatusConstant::REJECTED
+            && $finalApplicationStatus === ApplicationStatusConstant::REJECTED;
 
         abort_if(!$employee, 403, 'Only LEEO employee accounts can review applications.');
 
@@ -736,17 +853,17 @@ class ApplicationManagementController extends Controller
                 }
 
                 $status = $requirementPayload['verification_status'];
-                if ($finalApplicationStatus === 'Rejected' && $status === 'Pending') {
-                    $status = 'Rejected';
+                if ($finalApplicationStatus === ApplicationStatusConstant::REJECTED && $status === RequirementVerificationStatusConstant::PENDING) {
+                    $status = RequirementVerificationStatusConstant::REJECTED;
                 }
 
                 $requirement->update([
                     'verification_status' => $status,
-                    'verified_by_employee_id' => $status === 'Pending' ? null : $employee->id,
-                    'verification_date' => $status === 'Pending' ? null : now(),
-                    'remarks' => $status === 'Verified'
+                    'verified_by_employee_id' => $status === RequirementVerificationStatusConstant::PENDING ? null : $employee->id,
+                    'verification_date' => $status === RequirementVerificationStatusConstant::PENDING ? null : now(),
+                    'remarks' => $status === RequirementVerificationStatusConstant::VERIFIED
                         ? null
-                        : (($requirementPayload['remarks'] ?? null) ?: ($status === 'Rejected' ? $applicationRemarks : null)),
+                        : (($requirementPayload['remarks'] ?? null) ?: ($status === RequirementVerificationStatusConstant::REJECTED ? $applicationRemarks : null)),
                 ]);
             }
 
@@ -773,6 +890,18 @@ class ApplicationManagementController extends Controller
             $this->sendQualifiedForBiddingEmail($application);
         }
 
+        if ($shouldSendNeedsRevisionEmail || $shouldSendRejectedEmail) {
+            $application->refresh()->load(['user:id,email']);
+
+            if ($shouldSendNeedsRevisionEmail) {
+                $this->sendNeedsRevisionEmail($application);
+            }
+
+            if ($shouldSendRejectedEmail) {
+                $this->sendRejectedEmail($application);
+            }
+        }
+
         return redirect()->route('admin.applications.show', $application)
             ->with('success', 'Application review saved successfully.');
     }
@@ -782,27 +911,27 @@ class ApplicationManagementController extends Controller
      */
     private function resolveFinalApplicationStatus(string $requestedStatus, array $requirementPayloads): string
     {
-        if ($requestedStatus === 'Rejected') {
-            return 'Rejected';
+        if ($requestedStatus === ApplicationStatusConstant::REJECTED) {
+            return ApplicationStatusConstant::REJECTED;
         }
 
         $statuses = collect($requirementPayloads)
             ->filter(fn ($payload) => is_array($payload))
             ->pluck('verification_status');
 
-        if ($statuses->contains('Rejected')) {
-            return 'Rejected';
+        if ($statuses->contains(RequirementVerificationStatusConstant::REJECTED)) {
+            return ApplicationStatusConstant::REJECTED;
         }
 
-        if ($statuses->contains('Needs Revision')) {
-            return 'Needs Revision';
+        if ($statuses->contains(RequirementVerificationStatusConstant::NEEDS_REVISION)) {
+            return ApplicationStatusConstant::NEEDS_REVISION;
         }
 
-        if ($statuses->isNotEmpty() && $statuses->every(fn ($status) => $status === 'Verified')) {
-            return 'Qualified';
+        if ($statuses->isNotEmpty() && $statuses->every(fn ($status) => $status === RequirementVerificationStatusConstant::VERIFIED)) {
+            return ApplicationStatusConstant::QUALIFIED;
         }
 
-        return $requestedStatus === 'Qualified' ? 'Under Review' : $requestedStatus;
+        return $requestedStatus === ApplicationStatusConstant::QUALIFIED ? ApplicationStatusConstant::UNDER_REVIEW : $requestedStatus;
     }
 
     /**
@@ -832,7 +961,7 @@ class ApplicationManagementController extends Controller
                 ->with('info', 'Winner already confirmed for this application.');
         }
 
-        if ($application->application_status !== 'Qualified') {
+        if ($application->application_status !== ApplicationStatusConstant::QUALIFIED) {
             return redirect()->route('admin.applications.show', $application)
                 ->with('error', 'Only qualified applications can be promoted to winner.');
         }
@@ -875,7 +1004,7 @@ class ApplicationManagementController extends Controller
                 $winnerSelectedAt = now();
 
                 $application->update([
-                    'application_status' => 'Winner',
+                    'application_status' => ApplicationStatusConstant::WINNER,
                     'selected_stall_id' => $selectedStall->id,
                     'selected_by_employee_id' => $employee->id,
                     'selected_at' => $winnerSelectedAt,
@@ -906,17 +1035,21 @@ class ApplicationManagementController extends Controller
 
                 ApplicationOpening::query()
                     ->where('stall_id', $selectedStall->id)
-                    ->whereIn('opening_status', ['Open', 'Closed'])
+                    ->whereIn('opening_status', [OpeningStatusConstant::OPEN, OpeningStatusConstant::CLOSED])
                     ->latest('id')
                     ->first()
-                    ?->update(['opening_status' => 'Completed']);
+                    ?->update(['opening_status' => OpeningStatusConstant::COMPLETED]);
 
-                $selectedStall->update(['stall_status' => 'Occupied']);
+                $selectedStall->update(['stall_status' => OpeningStatusConstant::STALL_OCCUPIED]);
 
                 if ($this->availableWinnerStalls()->isEmpty()) {
                     $notSelectedApplications = BrokerApplication::query()
                         ->where('id', '!=', $application->id)
-                        ->whereNotIn('application_status', ['Rejected', 'Winner', 'Not Selected'])
+                        ->whereNotIn('application_status', [
+                            ApplicationStatusConstant::REJECTED,
+                            ApplicationStatusConstant::WINNER,
+                            ApplicationStatusConstant::NOT_SELECTED,
+                        ])
                         ->get(['id', 'user_id']);
 
                     $notSelectedApplicantCount = $notSelectedApplications->count();
@@ -924,7 +1057,7 @@ class ApplicationManagementController extends Controller
                     BrokerApplication::query()
                         ->whereKey($notSelectedApplications->pluck('id'))
                         ->update([
-                            'application_status' => 'Not Selected',
+                            'application_status' => ApplicationStatusConstant::NOT_SELECTED,
                             'selected_by_employee_id' => $employee->id,
                             'selected_at' => $winnerSelectedAt,
                         ]);
@@ -966,13 +1099,21 @@ class ApplicationManagementController extends Controller
         return Auth::user()?->employee;
     }
 
+    private function abortUnlessApplicantSpecificRequirement(BrokerApplication $application, SubmittedRequirement $requirement): void
+    {
+        abort_unless(
+            (int) $requirement->application_id === (int) $application->id && $requirement->is_additional,
+            404
+        );
+    }
+
     /**
      * Get vacant stalls that can still be awarded to a winning applicant.
      */
     private function availableWinnerStalls(): Collection
     {
         return ApplicationOpening::query()
-            ->whereIn('opening_status', ['Open', 'Closed'])
+            ->whereIn('opening_status', [OpeningStatusConstant::OPEN, OpeningStatusConstant::CLOSED])
             ->whereHas('stall', function ($query) {
                 $query->whereIn('stall_status', ApplicationOpening::AVAILABLE_STALL_STATUSES);
             })
@@ -1032,7 +1173,7 @@ class ApplicationManagementController extends Controller
         }
 
         $vacantStalls = $stalls
-            ->filter(fn (Stall $stall) => $stall->stall_status === 'Vacant')
+            ->filter(fn (Stall $stall) => $stall->stall_status === OpeningStatusConstant::STALL_VACANT)
             ->values();
 
         $openings = ApplicationOpening::query()
@@ -1109,6 +1250,50 @@ class ApplicationManagementController extends Controller
             Mail::to($email)->send(new BrokerApplicationQualifiedForBidding($application, $opening, $stall));
         } catch (\Throwable $exception) {
             Log::warning('Unable to send broker qualified-for-bidding email.', [
+                'application_id' => $application->id,
+                'email' => $email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send the needs-revision notification email without breaking review flow.
+     */
+    private function sendNeedsRevisionEmail(BrokerApplication $application): void
+    {
+        $email = $application->user?->email;
+
+        if (!$email) {
+            return;
+        }
+
+        try {
+            Mail::to($email)->send(new BrokerApplicationNeedsRevision($application));
+        } catch (\Throwable $exception) {
+            Log::warning('Unable to send broker needs-revision email.', [
+                'application_id' => $application->id,
+                'email' => $email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send the rejected notification email without breaking review flow.
+     */
+    private function sendRejectedEmail(BrokerApplication $application): void
+    {
+        $email = $application->user?->email;
+
+        if (!$email) {
+            return;
+        }
+
+        try {
+            Mail::to($email)->send(new BrokerApplicationRejected($application));
+        } catch (\Throwable $exception) {
+            Log::warning('Unable to send broker rejected email.', [
                 'application_id' => $application->id,
                 'email' => $email,
                 'error' => $exception->getMessage(),

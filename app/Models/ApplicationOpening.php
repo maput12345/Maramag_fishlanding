@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Constants\OpeningStatusConstant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,8 +18,8 @@ class ApplicationOpening extends Model
     protected $table = 'ApplicationOpening';
 
     public const AVAILABLE_STALL_STATUSES = [
-        'Vacant',
-        'Open for Application',
+        OpeningStatusConstant::STALL_VACANT,
+        OpeningStatusConstant::STALL_OPEN_FOR_APPLICATION,
     ];
 
     protected $fillable = [

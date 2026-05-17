@@ -166,6 +166,8 @@ class FinancialStatementEntry extends Model
         $salesCount = (int) (clone $salesBaseQuery)->count();
         $costOfSales = (float) (clone $costBaseQuery)->sum('FishBoxStockCycle.cost_price');
         $soldBoxes = (int) (clone $costBaseQuery)->count('TransactionLineItem.id');
+        $salesDiscounts = (float) (clone $costBaseQuery)->sum('TransactionLineItem.discount');
+        $grossSales = $sales + $salesDiscounts;
         $collections = (float) (clone $collectionsBaseQuery)->sum('PaymentRecord.paid_amount');
         $cashOnHand = SalesTransaction::getSummaryForFilters(null, null, $brokerId, $date, $date)['paid_total'];
         $outstandingReceivableBalance = SalesTransaction::getTotalSalesBalance($brokerId, $date);
@@ -180,6 +182,9 @@ class FinancialStatementEntry extends Model
 
         return [
             'statement_date' => $date,
+            'gross_sales' => $grossSales,
+            'sales_discounts' => $salesDiscounts,
+            'net_sales' => $sales,
             'sales' => $sales,
             'sales_count' => $salesCount,
             'cost_of_sales' => $costOfSales,
@@ -227,6 +232,11 @@ class FinancialStatementEntry extends Model
                     $sale->salesDetails->sum(fn (TransactionLineItem $detail): float => (float) ($detail->fishBoxPurchase?->cost_price ?? 0)),
                     2
                 );
+                $salesDiscounts = round(
+                    $sale->salesDetails->sum(fn (TransactionLineItem $detail): float => (float) $detail->discount),
+                    2
+                );
+                $netSales = (float) $sale->total_amount;
 
                 return [
                     'id' => (int) $sale->id,
@@ -235,9 +245,12 @@ class FinancialStatementEntry extends Model
                     'buyer_name' => $sale->buyer_name,
                     'commodities' => $sale->salesDetails->pluck('item')->filter()->unique()->implode(', '),
                     'sold_boxes' => $sale->salesDetails->count(),
-                    'sales' => (float) $sale->total_amount,
+                    'gross_sales' => round($netSales + $salesDiscounts, 2),
+                    'sales_discounts' => $salesDiscounts,
+                    'net_sales' => $netSales,
+                    'sales' => $netSales,
                     'cost_of_sales' => $costOfSales,
-                    'gross_profit' => round((float) $sale->total_amount - $costOfSales, 2),
+                    'gross_profit' => round($netSales - $costOfSales, 2),
                     'paid_amount' => (float) $sale->paid_amount,
                     'status' => $sale->status,
                 ];

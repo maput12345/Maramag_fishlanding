@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Constants\RequirementVerificationStatusConstant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -173,7 +174,7 @@ class BrokerApplication extends Model
 
         if ($reviewRequirementPayloads === null) {
             return $requirements->every(function (SubmittedRequirement $requirement) {
-                return $requirement->verification_status === 'Verified';
+                return $requirement->verification_status === RequirementVerificationStatusConstant::VERIFIED;
             });
         }
 
@@ -200,7 +201,7 @@ class BrokerApplication extends Model
         }
 
         return $requirements->every(function (SubmittedRequirement $requirement) use ($submittedStatusesById) {
-            return $submittedStatusesById->get($requirement->id) === 'Verified';
+            return $submittedStatusesById->get($requirement->id) === RequirementVerificationStatusConstant::VERIFIED;
         });
     }
 }

@@ -86,6 +86,10 @@
                         menu.open = false;
                     });
                 }
+
+                window.dispatchEvent(new CustomEvent('admin-sidebar-toggled', {
+                    detail: { collapsed }
+                }));
             };
 
             toggle.addEventListener('click', function (event) {

@@ -40,18 +40,20 @@ class UserRequest extends FormRequest
 
         // Password validation rules
         $passwordRules = [];
+        $passwordConfirmationRules = [];
 
         if ($this->isMethod('post')) {
             // Create mode - password is always required
             $passwordRules = ['required', 'string', 'min:8', 'confirmed'];
         } else {
             // Update mode - check if change_password checkbox is checked
-            if ($this->has('change_password') && $this->input('change_password')) {
+            if ($this->boolean('change_password')) {
                 // If checkbox is checked, password is required
                 $passwordRules = ['required', 'string', 'min:8', 'confirmed'];
             } else {
-                // If checkbox is not checked, password is nullable
-                $passwordRules = ['nullable', 'string', 'min:8'];
+                // If checkbox is not checked, reject crafted password fields
+                $passwordRules = ['prohibited'];
+                $passwordConfirmationRules = ['prohibited'];
             }
         }
 
@@ -61,13 +63,20 @@ class UserRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:255', 'min:1'],
             'email' => $emailRules,
             'password' => $passwordRules,
+            'password_confirmation' => $passwordConfirmationRules,
             'address' => ['nullable', 'string', 'max:500'],
             'stall_name' => ['nullable', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:50'],
             'position' => ['nullable', 'string', 'max:255'],
             'role' => $this->isMethod('post')
-                ? ['required', 'string', Rule::in(['admin', 'staff', 'broker'])]
+                ? ['required', 'string', Rule::in(['admin', 'staff', 'broker', 'cashier'])]
                 : ['prohibited'],
+            'broker_id' => [
+                Rule::requiredIf($this->isMethod('post') && $this->input('role') === 'cashier'),
+                'nullable',
+                'integer',
+                Rule::exists('Broker', 'id'),
+            ],
         ];
     }
 
@@ -95,6 +104,8 @@ class UserRequest extends FormRequest
             'stall_name.max' => 'The stall name may not be greater than 255 characters.',
             'contact_number.max' => 'The contact number may not be greater than 50 characters.',
             'position.max' => 'The position may not be greater than 255 characters.',
+            'broker_id.required' => 'Please assign the cashier to a broker.',
+            'broker_id.exists' => 'The selected broker does not exist.',
         ];
     }
 
@@ -116,6 +127,7 @@ class UserRequest extends FormRequest
             'contact_number' => 'contact number',
             'position' => 'position',
             'role' => 'user role',
+            'broker_id' => 'assigned broker',
         ];
     }
 }

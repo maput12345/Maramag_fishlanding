@@ -36,11 +36,11 @@ window.QRCodeModal = {
         });
     },
 
-    getQRCodeOptions(data, size = 256) {
+    getQRCodeOptions(data, size = 256, type = 'svg') {
         return {
             width: size,
             height: size,
-            type: 'svg',
+            type,
             data,
             dotsOptions: {
                 color: '#2563eb',
@@ -63,8 +63,8 @@ window.QRCodeModal = {
         };
     },
 
-    createQRCode(data, size = 256) {
-        return new QRCodeStyling(this.getQRCodeOptions(data, size));
+    createQRCode(data, size = 256, type = 'svg') {
+        return new QRCodeStyling(this.getQRCodeOptions(data, size, type));
     },
 
     showQRModal(qrData, fishBoxName) {
@@ -143,7 +143,7 @@ window.QRCodeModal = {
             const parsedBoxes = JSON.parse(sourceElement.textContent || '[]');
             return Array.isArray(parsedBoxes) ? parsedBoxes : [];
         } catch (error) {
-            console.error('Unable to parse bulk QR data.', error);
+            this.notify('Bulk QR data could not be read. Please refresh the page and try again.', 'error');
             return [];
         }
     },
@@ -169,14 +169,41 @@ window.QRCodeModal = {
 
     async renderBulkQrMarkup(qrData, size = 180) {
         const tempContainer = document.createElement('div');
-        const qrCode = this.createQRCode(qrData, size);
+        const qrCode = this.createQRCode(qrData, size, 'canvas');
 
         qrCode.append(tempContainer);
-        await new Promise((resolve) => {
-            window.requestAnimationFrame(() => resolve());
-        });
+        const canvas = await this.waitForBulkQrCanvas(tempContainer);
 
-        return tempContainer.innerHTML;
+        if (!canvas) {
+            return tempContainer.innerHTML;
+        }
+
+        return `<img src="${canvas.toDataURL('image/png')}" width="${size}" height="${size}" alt="Fish box QR code">`;
+    },
+
+    waitForBulkQrCanvas(container) {
+        return new Promise((resolve) => {
+            let attempts = 0;
+            const findCanvas = () => {
+                const canvas = container.querySelector('canvas');
+
+                if (canvas) {
+                    resolve(canvas);
+                    return;
+                }
+
+                attempts += 1;
+
+                if (attempts >= 20) {
+                    resolve(null);
+                    return;
+                }
+
+                window.requestAnimationFrame(findCanvas);
+            };
+
+            findCanvas();
+        });
     },
 
     async printBulkQRCodes(button) {
@@ -193,6 +220,7 @@ window.QRCodeModal = {
 
         const originalContent = button.innerHTML;
         const qrSize = this.getBulkQrPrintSize(button);
+        const printWindow = this.openEdgePrintWindow();
         button.disabled = true;
         button.innerHTML = `
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -209,9 +237,14 @@ window.QRCodeModal = {
                     qrMarkup: await this.renderBulkQrMarkup(fishBox.qr_code, qrSize),
                 }))
             );
-            this.printDocument(this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize));
+            await this.printDocument(
+                this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize),
+                printWindow
+            );
         } catch (error) {
-            console.error('Bulk QR print failed.', error);
+            if (printWindow && !printWindow.closed) {
+                printWindow.close();
+            }
             this.notify('Bulk QR print could not be prepared. Please try again.', 'error');
         } finally {
             button.disabled = false;
@@ -219,14 +252,86 @@ window.QRCodeModal = {
         }
     },
 
-    printDocument(printMarkup) {
+    isMicrosoftEdge() {
+        return /\bEdg\//.test(window.navigator.userAgent);
+    },
+
+    openEdgePrintWindow() {
+        if (!this.isMicrosoftEdge()) {
+            return null;
+        }
+
+        const printWindow = window.open('', '_blank');
+
+        if (!printWindow) {
+            return null;
+        }
+
+        printWindow.document.open();
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+                <head>
+                    <meta charset="utf-8">
+                    <title>Preparing QR Print</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            min-height: 100vh;
+                            display: grid;
+                            place-items: center;
+                            font-family: Arial, sans-serif;
+                            color: #0f172a;
+                            background: #ffffff;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <p>Preparing QR print...</p>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+
+        return printWindow;
+    },
+
+    waitForPrintDocument(iframeDocument) {
+        const waitForReadyState = new Promise((resolve) => {
+            if (iframeDocument.readyState === 'complete') {
+                resolve();
+                return;
+            }
+
+            iframeDocument.addEventListener('readystatechange', () => {
+                if (iframeDocument.readyState === 'complete') {
+                    resolve();
+                }
+            }, { once: true });
+        });
+
+        const waitForFonts = iframeDocument.fonts?.ready?.catch(() => null) || Promise.resolve();
+
+        return Promise.race([
+            Promise.all([waitForReadyState, waitForFonts]),
+            new Promise((resolve) => window.setTimeout(resolve, 1200)),
+        ]);
+    },
+
+    async printDocument(printMarkup, printWindow = null) {
+        if (printWindow && !printWindow.closed) {
+            await this.printWindowDocument(printWindow, printMarkup);
+            return;
+        }
+
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.right = '0';
         iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
         iframe.style.border = '0';
+        iframe.style.opacity = '0';
         iframe.setAttribute('aria-hidden', 'true');
 
         document.body.appendChild(iframe);
@@ -239,20 +344,41 @@ window.QRCodeModal = {
             throw new Error('Print frame could not be created.');
         }
 
-        iframe.onload = () => {
-            window.setTimeout(() => {
-                iframeWindow.focus();
-                iframeWindow.print();
+        let cleanupTimer = null;
+        const cleanup = () => {
+            if (cleanupTimer) {
+                window.clearTimeout(cleanupTimer);
+            }
 
-                window.setTimeout(() => {
-                    iframe.remove();
-                }, 1000);
-            }, 250);
+            iframe.remove();
         };
 
         iframeDocument.open();
         iframeDocument.write(printMarkup);
         iframeDocument.close();
+
+        await this.waitForPrintDocument(iframeDocument);
+
+        iframeWindow.addEventListener('afterprint', cleanup, { once: true });
+        cleanupTimer = window.setTimeout(cleanup, 60000);
+
+        iframeWindow.focus();
+        iframeWindow.print();
+    },
+
+    async printWindowDocument(printWindow, printMarkup) {
+        const printDocument = printWindow.document;
+
+        printDocument.open();
+        printDocument.write(printMarkup);
+        printDocument.close();
+
+        await this.waitForPrintDocument(printDocument);
+
+        printWindow.focus();
+        window.setTimeout(() => {
+            printWindow.print();
+        }, 250);
     },
 
     buildBulkPrintDocument(fishBoxes, filterSummary, qrSize = 180) {
@@ -358,9 +484,12 @@ window.QRCodeModal = {
                             justify-content: center;
                         }
 
-                        .qr-card__code svg {
+                        .qr-card__code svg,
+                        .qr-card__code canvas,
+                        .qr-card__code img {
                             width: ${qrSize}px;
                             height: ${qrSize}px;
+                            display: block;
                         }
 
                         .qr-card__meta {
@@ -449,7 +578,37 @@ window.QRCodeModal = {
             return;
         }
 
-        window.alert(message);
+        if (window.Swal) {
+            window.Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: type,
+                title: message,
+                showConfirmButton: false,
+                timer: 2400,
+                timerProgressBar: true,
+            });
+            return;
+        }
+
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.setAttribute('role', 'status');
+        notification.style.cssText = [
+            'position:fixed',
+            'right:1rem',
+            'top:1rem',
+            'z-index:9999',
+            'max-width:22rem',
+            'padding:0.85rem 1rem',
+            'border-radius:0.75rem',
+            'background:#0f172a',
+            'color:#fff',
+            'box-shadow:0 16px 36px rgba(15,23,42,0.22)',
+            'font:600 0.875rem system-ui,sans-serif',
+        ].join(';');
+        document.body.appendChild(notification);
+        window.setTimeout(() => notification.remove(), 2800);
     },
 
     hideQRModal() {

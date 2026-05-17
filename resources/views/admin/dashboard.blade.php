@@ -8,12 +8,6 @@
 
 @section('content')
 <div class="w-full min-w-0 dashboard-shell">
-    <div class="dashboard-header">
-        <span class="dashboard-kicker">LEEO Command Center</span>
-        <div>
-            <h1 class="dashboard-title">LEEO Dashboard</h1>
-        </div>
-    </div>
 
     <div class="dashboard-metric-grid">
         <a href="{{ route('admin.sales.index') }}" class="metric-card metric-card--success h-full">

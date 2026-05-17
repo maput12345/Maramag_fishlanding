@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Constants\ApplicationStatusConstant;
 use App\Constants\RoleStatusConstant;
 use App\Constants\UserStatusConstant;
 use App\Http\Controllers\Controller;
@@ -11,9 +12,11 @@ use App\Models\BrokerApplication;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -36,24 +39,58 @@ class UserManagementController extends Controller
     public function index(Request $request): View
     {
         $adminRoles = [RoleStatusConstant::ADMIN, RoleStatusConstant::STAFF];
+        $filters = $this->userManagementFilters($request, $adminRoles);
+        $tab = $filters['tab'];
+        $search = $filters['search'];
+        $status = $filters['status'];
+        $role = $filters['role'];
+
+        ['admins' => $admins, 'brokers' => $brokers, 'cashiers' => $cashiers, 'applicants' => $applicants]
+            = $this->usersForActiveTab($tab, $search, $status, $role, $adminRoles);
+
+        $count = $this->userManagementCounts($adminRoles);
+        $brokersForAssignment = $this->getBrokersForAssignment();
+
+        return view('admin.users.index', compact('admins', 'brokers', 'cashiers', 'applicants', 'count', 'tab', 'search', 'status', 'role', 'brokersForAssignment'));
+    }
+
+    private function userManagementFilters(Request $request, array $adminRoles): array
+    {
         $tab = $request->query('tab', 'admins');
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status', 'all');
         $role = $request->query('role', 'all');
 
-        if (!in_array($tab, ['admins', 'brokers', 'applicants'], true)) {
-            $tab = 'admins';
-        }
+        return [
+            'tab' => in_array($tab, ['admins', 'brokers', 'cashiers', 'applicants'], true) ? $tab : 'admins',
+            'search' => $search,
+            'status' => in_array($status, ['all', UserStatusConstant::ACTIVE, UserStatusConstant::DEACTIVATED], true) ? $status : 'all',
+            'role' => in_array($role, array_merge(['all'], $adminRoles), true) ? $role : 'all',
+        ];
+    }
 
-        if (!in_array($status, ['all', UserStatusConstant::ACTIVE, UserStatusConstant::DEACTIVATED], true)) {
-            $status = 'all';
-        }
+    private function usersForActiveTab(string $tab, string $search, string $status, string $role, array $adminRoles): array
+    {
+        $users = [
+            'admins' => collect(),
+            'brokers' => collect(),
+            'cashiers' => collect(),
+            'applicants' => collect(),
+        ];
 
-        if (!in_array($role, array_merge(['all'], $adminRoles), true)) {
-            $role = 'all';
-        }
+        $users[$tab] = match ($tab) {
+            'brokers' => $this->brokerListingQuery($search, $status)->get(),
+            'cashiers' => $this->cashierListingQuery($search, $status)->get(),
+            'applicants' => $this->applicantListingQuery($search, $status)->get(),
+            default => $this->adminListingQuery($search, $status, $role, $adminRoles)->get(),
+        };
 
-        $adminsQuery = User::query()
+        return $users;
+    }
+
+    private function adminListingQuery(string $search, string $status, string $role, array $adminRoles): Builder
+    {
+        $query = User::query()
             ->select(['id', 'email', 'status', 'created_at'])
             ->with([
                 'roles:id,role_name',
@@ -63,21 +100,17 @@ class UserManagementController extends Controller
                 $roleQuery->whereIn('role_name', $adminRoles);
             });
 
-        if ($status === UserStatusConstant::ACTIVE) {
-            $adminsQuery->active();
-        } elseif ($status === UserStatusConstant::DEACTIVATED) {
-            $adminsQuery->deactivated();
-        }
+        $this->applyUserStatusFilter($query, $status);
 
         if (in_array($role, $adminRoles, true)) {
-            $adminsQuery->whereHas('roles', function ($roleQuery) use ($role) {
+            $query->whereHas('roles', function ($roleQuery) use ($role) {
                 $roleQuery->where('role_name', $role);
             });
         }
 
         if ($search !== '') {
-            $adminsQuery->where(function ($query) use ($search) {
-                $query->where('email', 'like', '%' . $search . '%')
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('email', 'like', '%' . $search . '%')
                     ->orWhereHas('employee', function ($employeeQuery) use ($search) {
                         $employeeQuery
                             ->where('first_name', 'like', '%' . $search . '%')
@@ -89,8 +122,96 @@ class UserManagementController extends Controller
             });
         }
 
-        $admins = collect();
-        $applicantsQuery = User::query()
+        return $query;
+    }
+
+    private function brokerListingQuery(string $search, string $status): Builder
+    {
+        $query = Broker::query()
+            ->select([
+                'id',
+                'user_id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'suffix',
+                'business_name',
+                'address',
+                'contact_number',
+                'stall_name',
+                'created_at',
+            ])
+            ->with('user:id,email,status');
+
+        if ($status === UserStatusConstant::ACTIVE) {
+            $query->active();
+        } elseif ($status === UserStatusConstant::DEACTIVATED) {
+            $query->deactivated();
+        }
+
+        if ($search !== '') {
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery
+                    ->where('first_name', 'like', '%' . $search . '%')
+                    ->orWhere('middle_name', 'like', '%' . $search . '%')
+                    ->orWhere('last_name', 'like', '%' . $search . '%')
+                    ->orWhere('stall_name', 'like', '%' . $search . '%')
+                    ->orWhere('business_name', 'like', '%' . $search . '%')
+                    ->orWhere('address', 'like', '%' . $search . '%')
+                    ->orWhere('contact_number', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('email', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    private function cashierListingQuery(string $search, string $status): Builder
+    {
+        $query = User::query()
+            ->select(['id', 'email', 'status', 'created_at'])
+            ->with([
+                'roles:id,role_name',
+                'employee:id,user_id,first_name,middle_name,last_name,position,contact_number',
+                'brokerStaff:id,user_id,broker_id,position,status',
+                'brokerStaff.broker:id,user_id,first_name,middle_name,last_name,suffix,business_name,stall_name',
+            ])
+            ->whereHas('roles', function ($roleQuery) {
+                $roleQuery->where('role_name', RoleStatusConstant::CASHIER);
+            });
+
+        $this->applyUserStatusFilter($query, $status);
+
+        if ($search !== '') {
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('email', 'like', '%' . $search . '%')
+                    ->orWhereHas('employee', function ($employeeQuery) use ($search) {
+                        $employeeQuery
+                            ->where('first_name', 'like', '%' . $search . '%')
+                            ->orWhere('middle_name', 'like', '%' . $search . '%')
+                            ->orWhere('last_name', 'like', '%' . $search . '%')
+                            ->orWhere('position', 'like', '%' . $search . '%')
+                            ->orWhere('contact_number', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('brokerStaff.broker', function ($brokerQuery) use ($search) {
+                        $brokerQuery
+                            ->where('first_name', 'like', '%' . $search . '%')
+                            ->orWhere('middle_name', 'like', '%' . $search . '%')
+                            ->orWhere('last_name', 'like', '%' . $search . '%')
+                            ->orWhere('stall_name', 'like', '%' . $search . '%')
+                            ->orWhere('business_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    private function applicantListingQuery(string $search, string $status): Builder
+    {
+        $query = $this->applicantAccountQuery()
             ->select(['id', 'email', 'status', 'created_at'])
             ->with([
                 'roles:id,role_name',
@@ -116,27 +237,13 @@ class UserManagementController extends Controller
                         ])
                         ->latest('submitted_at');
                 },
-            ])
-            ->whereHas('roles', function ($roleQuery) {
-                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
-            })
-            ->whereDoesntHave('roles', function ($roleQuery) {
-                $roleQuery->whereIn('role_name', [
-                    RoleStatusConstant::ADMIN,
-                    RoleStatusConstant::STAFF,
-                    RoleStatusConstant::BROKER,
-                ]);
-            });
+            ]);
 
-        if ($status === UserStatusConstant::ACTIVE) {
-            $applicantsQuery->active();
-        } elseif ($status === UserStatusConstant::DEACTIVATED) {
-            $applicantsQuery->deactivated();
-        }
+        $this->applyUserStatusFilter($query, $status);
 
         if ($search !== '') {
-            $applicantsQuery->where(function ($query) use ($search) {
-                $query->where('email', 'like', '%' . $search . '%')
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('email', 'like', '%' . $search . '%')
                     ->orWhereHas('brokerApplications', function ($applicationQuery) use ($search) {
                         $applicationQuery
                             ->where('first_name', 'like', '%' . $search . '%')
@@ -148,79 +255,81 @@ class UserManagementController extends Controller
             });
         }
 
-        $brokersQuery = Broker::query()
-            ->select([
-                'id',
-                'user_id',
-                'first_name',
-                'middle_name',
-                'last_name',
-                'suffix',
-                'business_name',
-                'address',
-                'contact_number',
-                'stall_name',
-                'created_at',
-            ])
-            ->with('user:id,email,status');
+        return $query;
+    }
 
+    private function applyUserStatusFilter(Builder $query, string $status): void
+    {
         if ($status === UserStatusConstant::ACTIVE) {
-            $brokersQuery->active();
+            $query->active();
         } elseif ($status === UserStatusConstant::DEACTIVATED) {
-            $brokersQuery->deactivated();
+            $query->deactivated();
         }
+    }
 
-        if ($search !== '') {
-            $brokersQuery->where(function ($query) use ($search) {
-                $query
-                    ->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('middle_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhere('stall_name', 'like', '%' . $search . '%')
-                    ->orWhere('business_name', 'like', '%' . $search . '%')
-                    ->orWhere('address', 'like', '%' . $search . '%')
-                    ->orWhere('contact_number', 'like', '%' . $search . '%')
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('email', 'like', '%' . $search . '%');
-                    });
-            });
-        }
-
-        $brokers = collect();
-        $applicants = collect();
-
-        if ($tab === 'admins') {
-            $admins = $adminsQuery->get();
-        } elseif ($tab === 'brokers') {
-            $brokers = $brokersQuery->get();
-        } else {
-            $applicants = $applicantsQuery->get();
-        }
-
-        // Get broker statistics using grouped counts
+    private function userManagementCounts(array $adminRoles): array
+    {
         $brokerStatusCounts = Broker::query()
             ->join('User', 'User.id', '=', 'Broker.user_id')
             ->selectRaw('User.status, COUNT(*) as total')
             ->groupBy('User.status')
             ->pluck('total', 'User.status');
-        $deletedBrokers = Broker::onlyTrashed()->count();
         $activeBrokers = (int) ($brokerStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
         $deactivatedBrokers = (int) ($brokerStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
-        $totalBrokers = $activeBrokers + $deactivatedBrokers;
 
-        // Get admin statistics using grouped counts
-        $employeeQuery = User::query()->whereHas('roles', function ($roleQuery) use ($adminRoles) {
-            $roleQuery->whereIn('role_name', $adminRoles);
-        });
-        $adminStatusCounts = (clone $employeeQuery)
+        $adminStatusCounts = User::query()
+            ->whereHas('roles', function ($roleQuery) use ($adminRoles) {
+                $roleQuery->whereIn('role_name', $adminRoles);
+            })
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
         $activeAdmins = (int) ($adminStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
         $deactivatedAdmins = (int) ($adminStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
-        $totalAdmins = $activeAdmins + $deactivatedAdmins;
 
-        $applicantAccountQuery = User::query()
+        $cashierStatusCounts = User::query()
+            ->whereHas('roles', function ($roleQuery) {
+                $roleQuery->where('role_name', RoleStatusConstant::CASHIER);
+            })
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $activeCashiers = (int) ($cashierStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
+        $deactivatedCashiers = (int) ($cashierStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
+
+        $applicantStatusCounts = (clone $this->applicantAccountQuery())
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $activeApplicants = (int) ($applicantStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
+        $archivedApplicants = (int) ($applicantStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
+
+        return [
+            'deletedBrokers' => Broker::onlyTrashed()->count(),
+            'deactivatedBrokers' => $deactivatedBrokers,
+            'activeBrokers' => $activeBrokers,
+            'totalBrokers' => $activeBrokers + $deactivatedBrokers,
+            'deactivatedAdmins' => $deactivatedAdmins,
+            'activeAdmins' => $activeAdmins,
+            'totalAdmins' => $activeAdmins + $deactivatedAdmins,
+            'deactivatedCashiers' => $deactivatedCashiers,
+            'activeCashiers' => $activeCashiers,
+            'totalCashiers' => $activeCashiers + $deactivatedCashiers,
+            'activeApplicants' => $activeApplicants,
+            'archivedApplicants' => $archivedApplicants,
+            'totalApplicants' => $activeApplicants + $archivedApplicants,
+            'notSelectedApplications' => BrokerApplication::query()
+                ->where('application_status', ApplicationStatusConstant::NOT_SELECTED)
+                ->whereHas('user.roles', function ($roleQuery) {
+                    $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
+                })
+                ->count(),
+        ];
+    }
+
+    private function applicantAccountQuery(): Builder
+    {
+        return User::query()
             ->whereHas('roles', function ($roleQuery) {
                 $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
             })
@@ -231,36 +340,6 @@ class UserManagementController extends Controller
                     RoleStatusConstant::BROKER,
                 ]);
             });
-
-        $applicantStatusCounts = (clone $applicantAccountQuery)
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
-        $activeApplicants = (int) ($applicantStatusCounts[UserStatusConstant::ACTIVE] ?? 0);
-        $archivedApplicants = (int) ($applicantStatusCounts[UserStatusConstant::DEACTIVATED] ?? 0);
-        $totalApplicants = $activeApplicants + $archivedApplicants;
-        $notSelectedApplications = BrokerApplication::query()
-            ->where('application_status', 'Not Selected')
-            ->whereHas('user.roles', function ($roleQuery) {
-                $roleQuery->where('role_name', RoleStatusConstant::APPLICANT);
-            })
-            ->count();
-
-        $count = [
-            'deletedBrokers' => $deletedBrokers,
-            'deactivatedBrokers' => $deactivatedBrokers,
-            'activeBrokers' => $activeBrokers,
-            'totalBrokers' => $totalBrokers,
-            'deactivatedAdmins' => $deactivatedAdmins,
-            'activeAdmins' => $activeAdmins,
-            'totalAdmins' => $totalAdmins,
-            'activeApplicants' => $activeApplicants,
-            'archivedApplicants' => $archivedApplicants,
-            'totalApplicants' => $totalApplicants,
-            'notSelectedApplications' => $notSelectedApplications,
-        ];
-
-        return view('admin.users.index', compact('admins', 'brokers', 'applicants', 'count', 'tab', 'search', 'status', 'role'));
     }
 
     /**
@@ -273,7 +352,8 @@ class UserManagementController extends Controller
             'user' => null,
             'profile' => null,
             'title' => 'Create New User',
-            'description' => 'Add a new admin, staff member, or broker to the system.'
+            'description' => 'Add a new admin, staff member, broker, or cashier to the system.',
+            'brokersForAssignment' => $this->getBrokersForAssignment(),
         ]);
     }
 
@@ -409,6 +489,7 @@ class UserManagementController extends Controller
                 'stall_name' => $request->stall_name,
                 'contact_number' => $request->contact_number,
                 'position' => $request->position,
+                'broker_id' => $request->broker_id,
             ];
 
             User::createUserWithRole($userData, $profileData);
@@ -416,7 +497,11 @@ class UserManagementController extends Controller
             DB::commit();
 
             $redirectUrl = route('admin.users.index', [
-                'tab' => $request->role === RoleStatusConstant::BROKER ? 'brokers' : 'admins',
+                'tab' => match ($request->role) {
+                    RoleStatusConstant::BROKER => 'brokers',
+                    RoleStatusConstant::CASHIER => 'cashiers',
+                    default => 'admins',
+                },
             ]);
 
             return redirect($redirectUrl)
@@ -424,6 +509,13 @@ class UserManagementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to create managed user.', [
+                'admin_user_id' => Auth::id(),
+                'requested_role' => $request->input('role'),
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to create user. Please try again.');
@@ -449,7 +541,7 @@ class UserManagementController extends Controller
             ];
 
             // Only update password if provided
-            if ($request->filled('password')) {
+            if ($request->boolean('change_password') && $request->filled('password')) {
                 $userData['password'] = Hash::make($request->password);
             }
 
@@ -479,6 +571,13 @@ class UserManagementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to update managed user.', [
+                'admin_user_id' => Auth::id(),
+                'target_user_id' => $id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to update user. Please try again.');
@@ -500,6 +599,13 @@ class UserManagementController extends Controller
                 ->with('success', 'User activated successfully!');
 
         } catch (\Exception $e) {
+            Log::error('Failed to activate managed user.', [
+                'admin_user_id' => Auth::id(),
+                'target_user_id' => $id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return redirect()->back()
                 ->with('error', 'Failed to activate user. Please try again.');
         }
@@ -524,6 +630,13 @@ class UserManagementController extends Controller
                 ->with('success', 'User deactivated successfully!');
 
         } catch (\Exception $e) {
+            Log::error('Failed to deactivate managed user.', [
+                'admin_user_id' => Auth::id(),
+                'target_user_id' => $id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return redirect()->back()
                 ->with('error', 'Failed to deactivate user. Please try again.');
         }
@@ -544,6 +657,13 @@ class UserManagementController extends Controller
                 ->with('success', 'User deleted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Failed to delete managed user.', [
+                'admin_user_id' => Auth::id(),
+                'target_user_id' => $id,
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return redirect()->back()
                 ->with('error', 'Failed to delete user. Please try again.');
         }
@@ -560,6 +680,7 @@ class UserManagementController extends Controller
                 'roles:id,role_name',
                 'broker:id,user_id,first_name,middle_name,last_name,suffix,business_name,address,stall_name,contact_number',
                 'employee:id,user_id,first_name,middle_name,last_name,suffix,position,contact_number',
+                'brokerStaff:id,user_id,broker_id,position,status',
             ])
             ->findOrFail($id);
     }
@@ -577,6 +698,21 @@ class UserManagementController extends Controller
             return 'applicants';
         }
 
+        if ($user->hasRole(RoleStatusConstant::CASHIER)) {
+            return 'cashiers';
+        }
+
         return 'admins';
+    }
+
+    private function getBrokersForAssignment()
+    {
+        return Broker::query()
+            ->active()
+            ->with('stall:id,stall_number')
+            ->orderBy('stall_name')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'stall_id', 'stall_name', 'business_name']);
     }
 }

@@ -7,6 +7,7 @@ class RoleStatusConstant
     public const ADMIN = 'admin';
     public const STAFF = 'staff';
     public const BROKER = 'broker';
+    public const CASHIER = 'cashier';
     public const APPLICANT = 'applicant';
 
     public static function getAllRoles(): array
@@ -15,6 +16,7 @@ class RoleStatusConstant
             self::ADMIN,
             self::STAFF,
             self::BROKER,
+            self::CASHIER,
             self::APPLICANT,
         ];
     }

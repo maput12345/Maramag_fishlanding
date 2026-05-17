@@ -114,8 +114,7 @@ window.printBrokerSales = async function(brokerId, brokerName, stallName) {
                 dateFrom = freshData.receipt_date_from || dateFrom;
                 dateTo = freshData.receipt_date_to || dateTo;
             }
-        } catch (error) {
-            console.error('Unable to refresh broker receipt data before printing.', error);
+        } catch {
         }
     }
 

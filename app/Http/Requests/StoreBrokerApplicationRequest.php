@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\OpeningStatusConstant;
 use App\Models\ApplicationOpening;
 use App\Models\RequirementType;
 use Illuminate\Foundation\Http\FormRequest;
@@ -80,7 +82,7 @@ class StoreBrokerApplicationRequest extends FormRequest
                 return;
             }
 
-            if ($opening->opening_status !== 'Open') {
+            if ($opening->opening_status !== OpeningStatusConstant::OPEN) {
                 $validator->errors()->add('opening', 'This application opening is no longer accepting submissions.');
             }
 
@@ -97,7 +99,7 @@ class StoreBrokerApplicationRequest extends FormRequest
                 $validator->errors()->add('opening', 'This application opening is outside the allowed date range.');
             }
 
-            $terminalApplicationStatuses = ['Rejected', 'Not Selected', 'Cancelled'];
+            $terminalApplicationStatuses = ApplicationStatusConstant::terminalStatuses();
 
             $sameOpeningAlreadySubmitted = $this->user()
                 ?->brokerApplications()

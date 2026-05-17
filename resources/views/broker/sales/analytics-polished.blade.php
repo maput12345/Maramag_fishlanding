@@ -9,14 +9,6 @@ $breadcrumbs = [
 
 @section('content')
 <div class="w-full dashboard-shell">
-    <div class="dashboard-header">
-        <span class="dashboard-kicker">Sales Intelligence</span>
-        <div>
-            <h1 class="dashboard-title">Sales Analytics</h1>
-            <p class="dashboard-subtitle">Review collections from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
-        </div>
-    </div>
-
     <section class="panel-card">
         <div class="panel-card__inner">
             <div class="panel-card__header">

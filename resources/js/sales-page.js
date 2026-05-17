@@ -5,6 +5,8 @@
 
 (function () {
     const MODAL_QUERY_KEYS = ['modal', 'edit', 'show', 'sale', 'print', 'auto_print'];
+    const SALES_UPDATED_STORAGE_KEY = 'broker-sales-updated-token';
+    let pendingSalesRecordsRefresh = false;
 
     function getSalesRoot() {
         return document.querySelector('[data-sales-page]');
@@ -12,6 +14,10 @@
 
     function isSalesPageActive() {
         return Boolean(getSalesRoot());
+    }
+
+    function isSalesRecordsPageActive() {
+        return Boolean(getSalesRoot()?.hasAttribute('data-sales-records'));
     }
 
     function toAbsoluteUrl(url) {
@@ -53,6 +59,52 @@
 
         if (typeof window.initializeBrokerSalesPage === 'function') {
             window.initializeBrokerSalesPage(fragment);
+        }
+    }
+
+    function publishSalesUpdated(token) {
+        if (!token) {
+            return;
+        }
+
+        try {
+            localStorage.setItem(SALES_UPDATED_STORAGE_KEY, JSON.stringify({
+                token: String(token),
+                at: Date.now(),
+            }));
+        } catch (error) {
+        }
+    }
+
+    function refreshSalesRecordsPage() {
+        if (!isSalesRecordsPageActive()) {
+            return;
+        }
+
+        refreshSalesFragment(getSalesBaseUrl(), 'silent').catch(() => {
+            window.location.href = getSalesBaseUrl();
+        });
+    }
+
+    function refreshSalesRecordsWhenVisible() {
+        if (!isSalesRecordsPageActive()) {
+            return;
+        }
+
+        if (document.hidden) {
+            pendingSalesRecordsRefresh = true;
+            return;
+        }
+
+        pendingSalesRecordsRefresh = false;
+        refreshSalesRecordsPage();
+    }
+
+    function publishInitialSalesUpdate() {
+        const token = getSalesRoot()?.dataset.salesUpdatedToken;
+
+        if (token) {
+            publishSalesUpdated(token);
         }
     }
 
@@ -215,7 +267,17 @@
             }
 
             const afterSaveUrl = payload.redirect_url || form.dataset.salesAfterSaveUrl || getSalesBaseUrl();
-            await refreshSalesFragment(afterSaveUrl, 'replace');
+
+            if (payload.force_redirect) {
+                window.location.href = afterSaveUrl;
+                return;
+            }
+
+            try {
+                await refreshSalesFragment(afterSaveUrl, 'replace');
+            } catch (refreshError) {
+                window.location.href = afterSaveUrl;
+            }
         } catch (error) {
             if (window.toastr) {
                 window.toastr.error(error.message || 'Something went wrong while saving the form.');
@@ -271,6 +333,10 @@
             return;
         }
 
+        if (asyncForm.hasAttribute('data-sales-sync-submit')) {
+            return;
+        }
+
         event.preventDefault();
         handleAsyncFormSubmit(asyncForm);
     });
@@ -284,4 +350,26 @@
             // Keep popstate failures quiet to avoid trapping navigation.
         });
     });
+
+    window.addEventListener('storage', (event) => {
+        if (event.key !== SALES_UPDATED_STORAGE_KEY || !event.newValue) {
+            return;
+        }
+
+        refreshSalesRecordsWhenVisible();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && pendingSalesRecordsRefresh) {
+            refreshSalesRecordsWhenVisible();
+        }
+    });
+
+    window.addEventListener('focus', () => {
+        if (pendingSalesRecordsRefresh) {
+            refreshSalesRecordsWhenVisible();
+        }
+    });
+
+    publishInitialSalesUpdate();
 })();

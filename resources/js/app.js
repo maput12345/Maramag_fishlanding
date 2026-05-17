@@ -170,6 +170,11 @@ function initializeSweetAlert() {
 
             const action = form.getAttribute('data-swal');
             const recordName = form.getAttribute('data-record-name') || '';
+            const customTitle = form.getAttribute('data-swal-title');
+            const customText = form.getAttribute('data-swal-text');
+            const customConfirmText = form.getAttribute('data-swal-confirm');
+            const customCancelText = form.getAttribute('data-swal-cancel');
+            const customIcon = form.getAttribute('data-swal-icon');
 
             let title = 'Are you sure?';
             let text = '';
@@ -218,6 +223,12 @@ function initializeSweetAlert() {
                     text = 'This action cannot be undone.';
                     confirmText = 'Yes, continue';
             }
+
+            title = customTitle || title;
+            text = customText || text;
+            confirmText = customConfirmText || confirmText;
+            icon = customIcon || icon;
+
             Swal.close();
             // Use setTimeout to ensure proper initialization
             setTimeout(() => {
@@ -229,7 +240,7 @@ function initializeSweetAlert() {
                     confirmButtonColor: (action === 'delete' || action === 'mark-missing') ? '#dc2626' : '#059669',
                     cancelButtonColor: '#6b7280',
                     confirmButtonText: confirmText,
-                    cancelButtonText: 'Cancel',
+                    cancelButtonText: customCancelText || 'Cancel',
                     allowOutsideClick: false,
                     allowEscapeKey: false
                 }).then((result) => {

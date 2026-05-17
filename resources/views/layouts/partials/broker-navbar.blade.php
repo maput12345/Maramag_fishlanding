@@ -14,6 +14,7 @@
     $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
+    $isCashierStaff = auth()->check() && auth()->user()->isCashier();
 
     if ($brokerViewReadOnly) {
         $resolvedTopbarAction = [
@@ -66,6 +67,19 @@
         </div>
 
         <div class="flex items-center space-x-4">
+            @unless($brokerViewReadOnly || $isCashierStaff)
+                <a
+                    href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'scan_return' => 1]) }}"
+                    class="inline-flex items-center justify-center rounded-xl bg-slate-950 px-3 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 lg:px-4"
+                    aria-label="Scan QR to return fish box"
+                    title="Scan QR to return fish box"
+                    data-scan-qr-return-shortcut
+                >
+                    <x-heroicon-o-camera class="h-5 w-5 lg:mr-2" />
+                    <span class="hidden lg:inline">Scan QR to Return</span>
+                </a>
+            @endunless
+
             @if(!empty($resolvedTopbarAction['url']) && !empty($resolvedTopbarAction['label']))
                 <a
                     href="{{ $resolvedTopbarAction['url'] }}"
@@ -122,7 +136,7 @@
                                 @endif
                             </div>
                         </div>
-                        <a href="{{ url()->current() }}?modal=profile" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ request()->fullUrlWithQuery(['modal' => 'profile']) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <x-heroicon-o-user class="w-4 h-4 mr-3" />
                             Profile
                         </a>

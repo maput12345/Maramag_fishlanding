@@ -61,7 +61,7 @@
                             <div class="text-xs text-gray-500">{{ auth()->user()->email }}</div>
                             <div class="text-xs font-medium text-blue-600">Applicant</div>
                         </div>
-                        <a href="{{ url()->current() }}?modal=profile" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ request()->fullUrlWithQuery(['modal' => 'profile']) }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <x-heroicon-o-user class="w-4 h-4 mr-3" />
                             Profile
                         </a>

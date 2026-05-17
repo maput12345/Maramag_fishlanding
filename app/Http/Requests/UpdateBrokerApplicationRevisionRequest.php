@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\RequirementVerificationStatusConstant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBrokerApplicationRevisionRequest extends FormRequest
@@ -13,7 +15,7 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
         return $this->user()
             && $application
             && (int) $application->user_id === (int) $this->user()->id
-            && $application->application_status === 'Needs Revision';
+            && $application->application_status === ApplicationStatusConstant::NEEDS_REVISION;
     }
 
     public function rules(): array
@@ -41,7 +43,7 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
                 return;
             }
 
-            if ($application->application_status !== 'Needs Revision') {
+            if ($application->application_status !== ApplicationStatusConstant::NEEDS_REVISION) {
                 $validator->errors()->add('application', 'Only applications marked Needs Revision can be resubmitted.');
             }
 
@@ -86,6 +88,9 @@ class UpdateBrokerApplicationRevisionRequest extends FormRequest
 
     private function requiresApplicantAction(?string $verificationStatus): bool
     {
-        return in_array($verificationStatus, ['Needs Revision', 'Rejected'], true);
+        return in_array($verificationStatus, [
+            RequirementVerificationStatusConstant::NEEDS_REVISION,
+            RequirementVerificationStatusConstant::REJECTED,
+        ], true);
     }
 }

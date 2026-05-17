@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\OpeningStatusConstant;
 use App\Models\BrokerApplication;
 use App\Models\ApplicationOpening;
 use App\Models\InventoryMovement;
@@ -28,18 +30,11 @@ class AdminDashboardController extends Controller
         );
 
         $needsReviewCount = BrokerApplication::query()
-            ->where('application_status', 'Submitted')
+            ->where('application_status', ApplicationStatusConstant::SUBMITTED)
             ->count();
 
         $totalApplicationsCount = BrokerApplication::query()
-            ->whereIn('application_status', [
-                'Submitted',
-                'Pending',
-                'Needs Review',
-                'Under Review',
-                'Revision Resubmitted',
-                'For Revision',
-            ])
+            ->whereIn('application_status', ApplicationStatusConstant::ongoingReviewStatuses())
             ->count();
 
         $vacantStallsCount = Stall::query()
@@ -47,7 +42,7 @@ class AdminDashboardController extends Controller
             ->count();
 
         $occupiedStallsCount = Stall::query()
-            ->where('stall_status', 'Occupied')
+            ->where('stall_status', OpeningStatusConstant::STALL_OCCUPIED)
             ->count();
 
         $weekStart = $today->copy()->subDays(6);

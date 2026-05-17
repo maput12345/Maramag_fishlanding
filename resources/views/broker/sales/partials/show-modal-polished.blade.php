@@ -39,6 +39,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         @php
 $buyerName = $viewingSales->buyer?->name ?: 'Walk-in Buyer';
             $buyerContact = $viewingSales->buyer?->contact ?: 'Not provided';
+            $processedByName = $viewingSales->creator?->name ?? 'Broker Owner';
+            $processedByRole = $viewingSales->creator?->isCashier() ? 'Cashier Staff' : 'Broker Owner';
             $paymentProgress = $viewingSales->total_amount > 0
                 ? (($viewingSales->paid_amount / (float) $viewingSales->total_amount) * 100)
                 : 0;
@@ -86,6 +88,16 @@ $buyerName = $viewingSales->buyer?->name ?: 'Walk-in Buyer';
                                             Contact
                                         </span>
                                         <span class="text-sm font-semibold text-gray-900">{{ $buyerContact }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 py-2">
+                                        <span class="flex items-center text-sm text-gray-600">
+                                            <x-heroicon-o-identification class="mr-2 h-4 w-4" />
+                                            Processed By
+                                        </span>
+                                        <span class="text-right text-sm font-semibold text-gray-900">
+                                            {{ $processedByName }}
+                                            <span class="block text-xs font-medium text-gray-500">{{ $processedByRole }}</span>
+                                        </span>
                                     </div>
                                     <div class="flex items-center justify-between py-2">
                                         <span class="flex items-center text-sm text-gray-600">

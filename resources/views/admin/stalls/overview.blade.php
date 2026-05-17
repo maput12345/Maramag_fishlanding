@@ -1,6 +1,25 @@
 @extends('layouts.admin')
 
 @section('content')
+@php
+    $overviewQuery = request()->except(['modal', 'opening', 'stall']);
+    $visibleStalls = method_exists($stalls, 'getCollection') ? $stalls->getCollection() : collect($stalls);
+    $editingScheduleOpening = null;
+    $managingPhotosStall = null;
+
+    if (request('modal') === 'edit-schedule') {
+        $editingScheduleOpeningId = (int) request('opening');
+        $editingScheduleOpening = $visibleStalls
+            ->flatMap(fn ($stall) => $stall->applicationOpenings)
+            ->first(fn ($opening) => (int) $opening->id === $editingScheduleOpeningId);
+    }
+
+    if (request('modal') === 'manage-photos') {
+        $managingPhotosStallId = (int) request('stall');
+        $managingPhotosStall = $visibleStalls->first(fn ($stall) => (int) $stall->id === $managingPhotosStallId);
+    }
+@endphp
+
 <div class="space-y-8">
     @if(session('success') || session('error') || session('info'))
         <section class="space-y-3">
@@ -41,16 +60,13 @@
                 <div class="flex-1">
                     <label for="stall_search" class="block text-sm font-semibold text-slate-900">Search Stall</label>
                     <div class="relative mt-2">
-                        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
-                            <i data-lucide="search" class="h-5 w-5"></i>
-                        </span>
                         <input
                             id="stall_search"
                             name="stall_search"
                             type="search"
                             value="{{ $stallSearch }}"
                             placeholder="Search stall number, status, address, or remarks..."
-                            class="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-200"
+                            class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-200"
                         >
                     </div>
                 </div>
@@ -73,7 +89,7 @@
                         <th class="px-4 py-3 text-left font-semibold text-slate-600">Bidding Info</th>
                         <th class="px-4 py-3 text-right font-semibold text-slate-600">Requirements</th>
                         <th class="px-4 py-3 text-right font-semibold text-slate-600">Applicants</th>
-                        <th class="min-w-[16rem] px-4 py-3 text-left font-semibold text-slate-600">Actions</th>
+                        <th class="min-w-[14rem] px-4 py-3 text-left font-semibold text-slate-600">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -84,7 +100,7 @@
                                 ? 'Open'
                                 : $stall->stall_status;
                         @endphp
-                        <tr>
+                        <tr class="align-top">
                             <td class="w-28 whitespace-nowrap px-4 py-4 font-semibold text-slate-950">{{ $stall->display_name }}</td>
                             <td class="max-w-xs px-4 py-4 text-slate-600">
                                 <div class="font-medium text-slate-900">{{ $stall->address ?: 'No address recorded.' }}</div>
@@ -118,7 +134,7 @@
                             </td>
                             <td class="px-4 py-4 text-right tabular-nums">{{ $opening?->requirement_types_count ?? 0 }}</td>
                             <td class="px-4 py-4 text-right tabular-nums">{{ $opening?->broker_applications_count ?? 0 }}</td>
-                            <td class="px-4 py-4">
+                            <td class="min-w-[14rem] px-4 py-4">
                                 @if($opening)
                                     @php
                                         $openingAvailabilityStatus = $opening->opening_status === 'Cancelled'
@@ -136,104 +152,28 @@
                                         <button type="submit" class="app-button app-button--secondary">Save</button>
                                     </form>
 
-                                    <details class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                        <summary class="cursor-pointer text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Edit Bidding Schedule</summary>
-                                        <form action="{{ route('admin.stalls.openings.update', $opening) }}" method="POST" class="mt-4 space-y-3">
-                                            @csrf
-                                            @method('PATCH')
-                                            <div class="grid gap-3 sm:grid-cols-2">
-                                                <div>
-                                                    <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Date</label>
-                                                    <input
-                                                        name="bidding_date"
-                                                        type="date"
-                                                        value="{{ optional($opening->bidding_date)->format('Y-m-d') }}"
-                                                        class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                        required
-                                                    >
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Time</label>
-                                                    <input
-                                                        name="bidding_time"
-                                                        type="time"
-                                                        value="{{ optional($opening->bidding_time)->format('H:i') }}"
-                                                        class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                        required
-                                                    >
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bidding Location</label>
-                                                <input
-                                                    name="bidding_location"
-                                                    type="text"
-                                                    value="{{ $opening->bidding_location }}"
-                                                    class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                    maxlength="255"
-                                                    required
-                                                >
-                                            </div>
-                                            <button type="submit" class="app-button app-button--secondary">Save Schedule</button>
-                                        </form>
-                                    </details>
-                                @else
-                                    <span class="text-xs font-medium text-slate-500">No actions available</span>
-                                @endif
-
-                                <details class="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
-                                    <summary class="cursor-pointer text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Manage Photos</summary>
-
-                                    <div class="mt-4 space-y-4">
-                                        @if($stall->stallImages->isNotEmpty())
-                                            <div class="grid grid-cols-2 gap-3">
-                                                @foreach($stall->stallImages as $stallImage)
-                                                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                                                        <a href="{{ asset('storage/' . $stallImage->image_path) }}" target="_blank" rel="noopener">
-                                                            <img
-                                                                src="{{ asset('storage/' . $stallImage->image_path) }}"
-                                                                alt="{{ $stall->display_name }} photo {{ $loop->iteration }}"
-                                                                class="h-24 w-full object-cover"
-                                                            >
-                                                        </a>
-                                                        <form
-                                                            action="{{ route('admin.stalls.photos.destroy', [$stall, $stallImage]) }}"
-                                                            method="POST"
-                                                            data-swal="delete"
-                                                            data-record-name="{{ $stall->display_name }} photo {{ $loop->iteration }}"
-                                                        >
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="w-full px-3 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50">
-                                                                Remove
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @else
-                                            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                                                No photos uploaded yet.
-                                            </div>
-                                        @endif
-
-                                        <form action="{{ route('admin.stalls.photos.store', $stall) }}" method="POST" enctype="multipart/form-data" class="space-y-3 border-t border-slate-100 pt-4">
-                                            @csrf
-                                            <div>
-                                                <label class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Add Photos</label>
-                                                <input
-                                                    name="stall_images[]"
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp"
-                                                    multiple
-                                                    class="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm"
-                                                >
-                                                <p class="mt-1 text-xs text-slate-500">Upload JPG, PNG, or WebP. Maximum 6 photos per stall.</p>
-                                            </div>
-                                            <button type="submit" class="app-button app-button--secondary">Upload Photos</button>
-                                        </form>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        <a href="{{ route('admin.stalls.overview', array_merge($overviewQuery, ['modal' => 'edit-schedule', 'opening' => $opening->id])) }}"
+                                           class="app-button app-button--secondary px-3 py-2 text-xs">
+                                            <x-heroicon-o-calendar-days class="h-4 w-4" />
+                                            <span>Edit Schedule</span>
+                                        </a>
+                                        <a href="{{ route('admin.stalls.overview', array_merge($overviewQuery, ['modal' => 'manage-photos', 'stall' => $stall->id])) }}"
+                                           class="app-button app-button--secondary px-3 py-2 text-xs">
+                                            <x-heroicon-o-photo class="h-4 w-4" />
+                                            <span>Manage Photos</span>
+                                        </a>
                                     </div>
-                                </details>
+                                @else
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-xs font-medium text-slate-500">No opening actions</span>
+                                        <a href="{{ route('admin.stalls.overview', array_merge($overviewQuery, ['modal' => 'manage-photos', 'stall' => $stall->id])) }}"
+                                           class="app-button app-button--secondary px-3 py-2 text-xs">
+                                            <x-heroicon-o-photo class="h-4 w-4" />
+                                            <span>Manage Photos</span>
+                                        </a>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -252,4 +192,140 @@
         </div>
     </section>
 </div>
+
+@if($editingScheduleOpening)
+    <x-app-modal
+        title="Edit Bidding Schedule"
+        subtitle="{{ $editingScheduleOpening->stall?->display_name ?? 'Selected stall' }}"
+        :close-url="route('admin.stalls.overview', $overviewQuery)"
+        max-width="lg"
+        body-class="workspace-popup__body--soft"
+    >
+        <x-slot:icon>
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <x-heroicon-o-calendar-days class="h-6 w-6" />
+            </span>
+        </x-slot:icon>
+
+        <form action="{{ route('admin.stalls.openings.update', $editingScheduleOpening) }}" method="POST" class="space-y-5">
+            @csrf
+            @method('PATCH')
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="modal_bidding_date" class="block text-sm font-semibold text-slate-800">Bidding Date</label>
+                    <input
+                        id="modal_bidding_date"
+                        name="bidding_date"
+                        type="date"
+                        value="{{ old('bidding_date', optional($editingScheduleOpening->bidding_date)->format('Y-m-d')) }}"
+                        class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                        required
+                    >
+                </div>
+                <div>
+                    <label for="modal_bidding_time" class="block text-sm font-semibold text-slate-800">Bidding Time</label>
+                    <input
+                        id="modal_bidding_time"
+                        name="bidding_time"
+                        type="time"
+                        value="{{ old('bidding_time', optional($editingScheduleOpening->bidding_time)->format('H:i')) }}"
+                        class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div>
+                <label for="modal_bidding_location" class="block text-sm font-semibold text-slate-800">Bidding Location</label>
+                <input
+                    id="modal_bidding_location"
+                    name="bidding_location"
+                    type="text"
+                    value="{{ old('bidding_location', $editingScheduleOpening->bidding_location) }}"
+                    class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                    maxlength="255"
+                    required
+                >
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" class="app-button app-button--secondary" @click="close()">Cancel</button>
+                <button type="submit" class="app-button app-button--primary">Save Schedule</button>
+            </div>
+        </form>
+    </x-app-modal>
+@endif
+
+@if($managingPhotosStall)
+    <x-app-modal
+        title="Manage Photos"
+        subtitle="{{ $managingPhotosStall->display_name }}"
+        :close-url="route('admin.stalls.overview', $overviewQuery)"
+        max-width="2xl"
+        body-class="workspace-popup__body--soft"
+    >
+        <x-slot:icon>
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <x-heroicon-o-photo class="h-6 w-6" />
+            </span>
+        </x-slot:icon>
+
+        <div class="space-y-5">
+            @if($managingPhotosStall->stallImages->isNotEmpty())
+                <div class="grid gap-4 sm:grid-cols-2">
+                    @foreach($managingPhotosStall->stallImages as $stallImage)
+                        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <a href="{{ asset('storage/' . $stallImage->image_path) }}" target="_blank" rel="noopener">
+                                <img
+                                    src="{{ asset('storage/' . $stallImage->image_path) }}"
+                                    alt="{{ $managingPhotosStall->display_name }} photo {{ $loop->iteration }}"
+                                    class="h-40 w-full object-cover"
+                                >
+                            </a>
+                            <form
+                                action="{{ route('admin.stalls.photos.destroy', [$managingPhotosStall, $stallImage]) }}"
+                                method="POST"
+                                data-swal="delete"
+                                data-record-name="{{ $managingPhotosStall->display_name }} photo {{ $loop->iteration }}"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50">
+                                    <x-heroicon-o-trash class="h-4 w-4" />
+                                    <span>Remove Photo</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                    No photos uploaded yet.
+                </div>
+            @endif
+
+            <form action="{{ route('admin.stalls.photos.store', $managingPhotosStall) }}" method="POST" enctype="multipart/form-data" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                @csrf
+                <div>
+                    <label for="modal_stall_images" class="block text-sm font-semibold text-slate-800">Add Photos</label>
+                    <input
+                        id="modal_stall_images"
+                        name="stall_images[]"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm"
+                    >
+                    <p class="mt-2 text-xs text-slate-500">Upload JPG, PNG, or WebP. Maximum 6 photos per stall.</p>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button type="button" class="app-button app-button--secondary" @click="close()">Close</button>
+                    <button type="submit" class="app-button app-button--primary">Upload Photos</button>
+                </div>
+            </form>
+        </div>
+    </x-app-modal>
+@endif
 @endsection

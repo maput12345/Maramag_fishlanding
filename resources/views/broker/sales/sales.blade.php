@@ -19,15 +19,6 @@ $breadcrumbs = [
 
 @section('content')
             <div class="relative w-full content-spacing workspace-modal-host">
-                <!-- Page Header -->
-                <div class="mb-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div class="flex-1">
-                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Sales</h1>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                     <div class="bg-white rounded-xl shadow-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Sales Records</p>

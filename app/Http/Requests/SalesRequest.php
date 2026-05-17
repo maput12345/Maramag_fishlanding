@@ -51,7 +51,7 @@ class SalesRequest extends FormRequest
     {
         $rules = [
             'sales_date' => 'required|date',
-            'total_amount' => 'required|numeric|min:0',
+            'total_amount' => 'nullable|numeric|min:0',
             'buyer_first_name' => 'required|string|max:255',
             'buyer_middle_name' => 'nullable|string|max:255',
             'buyer_last_name' => 'required|string|max:255',
@@ -66,9 +66,13 @@ class SalesRequest extends FormRequest
             'sales_details.*.fish_type_id' => 'required|exists:FishType,id',
             'sales_details.*.item' => 'nullable|string|max:255',
             'sales_details.*.item_description' => 'nullable|string',
-            'sales_details.*.unit_price' => 'required|numeric|min:0',
+            'sales_details.*.unit_price' => 'nullable|numeric|min:0',
             'sales_details.*.quantity' => 'nullable|integer|min:1',
-            'sales_details.*.sub_total' => 'required|numeric|min:0',
+            'sales_details.*.sub_total' => 'nullable|numeric|min:0',
+            'sales_details.*.discount_mode' => 'nullable|string|in:percent,amount',
+            'sales_details.*.discount_value' => 'nullable|numeric|min:0',
+            'sales_details.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'sales_details.*.discount' => 'nullable|numeric|min:0',
         ];
 
         return $rules;
@@ -116,16 +120,6 @@ class SalesRequest extends FormRequest
 
             if ($validator->errors()->isNotEmpty()) {
                 return;
-            }
-
-            $initialPaidAmount = $this->input('initial_paid_amount');
-
-            if ($initialPaidAmount !== null && $initialPaidAmount !== '') {
-                $totalAmount = (float) $this->input('total_amount', 0);
-
-                if ((float) $initialPaidAmount > $totalAmount) {
-                    $validator->errors()->add('initial_paid_amount', 'Initial payment cannot exceed the total sale amount.');
-                }
             }
 
             if ($flattenedBoxIds->isEmpty()) {

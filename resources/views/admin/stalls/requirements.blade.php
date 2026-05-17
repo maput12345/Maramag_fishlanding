@@ -1,6 +1,15 @@
 @extends('layouts.admin')
 
 @section('content')
+@php
+    $editingRequirementType = null;
+
+    if (request('modal') === 'edit-requirement') {
+        $editingRequirementTypeId = (int) request('requirement');
+        $editingRequirementType = $requirementTypes->first(fn ($requirementType) => (int) $requirementType->id === $editingRequirementTypeId);
+    }
+@endphp
+
 <div class="space-y-8">
     @if(session('success') || session('error') || session('info'))
         <section class="space-y-3">
@@ -62,6 +71,10 @@
                 </label>
                 <button type="submit" class="app-button app-button--dark">Add</button>
             </div>
+            <div class="lg:col-span-3">
+                <label for="description" class="block text-sm font-medium text-slate-700">Description / Instruction</label>
+                <textarea id="description" name="description" rows="3" class="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" placeholder="Optional instruction shown to applicants.">{{ old('description') }}</textarea>
+            </div>
         </form>
     </section>
 
@@ -80,6 +93,7 @@
                         <th class="px-4 py-3 text-left font-semibold text-slate-600">Applies To</th>
                         <th class="px-4 py-3 text-left font-semibold text-slate-600">Default</th>
                         <th class="px-4 py-3 text-left font-semibold text-slate-600">Description</th>
+                        <th class="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -93,10 +107,33 @@
                                 </span>
                             </td>
                             <td class="max-w-md px-4 py-4 text-slate-600">{{ $requirementType->description ?: 'No description recorded.' }}</td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <a href="{{ route('admin.stalls.requirements.index', ['modal' => 'edit-requirement', 'requirement' => $requirementType->id]) }}"
+                                       class="app-button app-button--secondary px-3 py-2 text-xs">
+                                        <x-heroicon-o-pencil-square class="h-4 w-4" />
+                                        <span>Edit</span>
+                                    </a>
+                                    <form action="{{ route('admin.stalls.requirements.destroy', $requirementType) }}"
+                                          method="POST"
+                                          data-swal="delete"
+                                          data-record-name="{{ $requirementType->requirement_name }}"
+                                          data-swal-title="Delete requirement?"
+                                          data-swal-text="This removes the requirement only if it has not been used by a vacancy or applicant record. Used requirements must be edited instead."
+                                          data-swal-confirm="Yes, delete requirement">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="app-button app-button--danger px-3 py-2 text-xs">
+                                            <x-heroicon-o-trash class="h-4 w-4" />
+                                            <span>Delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-4 py-6 text-center text-slate-500">No requirements created yet.</td>
+                            <td colspan="5" class="px-4 py-6 text-center text-slate-500">No requirements created yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -104,4 +141,73 @@
         </div>
     </section>
 </div>
+
+@if($editingRequirementType)
+    <x-app-modal
+        title="Edit Requirement"
+        subtitle="Correct the reusable requirement shown when opening stall vacancies."
+        :close-url="route('admin.stalls.requirements.index')"
+        max-width="md"
+        body-class="workspace-popup__body--soft"
+    >
+        <x-slot:icon>
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100">
+                <x-heroicon-o-pencil-square class="h-6 w-6" />
+            </span>
+        </x-slot:icon>
+
+        <form action="{{ route('admin.stalls.requirements.update', $editingRequirementType) }}"
+              method="POST"
+              class="space-y-5">
+            @csrf
+            @method('PATCH')
+
+            <div>
+                <label for="edit_requirement_name" class="block text-sm font-semibold text-slate-800">Requirement Name</label>
+                <input id="edit_requirement_name"
+                       name="requirement_name"
+                       type="text"
+                       value="{{ old('requirement_name', $editingRequirementType->requirement_name) }}"
+                       class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm"
+                       required
+                       autofocus>
+            </div>
+
+            <div>
+                <label for="edit_audience" class="block text-sm font-semibold text-slate-800">Applies To</label>
+                <select id="edit_audience" name="audience" class="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm" required>
+                    @foreach([
+                        \App\Models\RequirementType::APPLICANT_TYPE_BOTH => 'All Applicants',
+                        \App\Models\RequirementType::APPLICANT_TYPE_NATURAL => 'Natural Person',
+                        \App\Models\RequirementType::APPLICANT_TYPE_JURIDICAL => 'Juridical Person',
+                    ] as $audienceValue => $audienceLabel)
+                        <option value="{{ $audienceValue }}" @selected(old('audience', $editingRequirementType->audience ?: \App\Models\RequirementType::APPLICANT_TYPE_BOTH) === $audienceValue)>{{ $audienceLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label for="edit_description" class="block text-sm font-semibold text-slate-800">Description / Instruction</label>
+                <textarea id="edit_description"
+                          name="description"
+                          rows="4"
+                          class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm">{{ old('description', $editingRequirementType->description) }}</textarea>
+            </div>
+
+            <label class="flex min-h-[3rem] items-center gap-3 rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-700">
+                <input name="is_required" type="checkbox" value="1" class="rounded border-slate-300 text-slate-900" @checked(old('is_required', $editingRequirementType->is_required))>
+                Required by default
+            </label>
+
+            <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" class="app-button app-button--secondary" @click="close()">
+                    Cancel
+                </button>
+                <button type="submit" class="app-button app-button--primary">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </x-app-modal>
+@endif
 @endsection

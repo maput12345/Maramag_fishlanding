@@ -1,4 +1,5 @@
 ﻿@php
+$isCashierStaff = auth()->check() && auth()->user()->isCashier();
 $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
         : false;
@@ -33,19 +34,35 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 @extends('layouts.broker')
 
 @section('content')
+    @if($isCashierStaff)
+        <style>
+            @media (min-width: 768px) {
+                .sales-filter-layout--cashier {
+                    grid-template-columns: minmax(320px, 1fr) minmax(220px, 280px) auto;
+                }
+
+                .sales-filter-layout--cashier .search-field,
+                .sales-filter-layout--cashier .status-field,
+                .sales-filter-layout--cashier .buttons-field {
+                    grid-column: auto;
+                }
+
+                .sales-filter-layout--cashier .buttons-field {
+                    align-self: end;
+                    justify-content: flex-end;
+                    white-space: nowrap;
+                }
+            }
+        </style>
+    @endif
+
     <div
         id="sales-page-root"
         class="relative w-full content-spacing workspace-modal-host"
         data-sales-page
+        data-sales-records
         data-sales-base-url="{{ $salesBaseUrl }}"
     >
-        <div class="mb-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex-1">
-                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Sales</h1>
-                </div>
-            </div>
-        </div>
 
         <div id="sales-page-fragment">
 
@@ -75,7 +92,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 dateFrom: '{{ request('date_from') }}',
                 dateTo: '{{ request('date_to') }}'
             }">
-                <div class="sales-filter-layout">
+                <div class="sales-filter-layout {{ $isCashierStaff ? 'sales-filter-layout--cashier' : '' }}">
                     <div class="search-field">
                         <label class="mb-1 block text-sm font-medium text-gray-700">Search</label>
                         <div class="relative">
@@ -102,21 +119,23 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                         </select>
                     </div>
 
-                    <div class="fish-type-field">
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Date From</label>
-                        <input type="date"
-                               name="date_from"
-                               x-model="dateFrom"
-                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                    </div>
+                    @unless($isCashierStaff)
+                        <div class="fish-type-field">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Date From</label>
+                            <input type="date"
+                                   name="date_from"
+                                   x-model="dateFrom"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
 
-                    <div class="fish-type-field">
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Date To</label>
-                        <input type="date"
-                               name="date_to"
-                               x-model="dateTo"
-                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
-                    </div>
+                        <div class="fish-type-field">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Date To</label>
+                            <input type="date"
+                                   name="date_to"
+                                   x-model="dateTo"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    @endunless
 
                     <div class="buttons-field flex flex-col items-center justify-end gap-3 sm:flex-row">
                         <a href="{{ route('broker.sales.sales') }}"
@@ -149,6 +168,9 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Commodities</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Buyer</th>
+                            @unless($isCashierStaff)
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Processed By</th>
+                            @endunless
                             <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Total Amount</th>
                             <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Paid Amount</th>
                             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
@@ -170,6 +192,21 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                         <div class="text-sm text-gray-500">{{ $sale->buyer_contact }}</div>
                                     </div>
                                 </td>
+                                @unless($isCashierStaff)
+                                    <td class="whitespace-nowrap px-6 py-4">
+                                        @php
+                                            $creator = $sale->creator;
+                                            $processedByLabel = $creator?->isCashier()
+                                                ? 'Cashier'
+                                                : 'Broker Owner';
+                                            $processedByName = $creator?->name ?? 'Broker Owner';
+                                        @endphp
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">{{ $processedByName }}</div>
+                                            <div class="text-xs text-gray-500">{{ $processedByLabel }}</div>
+                                        </div>
+                                    </td>
+                                @endunless
                                 <td class="whitespace-nowrap px-6 py-4 text-right text-sm tabular-nums text-gray-900">
                                     ₱{{ number_format($sale->total_amount, 2) }}
                                 </td>
@@ -193,7 +230,15 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                            title="Print Receipt">
                                             <x-heroicon-o-printer class="h-5 w-5" />
                                         </a>
-                                        @if(!$brokerViewReadOnly && $sale->status !== \App\Constants\SalesStatusConstant::PAID)
+                                        @php
+                                            $cashierCanModifySale = ! $isCashierStaff
+                                                || (
+                                                    (int) $sale->created_by_user_id === (int) auth()->id()
+                                                    && $sale->sales_date?->isSameDay(today())
+                                                    && $sale->status !== \App\Constants\SalesStatusConstant::PAID
+                                                );
+                                        @endphp
+                                        @if(!$brokerViewReadOnly && $sale->status !== \App\Constants\SalesStatusConstant::PAID && $cashierCanModifySale)
                                             <a href="{{ route('broker.sales.sales', array_merge($salesBaseQuery, ['modal' => 'edit', 'edit' => $sale->id])) }}"
                                                data-sales-modal-link
                                                class="text-blue-600 transition-colors hover:text-blue-900"
@@ -207,7 +252,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                                 <x-heroicon-o-currency-dollar class="h-5 w-5" />
                                             </a>
                                         @endif
-                                        @unless($brokerViewReadOnly)
+                                        @unless($brokerViewReadOnly || $isCashierStaff)
                                             <form action="{{ route('broker.sales.destroy', $sale->id) }}" method="POST" class="inline-block" data-swal="delete">
                                                 @csrf
                                                 @method('DELETE')
@@ -223,7 +268,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                    <td colspan="{{ $isCashierStaff ? 7 : 8 }}" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center">
                                         <x-heroicon-o-shopping-cart class="mb-4 h-16 w-16 text-gray-400" />
                                         <h3 class="mb-2 text-lg font-medium text-gray-900">No sales found</h3>
@@ -268,7 +313,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             required>
                         <option value="">Select Fish</option>
                         @foreach($fishTypes ?? [] as $fishType)
-                            @php
+@php
 $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishType->id] ?? null;
                             @endphp
 <option value="{{ $fishType->id }}"
@@ -372,7 +417,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             try {
                 return JSON.parse(configNode.textContent);
             } catch (error) {
-                console.error('Unable to parse sales form config.', error);
                 return null;
             }
         }

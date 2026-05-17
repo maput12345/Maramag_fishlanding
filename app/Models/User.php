@@ -86,6 +86,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(ApplicantProfile::class, 'user_id');
     }
 
+    public function brokerStaff(): HasOne
+    {
+        return $this->hasOne(BrokerStaff::class, 'user_id');
+    }
+
     /**
      * Get the latest submitted applicant details for display/autofill.
      */
@@ -219,6 +224,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasRole(RoleStatusConstant::STAFF);
     }
 
+    public function isCashier(): bool
+    {
+        return $this->hasRole(RoleStatusConstant::CASHIER);
+    }
+
     /**
      * Check whether the account is active.
      */
@@ -262,6 +272,13 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $query->whereHas('roles', function ($roleQuery) {
             $roleQuery->where('role_name', RoleStatusConstant::STAFF);
+        });
+    }
+
+    public function scopeCashiers($query): Builder
+    {
+        return $query->whereHas('roles', function ($roleQuery) {
+            $roleQuery->where('role_name', RoleStatusConstant::CASHIER);
         });
     }
 
@@ -318,10 +335,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
         if ($role->role_name === RoleStatusConstant::BROKER) {
             Broker::createProfile($user->id, $profilePayload);
-        } elseif (in_array($role->role_name, [RoleStatusConstant::ADMIN, RoleStatusConstant::STAFF], true)) {
+        } elseif (in_array($role->role_name, [RoleStatusConstant::ADMIN, RoleStatusConstant::STAFF, RoleStatusConstant::CASHIER], true)) {
             Employee::createProfile($user->id, $profilePayload);
         } elseif ($role->role_name === RoleStatusConstant::APPLICANT && $nameParts['first_name'] && $nameParts['last_name']) {
             ApplicantProfile::createProfile($user->id, $profilePayload);
+        }
+
+        if ($role->role_name === RoleStatusConstant::CASHIER && !empty($profilePayload['broker_id'])) {
+            BrokerStaff::create([
+                'broker_id' => $profilePayload['broker_id'],
+                'user_id' => $user->id,
+                'position' => $profilePayload['position'] ?? 'Cashier',
+                'status' => 'active',
+            ]);
         }
 
         return $user->load('roles', 'broker', 'employee', 'applicantProfile');

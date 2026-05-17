@@ -41,6 +41,9 @@ class LoginController extends Controller
         if ($user && $user->isBroker()) {
             return route('broker.dashboard');
         }
+        if ($user && $user->isCashier()) {
+            return route('broker.transaction');
+        }
 
         return route('applications.index');
     }
@@ -99,6 +102,8 @@ class LoginController extends Controller
             return redirect()->route('admin.dashboard');
         } elseif ($user->isBroker()) {
             return redirect()->route('broker.dashboard');
+        } elseif ($user->isCashier()) {
+            return redirect()->route('broker.transaction');
         }
 
         return redirect()->route('applications.index');

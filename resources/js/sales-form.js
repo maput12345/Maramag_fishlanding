@@ -445,6 +445,84 @@ function initializeSalesForm(config, scope = document) {
         return newRow;
     };
 
+    const clearSalesDetailRow = (row) => {
+        if (!row) {
+            return;
+        }
+
+        row.dataset.scanned = 'false';
+        row.dataset.activeFishTypeId = '';
+        row.dataset.discountMode = 'percent';
+        delete row.dataset.missingPriceWarningShownFor;
+
+        row.querySelectorAll('.fish-type-hidden-input, .quantity-hidden-input').forEach((input) => input.remove());
+
+        const fishTypeSelect = row.querySelector('.fish-type-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const unitPriceInput = row.querySelector('.unit-price-input');
+        const discountModeSelect = row.querySelector('.discount-mode-select');
+        const discountValueInput = row.querySelector('.discount-value-input');
+        const discountPercentInput = row.querySelector('.discount-percent-input');
+        const discountInput = row.querySelector('.discount-input');
+        const subTotalInput = row.querySelector('.sub-total-input');
+        const itemInput = row.querySelector('.item-input');
+        const itemDescriptionInput = row.querySelector('.item-description-input');
+        const fishBoxesContainer = row.querySelector('.fish-boxes-container');
+
+        if (fishTypeSelect) {
+            fishTypeSelect.disabled = false;
+            fishTypeSelect.value = '';
+            fishTypeSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+        }
+
+        if (quantityInput) {
+            quantityInput.disabled = false;
+            quantityInput.value = '1';
+            quantityInput.removeAttribute('max');
+            quantityInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+        }
+
+        if (unitPriceInput) {
+            unitPriceInput.value = '';
+        }
+
+        if (discountModeSelect) {
+            discountModeSelect.value = 'percent';
+        }
+
+        if (discountValueInput) {
+            discountValueInput.value = '';
+        }
+
+        if (discountPercentInput) {
+            discountPercentInput.value = '';
+        }
+
+        if (discountInput) {
+            discountInput.value = '';
+        }
+
+        if (subTotalInput) {
+            subTotalInput.value = '';
+        }
+
+        if (itemInput) {
+            itemInput.value = '';
+        }
+
+        if (itemDescriptionInput) {
+            itemDescriptionInput.value = '';
+        }
+
+        if (fishBoxesContainer) {
+            renderAutoAssignFishBox(fishBoxesContainer, row.dataset.index);
+        }
+
+        updateDiscountInputState(row);
+        updateTotalAmount();
+        updateAllRowsFishBoxAvailability();
+    };
+
     // Add new sales detail
     addBtn.addEventListener('click', () => {
         createSalesDetailRow();
@@ -452,11 +530,20 @@ function initializeSalesForm(config, scope = document) {
 
     // Remove sales detail
     container.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-detail-btn') && container.children.length > 1) {
-            e.target.closest('.sales-detail-row').remove();
+        if (!e.target.closest('.remove-detail-btn')) {
+            return;
+        }
+
+        const row = e.target.closest('.sales-detail-row');
+
+        if (container.children.length > 1) {
+            row?.remove();
             updateTotalAmount();
             updateAllRowsFishBoxAvailability();
+            return;
         }
+
+        clearSalesDetailRow(row);
     });
 
     if (initialPaidAmountInput) {

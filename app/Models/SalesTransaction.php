@@ -25,6 +25,7 @@ class SalesTransaction extends Model
     protected $fillable = [
         'sales_date',
         'broker_id',
+        'created_by_user_id',
         'buyer_id',
         'total_amount',
         'status',
@@ -50,6 +51,11 @@ class SalesTransaction extends Model
     public function buyer() : BelongsTo
     {
         return $this->belongsTo(Buyer::class, 'buyer_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     /**
@@ -165,6 +171,15 @@ class SalesTransaction extends Model
     {
         return DB::transaction(function () use ($salesData, $salesDetails, $brokerId, $initialPayment) {
             $userId = Auth::id();
+            $trustedSale = static::calculateTrustedSaleAmounts($salesDetails, $brokerId);
+            $salesDetails = $trustedSale['details'];
+
+            if (!empty($initialPayment['paid_amount']) && (float) $initialPayment['paid_amount'] > $trustedSale['total_amount']) {
+                throw ValidationException::withMessages([
+                    'initial_paid_amount' => 'Initial payment cannot exceed the total sale amount.',
+                ]);
+            }
+
             $buyer = Buyer::resolveForSaleParts(
                 $salesData['buyer_first_name'],
                 $salesData['buyer_middle_name'] ?? null,
@@ -172,6 +187,7 @@ class SalesTransaction extends Model
                 $salesData['buyer_contact'] ?? null
             );
             $salesDetails = static::assignAutomaticFishBoxes($salesDetails, $brokerId);
+            static::ensureFishBoxesMatchSaleDetails($salesDetails, $brokerId);
             $purchaseIdsByBoxId = static::resolveSellablePurchaseIds(
                 static::lockFishBoxesForUpdate($brokerId, static::extractRequestedBoxIds($salesDetails)),
                 static::extractRequestedBoxIds($salesDetails)
@@ -180,8 +196,9 @@ class SalesTransaction extends Model
             $sale = self::create([
                 'sales_date' => $salesData['sales_date'],
                 'broker_id' => $brokerId,
+                'created_by_user_id' => $userId,
                 'buyer_id' => $buyer->id,
-                'total_amount' => $salesData['total_amount'],
+                'total_amount' => $trustedSale['total_amount'],
                 'status' => SalesStatusConstant::ACTIVE
             ]);
 
@@ -217,6 +234,8 @@ class SalesTransaction extends Model
     {
         DB::transaction(function () use ($sale, $salesData, $salesDetails, $brokerId) {
             $userId = Auth::id();
+            $trustedSale = static::calculateTrustedSaleAmounts($salesDetails, $brokerId);
+            $salesDetails = $trustedSale['details'];
             $buyer = Buyer::resolveForSaleParts(
                 $salesData['buyer_first_name'],
                 $salesData['buyer_middle_name'] ?? null,
@@ -243,7 +262,7 @@ class SalesTransaction extends Model
             $lockedSale->update([
                 'sales_date' => $salesData['sales_date'],
                 'buyer_id' => $buyer->id,
-                'total_amount' => $salesData['total_amount'],
+                'total_amount' => $trustedSale['total_amount'],
             ]);
 
             foreach ($lockedSale->salesDetails as $detail) {
@@ -262,6 +281,7 @@ class SalesTransaction extends Model
             }
 
             $lockedSale->salesDetails()->delete();
+            static::ensureFishBoxesMatchSaleDetails($salesDetails, $brokerId);
             $purchaseIdsByBoxId = static::resolveSellablePurchaseIds($lockedFishBoxes, $requestedBoxIds);
 
             TransactionLineItem::createSalesDetails($lockedSale->id, $brokerId, $salesDetails, $purchaseIdsByBoxId);
@@ -269,6 +289,121 @@ class SalesTransaction extends Model
             $lockedSale->refresh();
             $lockedSale->updatePaymentStatus();
         });
+    }
+
+    /**
+     * Rebuild sale prices and totals on the server so browser-submitted money fields
+     * cannot change the official transaction amount.
+     *
+     * @return array{details: array<int, array<string, mixed>>, total_amount: float}
+     */
+    public static function calculateTrustedSaleAmounts(array $salesDetails, int $brokerId): array
+    {
+        $fishTypeIds = collect($salesDetails)
+            ->filter(fn ($detail): bool => is_array($detail))
+            ->pluck('fish_type_id')
+            ->filter(fn ($fishTypeId): bool => $fishTypeId !== null && $fishTypeId !== '')
+            ->map(fn ($fishTypeId): int => (int) $fishTypeId)
+            ->unique()
+            ->values();
+
+        if ($fishTypeIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'sales_details' => 'Please add at least one sale item.',
+            ]);
+        }
+
+        $priceMap = BrokerFishTypeAssignment::query()
+            ->select(['id', 'broker_id', 'fish_type_id'])
+            ->with([
+                'latestPrice' => function ($query) {
+                    $query->select([
+                        'FishPriceRecord.id',
+                        'FishPriceRecord.broker_fish_type_id',
+                        'FishPriceRecord.price',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->whereIn('fish_type_id', $fishTypeIds->all())
+            ->get()
+            ->filter(fn (BrokerFishTypeAssignment $assignment): bool => $assignment->latestPrice !== null)
+            ->mapWithKeys(fn (BrokerFishTypeAssignment $assignment): array => [
+                (int) $assignment->fish_type_id => round((float) $assignment->latestPrice->price, 2),
+            ]);
+
+        $trustedDetails = [];
+        $trustedTotal = 0.0;
+
+        foreach ($salesDetails as $index => $detail) {
+            if (!is_array($detail)) {
+                continue;
+            }
+
+            $fishTypeId = (int) ($detail['fish_type_id'] ?? 0);
+            $unitPrice = $priceMap->get($fishTypeId);
+
+            if ($fishTypeId <= 0 || $unitPrice === null) {
+                throw ValidationException::withMessages([
+                    "sales_details.{$index}.fish_type_id" => 'Set a current price for the selected fish before saving the sale.',
+                ]);
+            }
+
+            $boxIds = collect($detail['box_id'] ?? [])
+                ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+                ->values()
+                ->all();
+            $quantity = count($boxIds) > 0
+                ? count($boxIds)
+                : max(1, (int) ($detail['quantity'] ?? 1));
+            $discount = static::calculateTrustedUnitDiscount($detail, $unitPrice);
+            $unitSubTotal = max(0, round($unitPrice - $discount, 2));
+            $lineSubTotal = round($unitSubTotal * $quantity, 2);
+
+            $detail['unit_price'] = number_format($unitPrice, 2, '.', '');
+            $detail['discount'] = number_format($discount, 2, '.', '');
+            $detail['sub_total'] = number_format($lineSubTotal, 2, '.', '');
+            $detail['quantity'] = $quantity;
+
+            $trustedDetails[] = $detail;
+            $trustedTotal += $lineSubTotal;
+        }
+
+        return [
+            'details' => $trustedDetails,
+            'total_amount' => round($trustedTotal, 2),
+        ];
+    }
+
+    private static function calculateTrustedUnitDiscount(array $detail, float $unitPrice): float
+    {
+        $discountMode = $detail['discount_mode'] ?? 'percent';
+        $discountValue = static::parseMoneyValue($detail['discount_value'] ?? null);
+
+        if ($discountValue === null) {
+            $discountValue = $discountMode === 'amount'
+                ? static::parseMoneyValue($detail['discount'] ?? null)
+                : static::parseMoneyValue($detail['discount_percent'] ?? null);
+        }
+
+        $discountValue = $discountValue ?? 0.0;
+
+        if ($discountMode === 'amount') {
+            return round(min($unitPrice, max(0, $discountValue)), 2);
+        }
+
+        $discountPercent = min(100, max(0, $discountValue));
+
+        return round($unitPrice * ($discountPercent / 100), 2);
+    }
+
+    private static function parseMoneyValue($value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (float) str_replace(',', '', (string) $value);
     }
 
     /**
@@ -293,6 +428,55 @@ class SalesTransaction extends Model
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Prevent crafted requests from pricing a selected physical box under a
+     * different fish type row.
+     */
+    private static function ensureFishBoxesMatchSaleDetails(array $salesDetails, int $brokerId): void
+    {
+        $requestedBoxIds = static::extractRequestedBoxIds($salesDetails);
+
+        if ($requestedBoxIds === []) {
+            return;
+        }
+
+        $boxes = FishBox::query()
+            ->with([
+                'currentPurchase' => function ($query) {
+                    $query->select([
+                        'FishBoxStockCycle.id',
+                        'FishBoxStockCycle.fish_box_id',
+                        'FishBoxStockCycle.fish_type_id',
+                    ]);
+                },
+            ])
+            ->where('broker_id', $brokerId)
+            ->whereIn('id', $requestedBoxIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($salesDetails as $index => $detail) {
+            if (!is_array($detail)) {
+                continue;
+            }
+
+            $fishTypeId = (int) ($detail['fish_type_id'] ?? 0);
+            $boxIds = collect($detail['box_id'] ?? [])
+                ->filter(fn ($boxId): bool => $boxId !== null && $boxId !== '')
+                ->map(fn ($boxId): int => (int) $boxId);
+
+            foreach ($boxIds as $boxId) {
+                $box = $boxes->get($boxId);
+
+                if (!$box || (int) ($box->currentPurchase?->fish_type_id ?? 0) !== $fishTypeId) {
+                    throw ValidationException::withMessages([
+                        "sales_details.{$index}.fish_type_id" => 'One or more selected fish boxes do not match the selected fish type. Refresh the sales form and try again.',
+                    ]);
+                }
+            }
+        }
     }
 
     /**
@@ -494,12 +678,17 @@ class SalesTransaction extends Model
         ?string $status = null,
         ?int $brokerId = null,
         ?string $dateFrom = null,
-        ?string $dateTo = null
+        ?string $dateTo = null,
+        ?int $createdByUserId = null
     ): Builder {
         $query->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses());
 
         if ($brokerId) {
             $query->where('SalesTransaction.broker_id', $brokerId);
+        }
+
+        if ($createdByUserId) {
+            $query->where('SalesTransaction.created_by_user_id', $createdByUserId);
         }
 
         if ($search) {
@@ -565,7 +754,7 @@ class SalesTransaction extends Model
     {
         $query = self::query()
             ->withPaidAmount()
-            ->with(['buyer', 'salesDetails.fishBoxPurchase.fishType']);
+            ->with(['buyer', 'creator.employee', 'creator.roles', 'salesDetails.fishBoxPurchase.fishType']);
 
         $query = self::applySalesFilters($query, $search, $status, $brokerId, $dateFrom, $dateTo);
 
@@ -579,12 +768,54 @@ class SalesTransaction extends Model
         return $sales;
     }
 
+    public static function getPaginatedForCashier(?string $search, ?string $status, int $brokerId, int $cashierId, string $date): LengthAwarePaginator
+    {
+        $query = self::query()
+            ->withPaidAmount()
+            ->with(['buyer', 'creator.employee', 'creator.roles', 'salesDetails.fishBoxPurchase.fishType']);
+
+        $query = self::applySalesFilters($query, $search, $status, $brokerId, $date, $date, $cashierId);
+
+        $sales = $query->orderBy('SalesTransaction.created_at', 'desc')->paginate(15);
+
+        $sales->getCollection()->each(function ($sale) {
+            $sale->formatted_items = $sale->getFormattedItems();
+        });
+
+        return $sales;
+    }
+
     /**
      * Get summary metrics for the filtered sales list.
      */
     public static function getSummaryForFilters(?string $search = null, ?string $status = null, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         $summary = self::buildAggregateSalesQuery($search, $status, $brokerId, $dateFrom, $dateTo)
+            ->toBase()
+            ->selectRaw('
+                COUNT(SalesTransaction.id) as sales_count,
+                COALESCE(SUM(SalesTransaction.total_amount), 0) as gross_total,
+                COALESCE(SUM(COALESCE(payment_totals.paid_total, 0)), 0) as paid_total,
+                COALESCE(SUM(CASE
+                    WHEN SalesTransaction.total_amount > COALESCE(payment_totals.paid_total, 0)
+                    THEN SalesTransaction.total_amount - COALESCE(payment_totals.paid_total, 0)
+                    ELSE 0
+                END), 0) as balance_total
+            ')
+            ->first();
+
+        return [
+            'count' => (int) ($summary->sales_count ?? 0),
+            'gross_total' => (float) ($summary->gross_total ?? 0),
+            'paid_total' => (float) ($summary->paid_total ?? 0),
+            'balance_total' => (float) ($summary->balance_total ?? 0),
+        ];
+    }
+
+    public static function getSummaryForCashier(?string $search, ?string $status, int $brokerId, int $cashierId, string $date): array
+    {
+        $summary = self::buildAggregateSalesQuery($search, $status, $brokerId, $date, $date)
+            ->where('SalesTransaction.created_by_user_id', $cashierId)
             ->toBase()
             ->selectRaw('
                 COUNT(SalesTransaction.id) as sales_count,

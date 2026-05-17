@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\OpeningStatusConstant;
+use App\Constants\RequirementVerificationStatusConstant;
 use App\Http\Requests\StoreBrokerApplicationRequest;
 use App\Http\Requests\UpdateBrokerApplicationRevisionRequest;
 use App\Models\ApplicationOpening;
@@ -47,7 +50,7 @@ class ApplicationPortalController extends Controller
 
         $primaryOpening = $openings->first();
         $currentApplication = $applications
-            ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
+            ->whereNotIn('application_status', ApplicationStatusConstant::terminalStatuses())
             ->first();
 
         return view('applications.index', compact('openings', 'applications', 'primaryOpening', 'currentApplication'));
@@ -89,7 +92,7 @@ class ApplicationPortalController extends Controller
             return $redirect;
         }
 
-        if ($opening->opening_status !== 'Open' || !$opening->start_date || !$opening->end_date || !$opening->hasAvailableStall()) {
+        if ($opening->opening_status !== OpeningStatusConstant::OPEN || !$opening->start_date || !$opening->end_date || !$opening->hasAvailableStall()) {
             return redirect()->route('applications.index')
                 ->with('error', 'This stall opening is not currently accepting applications.');
         }
@@ -101,7 +104,7 @@ class ApplicationPortalController extends Controller
 
         $alreadyApplied = Auth::user()
             ->brokerApplications()
-            ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
+            ->whereNotIn('application_status', ApplicationStatusConstant::terminalStatuses())
             ->exists();
 
         if ($alreadyApplied) {
@@ -169,7 +172,7 @@ class ApplicationPortalController extends Controller
                 'representative_position' => $isJuridicalPerson ? $validated['representative_position'] : null,
                 'address' => $address,
                 'contact_number' => $contactNumber,
-                'application_status' => 'Submitted',
+                'application_status' => ApplicationStatusConstant::SUBMITTED,
                 'submitted_at' => now(),
             ]);
 
@@ -210,7 +213,7 @@ class ApplicationPortalController extends Controller
                     'issuing_office' => $requirementPayload['issuing_office'] ?? null,
                     'issue_date' => $requirementPayload['issue_date'] ?? null,
                     'expiry_date' => $requirementPayload['expiry_date'] ?? null,
-                    'verification_status' => 'Pending',
+                    'verification_status' => RequirementVerificationStatusConstant::PENDING,
                     'uploaded_at' => now(),
                 ]);
             }
@@ -254,7 +257,7 @@ class ApplicationPortalController extends Controller
 
         abort_unless($application->user_id === Auth::id(), 403);
 
-        if ($application->application_status !== 'Needs Revision') {
+        if ($application->application_status !== ApplicationStatusConstant::NEEDS_REVISION) {
             return redirect()->route('applications.show', $application)
                 ->with('info', 'This application is not currently open for revision.');
         }
@@ -287,7 +290,7 @@ class ApplicationPortalController extends Controller
                 'business_name' => $validated['business_name'] ?? null,
                 'address' => $validated['address'],
                 'contact_number' => $validated['contact_number'],
-                'application_status' => 'Submitted',
+                'application_status' => ApplicationStatusConstant::SUBMITTED,
                 'reviewed_by_employee_id' => null,
                 'review_date' => null,
                 'submitted_at' => $resubmittedAt,
@@ -341,7 +344,7 @@ class ApplicationPortalController extends Controller
                 }
 
                 if ($hasReplacementFile || $requiresApplicantAction) {
-                    $updates['verification_status'] = 'Pending';
+                    $updates['verification_status'] = RequirementVerificationStatusConstant::PENDING;
                     $updates['verified_by_employee_id'] = null;
                     $updates['verification_date'] = null;
                     $updates['remarks'] = null;
@@ -381,7 +384,10 @@ class ApplicationPortalController extends Controller
 
     private function requirementRequiresApplicantAction(?string $verificationStatus): bool
     {
-        return in_array($verificationStatus, ['Needs Revision', 'Rejected'], true);
+        return in_array($verificationStatus, [
+            RequirementVerificationStatusConstant::NEEDS_REVISION,
+            RequirementVerificationStatusConstant::REJECTED,
+        ], true);
     }
 
     private function applicantProfileNameParts(User $user): array

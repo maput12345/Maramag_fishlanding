@@ -19,7 +19,6 @@ class QRBackendHandler {
         this.csrfToken = this.getCSRFToken();
 
         if (!this.csrfToken) {
-            console.error('CSRF token not found');
             return false;
         }
 
@@ -49,12 +48,10 @@ class QRBackendHandler {
      */
     async updateFishBoxStatus(qrCode) {
         if (this.isProcessing) {
-            console.log('Already processing a request, ignoring...');
             return { success: false, message: 'Request already in progress' };
         }
 
         if (!this.baseUrl || !this.csrfToken) {
-            console.error('Backend handler not properly initialized');
             return {
                 success: false,
                 message: 'Configuration error. Please refresh the page.'
@@ -94,7 +91,6 @@ class QRBackendHandler {
             }
 
         } catch (error) {
-            console.error('Network error updating fish box status:', error);
             return {
                 success: false,
                 message: 'Network error. Please check your connection and try again.'
@@ -126,7 +122,6 @@ class QRBackendHandler {
                 return null;
             }
         } catch (error) {
-            console.error('Error fetching fish box details:', error);
             return null;
         }
     }
@@ -178,7 +173,7 @@ class QRBackendHandler {
         } else if (typeof toastr !== 'undefined') {
             toastr.success(message);
         } else {
-            alert(message);
+            this.showFallbackNotification(message, 'success');
         }
     }
 
@@ -206,7 +201,7 @@ class QRBackendHandler {
         } else if (typeof toastr !== 'undefined') {
             toastr.error(message);
         } else {
-            alert(message);
+            this.showFallbackNotification(message, 'error');
         }
     }
 
@@ -218,7 +213,7 @@ class QRBackendHandler {
         if (typeof toastr !== 'undefined') {
             toastr.warning(message);
         } else {
-            alert(message);
+            this.showFallbackNotification(message, 'warning');
         }
     }
 
@@ -230,8 +225,35 @@ class QRBackendHandler {
         if (typeof toastr !== 'undefined') {
             toastr.info(message);
         } else {
-            alert(message);
+            this.showFallbackNotification(message, 'info');
         }
+    }
+
+    showFallbackNotification(message, type = 'info') {
+        const colorMap = {
+            success: '#065f46',
+            error: '#991b1b',
+            warning: '#92400e',
+            info: '#0f172a',
+        };
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.setAttribute('role', 'status');
+        notification.style.cssText = [
+            'position:fixed',
+            'right:1rem',
+            'top:1rem',
+            'z-index:9999',
+            'max-width:22rem',
+            'padding:0.85rem 1rem',
+            'border-radius:0.75rem',
+            `background:${colorMap[type] || colorMap.info}`,
+            'color:#fff',
+            'box-shadow:0 16px 36px rgba(15,23,42,0.22)',
+            'font:600 0.875rem system-ui,sans-serif',
+        ].join(';');
+        document.body.appendChild(notification);
+        window.setTimeout(() => notification.remove(), 2800);
     }
 
     /**

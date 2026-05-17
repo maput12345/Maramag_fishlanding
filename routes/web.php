@@ -52,13 +52,16 @@ Route::post('/logout', function () {
     return redirect()->route('login')->with('message', 'You have been logged out successfully.');
 })->name('logout')->middleware(['auth', 'prevent.back.history']);
 
-// Profile routes - available to all authenticated users
-Route::middleware(['auth', 'verified', 'prevent.back.history'])->group(function () {
+// Profile details can be updated before email verification.
+Route::middleware(['auth', 'not.cashier', 'prevent.back.history'])->group(function () {
     Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
         Route::get('/', 'show')->name('show');
         Route::put('/', 'update')->name('update');
     });
+});
 
+// Applicant routes require a verified email before submission/revision workflows.
+Route::middleware(['auth', 'verified', 'not.cashier', 'prevent.back.history'])->group(function () {
     Route::controller(ApplicationPortalController::class)->prefix('applications')->name('applications.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/my-applications', 'myApplications')->name('my-applications');
@@ -107,6 +110,8 @@ Route::middleware(['auth', 'admin', 'prevent.back.history'])->group(function () 
         Route::get('/', 'index')->name('index');
         Route::post('/bulk-under-review', 'bulkMarkUnderReview')->name('bulk-under-review');
         Route::post('/{application}/additional-requirements', 'storeAdditionalRequirement')->name('additional-requirements.store');
+        Route::patch('/{application}/additional-requirements/{requirement}', 'updateAdditionalRequirement')->name('additional-requirements.update');
+        Route::delete('/{application}/additional-requirements/{requirement}', 'destroyAdditionalRequirement')->name('additional-requirements.destroy');
         Route::get('/{application}', 'show')->name('show');
         Route::patch('/{application}/review-draft', 'saveReviewDraft')->name('review-draft');
         Route::patch('/{application}/review', 'review')->name('review');
@@ -121,6 +126,8 @@ Route::middleware(['auth', 'admin', 'prevent.back.history'])->group(function () 
         Route::post('/{stall}/photos', 'storeStallPhotos')->name('photos.store');
         Route::delete('/{stall}/photos/{stallImage}', 'destroyStallPhoto')->name('photos.destroy');
         Route::post('/requirements', 'storeRequirementType')->name('requirements.store');
+        Route::patch('/requirements/{requirementType}', 'updateRequirementType')->name('requirements.update');
+        Route::delete('/requirements/{requirementType}', 'destroyRequirementType')->name('requirements.destroy');
         Route::post('/openings', 'storeOpening')->name('openings.store');
         Route::patch('/openings/{opening}', 'updateOpening')->name('openings.update');
         Route::patch('/openings/{opening}/status', 'updateOpeningStatus')->name('openings.status');

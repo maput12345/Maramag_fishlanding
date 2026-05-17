@@ -27,7 +27,6 @@ class SalesQRScanner {
         }
 
         this.startScanner().catch((error) => {
-            console.error('Unable to start sales QR scanner.', error);
             this.showErrorState(this.getCameraErrorMessage(error));
         });
     }
@@ -124,7 +123,6 @@ class SalesQRScanner {
             retryButton.addEventListener('click', () => {
                 retryButton.classList.add('hidden');
                 this.startScanner().catch((error) => {
-                    console.error('Unable to restart sales QR scanner.', error);
                     this.showErrorState(this.getCameraErrorMessage(error));
                 });
             });
@@ -305,7 +303,6 @@ class SalesQRScanner {
             this.handleSalesQRScanSuccess(fishBoxData);
             this.restartScannerAfterSuccess('Fish box added.');
         } catch (error) {
-            console.error('Sales QR processing failed.', error);
             this.showErrorState(error?.message || 'Error processing QR code. Please try again.');
         } finally {
             this.isProcessing = false;
@@ -324,7 +321,6 @@ class SalesQRScanner {
             }
 
             this.startScanner().catch((error) => {
-                console.error('Unable to restart sales QR scanner.', error);
                 this.showErrorState(this.getCameraErrorMessage(error));
             });
         }, 700);
@@ -360,12 +356,7 @@ class SalesQRScanner {
     notifyScannerUnavailable() {
         const message = 'QR scanner could not be loaded. Please refresh and try again.';
 
-        if (window.toastr) {
-            window.toastr.error(message);
-            return;
-        }
-
-        alert(message);
+        this.notify(message, 'error');
     }
 
     handleSalesQRScanSuccess(fishBox) {
@@ -445,7 +436,7 @@ class SalesQRScanner {
         if (!targetRow) {
             const template = document.getElementById('sales-detail-row-template');
             if (!template) {
-                console.error('Sales detail row template not found.');
+                this.notify('Sales row template is missing. Please refresh and try again.', 'error');
                 return;
             }
 
@@ -468,7 +459,7 @@ class SalesQRScanner {
         }
 
         if (!targetRow) {
-            console.error('Could not find or create target sales row.');
+            this.notify('Could not prepare the sales row. Please refresh and try again.', 'error');
             return;
         }
 
@@ -553,6 +544,45 @@ class SalesQRScanner {
         if (typeof window.refreshSalesTotals === 'function') {
             window.refreshSalesTotals();
         }
+    }
+
+    notify(message, type = 'info') {
+        if (window.toastr && typeof window.toastr[type] === 'function') {
+            window.toastr[type](message);
+            return;
+        }
+
+        if (window.Swal) {
+            window.Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: type,
+                title: message,
+                showConfirmButton: false,
+                timer: 2400,
+                timerProgressBar: true,
+            });
+            return;
+        }
+
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.setAttribute('role', 'status');
+        notification.style.cssText = [
+            'position:fixed',
+            'right:1rem',
+            'top:1rem',
+            'z-index:9999',
+            'max-width:22rem',
+            'padding:0.85rem 1rem',
+            'border-radius:0.75rem',
+            'background:#0f172a',
+            'color:#fff',
+            'box-shadow:0 16px 36px rgba(15,23,42,0.22)',
+            'font:600 0.875rem system-ui,sans-serif',
+        ].join(';');
+        document.body.appendChild(notification);
+        window.setTimeout(() => notification.remove(), 2800);
     }
 }
 

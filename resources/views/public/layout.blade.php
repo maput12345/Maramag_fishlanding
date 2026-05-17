@@ -27,6 +27,8 @@
     }
 
     .public-page {
+        display: flex;
+        flex-direction: column;
         position: relative;
         min-height: 100vh;
         overflow-x: hidden;
@@ -680,6 +682,7 @@
     }
 
     .public-footer {
+        margin-top: auto;
         border-top: 1px solid rgba(255, 255, 255, 0.14);
         background: rgba(2, 6, 23, 0.48);
         backdrop-filter: blur(14px);
@@ -829,7 +832,7 @@
     <footer class="public-footer">
         <div class="public-container">
             <span>Maramag Fish Landing Management System</span>
-            <<span>2025 <span class="font-bold text-blue-600">JJI Devz</span>, All rights reserved.</span>
+            <span>2025 <span class="font-bold text-blue-600">JJI Devz</span>, All rights reserved.</span>
         </div>
     </footer>
 </main>

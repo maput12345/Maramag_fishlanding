@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Constants\OpeningStatusConstant;
 use App\Models\ApplicationOpening;
 use App\Models\RequirementType;
 use App\Models\Stall;
@@ -41,7 +42,7 @@ class StoreApplicationOpeningRequest extends FormRequest
             if ($stallIds->isNotEmpty()) {
                 $nonVacantStallNames = Stall::query()
                     ->whereIn('id', $stallIds)
-                    ->where('stall_status', '!=', 'Vacant')
+                    ->where('stall_status', '!=', OpeningStatusConstant::STALL_VACANT)
                     ->get()
                     ->map(fn (Stall $stall) => $stall->display_name)
                     ->values();
@@ -55,7 +56,10 @@ class StoreApplicationOpeningRequest extends FormRequest
 
                 $stallsWithActiveOpenings = ApplicationOpening::query()
                     ->whereIn('stall_id', $stallIds)
-                    ->whereIn('opening_status', ['Open', 'Closed'])
+                    ->whereIn('opening_status', [
+                        OpeningStatusConstant::OPEN,
+                        OpeningStatusConstant::CLOSED,
+                    ])
                     ->with('stall:id,stall_number')
                     ->get()
                     ->map(fn (ApplicationOpening $opening) => $opening->stall?->display_name)

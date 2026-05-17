@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Constants\ApplicationStatusConstant;
+use App\Constants\RequirementVerificationStatusConstant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,11 +17,11 @@ class ReviewBrokerApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'application_status' => ['required', Rule::in(['Under Review', 'Needs Revision', 'Rejected', 'Qualified'])],
+            'application_status' => ['required', Rule::in(ApplicationStatusConstant::reviewStatuses())],
             'remarks' => ['nullable', 'string', 'max:2000'],
             'requirements' => ['required', 'array', 'min:1'],
             'requirements.*.id' => ['required', 'exists:SubmittedRequirement,id'],
-            'requirements.*.verification_status' => ['required', Rule::in(['Pending', 'Verified', 'Needs Revision', 'Rejected'])],
+            'requirements.*.verification_status' => ['required', Rule::in(RequirementVerificationStatusConstant::all())],
             'requirements.*.remarks' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -46,12 +48,12 @@ class ReviewBrokerApplicationRequest extends FormRequest
                 ->filter(fn ($payload) => is_array($payload))
                 ->pluck('verification_status');
             $allRequirementsVerified = $requirementStatuses->isNotEmpty()
-                && $requirementStatuses->every(fn ($status) => $status === 'Verified');
-            $willBeQualified = $this->input('application_status') !== 'Rejected'
-                && ($this->input('application_status') === 'Qualified' || $allRequirementsVerified);
+                && $requirementStatuses->every(fn ($status) => $status === RequirementVerificationStatusConstant::VERIFIED);
+            $willBeQualified = $this->input('application_status') !== ApplicationStatusConstant::REJECTED
+                && ($this->input('application_status') === ApplicationStatusConstant::QUALIFIED || $allRequirementsVerified);
 
             if (
-                $this->input('application_status') === 'Qualified'
+                $this->input('application_status') === ApplicationStatusConstant::QUALIFIED
                 && !$application->canBeQualified($this->input('requirements', []))
             ) {
                 $validator->errors()->add(
@@ -60,7 +62,7 @@ class ReviewBrokerApplicationRequest extends FormRequest
                 );
             }
 
-            if ($this->input('application_status') === 'Rejected' && blank($this->input('remarks'))) {
+            if ($this->input('application_status') === ApplicationStatusConstant::REJECTED && blank($this->input('remarks'))) {
                 $validator->errors()->add(
                     'remarks',
                     'Enter LEEO remarks explaining why this application was rejected.'

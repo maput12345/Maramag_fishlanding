@@ -25,6 +25,28 @@ class BrokerMiddleware
             return $next($request);
         }
 
+        if (auth()->user()->isCashier()) {
+            $allowedRoutes = [
+                'broker.transaction',
+                'broker.sales.sales',
+                'broker.sales.store',
+                'broker.sales.update',
+                'broker.sales-payments.store',
+                'broker.fish-boxes.qr',
+                'broker.sales.scan-sessions.store',
+                'broker.sales.scan-sessions.items',
+                'broker.sales.scan-sessions.close',
+            ];
+
+            if ($request->routeIs(...$allowedRoutes)) {
+                return $next($request);
+            }
+
+            return redirect()
+                ->route('broker.transaction')
+                ->with('info', 'Cashier staff can only access POS and their own transactions.');
+        }
+
         if (auth()->user()->isAdmin()) {
             if (Broker::isAdminImpersonatingBroker(auth()->user())) {
                 $isReadOnlyBrokerView = Broker::isAdminBrokerViewReadOnly(auth()->user());

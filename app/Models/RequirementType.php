@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 class RequirementType extends Model
@@ -110,13 +111,6 @@ class RequirementType extends Model
                 'sort_order' => 60,
             ],
             [
-                'requirement_name' => 'Community Fax Certificate',
-                'description' => 'Natural Person: 1 original and 1 photocopy from the Barangay Office.',
-                'is_required' => true,
-                'audience' => self::APPLICANT_TYPE_NATURAL,
-                'sort_order' => 70,
-            ],
-            [
                 'requirement_name' => 'Letter of Intent',
                 'description' => 'All Applicants: submit a signed letter of intent together with the application.',
                 'is_required' => true,
@@ -207,6 +201,8 @@ class RequirementType extends Model
     public static function legacyRequirementNameMap(): array
     {
         return [
+            'Community Fax Certificate'
+                => 'Community Tax Certificate',
             'Other Documents Required by the Municipal Market Committee'
                 => 'Other Documents as May Be Required by the Municipal Market Committee',
             'Certificate of Incorporation or Partnership'
@@ -233,6 +229,7 @@ class RequirementType extends Model
                 ->first();
 
             if ($canonicalRequirementType) {
+                static::mergeRequirementTypeInto($legacyRequirementType, $canonicalRequirementType);
                 continue;
             }
 
@@ -252,6 +249,39 @@ class RequirementType extends Model
                 ]
             );
         }
+    }
+
+    /**
+     * Move references from an old requirement row into its corrected replacement.
+     */
+    private static function mergeRequirementTypeInto(self $legacyRequirementType, self $canonicalRequirementType): void
+    {
+        DB::transaction(function () use ($legacyRequirementType, $canonicalRequirementType) {
+            OpeningRequirement::query()
+                ->where('requirement_type_id', $legacyRequirementType->id)
+                ->get()
+                ->each(function (OpeningRequirement $openingRequirement) use ($canonicalRequirementType) {
+                    $alreadyExists = OpeningRequirement::query()
+                        ->where('application_opening_id', $openingRequirement->application_opening_id)
+                        ->where('requirement_type_id', $canonicalRequirementType->id)
+                        ->exists();
+
+                    if ($alreadyExists) {
+                        $openingRequirement->delete();
+                        return;
+                    }
+
+                    $openingRequirement->update([
+                        'requirement_type_id' => $canonicalRequirementType->id,
+                    ]);
+                });
+
+            SubmittedRequirement::query()
+                ->where('requirement_type_id', $legacyRequirementType->id)
+                ->update(['requirement_type_id' => $canonicalRequirementType->id]);
+
+            $legacyRequirementType->delete();
+        });
     }
 
     /**

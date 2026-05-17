@@ -9,6 +9,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         || request()->boolean('auto_print')
         || $errors->any()
         || old('after_save') === 'transaction';
+    $isCashierStaff = auth()->check() && auth()->user()->isCashier();
     $transactionUrl = route('broker.transaction', $isPosMode ? ['pos' => 1] : []);
     $posLaunchUrl = route('broker.transaction', ['pos' => 1]);
     $salesBaseUrl = $transactionUrl;
@@ -112,20 +113,31 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         class="relative w-full content-spacing"
         data-sales-page
         data-sales-base-url="{{ $transactionUrl }}"
+        @if(request()->boolean('auto_print') && request()->filled('print')) data-sales-updated-token="{{ request('print') }}" @endif
     >
         <div id="sales-page-fragment" data-sales-form-root>
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <span class="dashboard-kicker">Cashier Terminal</span>
                 </div>
-                @unless($isPosMode)
-                    <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-end">
-                        <a href="{{ $posLaunchUrl }}" class="app-button app-button--dark h-12 w-full px-4 text-sm sm:w-auto">
-                            <x-heroicon-o-calculator class="h-4 w-4" />
-                            <span>Open Cashier-Only</span>
+                <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:justify-end">
+                    @if($isPosMode)
+                        <a href="{{ route('broker.sales.sales') }}" class="app-button app-button--secondary h-12 w-full px-4 text-sm sm:w-auto">
+                            <x-heroicon-o-banknotes class="h-4 w-4" />
+                            <span>{{ $isCashierStaff ? 'My Transactions' : 'Sales Records' }}</span>
                         </a>
-                    </div>
-                @endunless
+                    @endif
+                    @unless($isPosMode)
+                        <a href="{{ $posLaunchUrl }}"
+                           target="_blank"
+                           rel="noopener"
+                           class="app-button app-button--dark h-14 w-14 px-0 shadow-md ring-1 ring-white/20"
+                           aria-label="Open cashier-only terminal"
+                           title="Open cashier-only terminal">
+                            <x-heroicon-o-identification class="h-7 w-7" />
+                        </a>
+                    @endunless
+                </div>
             </div>
 
             @if($brokerViewReadOnly)
@@ -139,6 +151,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     <form action="{{ route('broker.sales.store') }}"
                           method="POST"
                           data-sales-async-form
+                          data-sales-sync-submit
                           data-transaction-step-form
                           data-buyer-section-visible="{{ $buyerSectionInitiallyVisible ? 'true' : 'false' }}"
                           data-sales-after-save-url="{{ $transactionUrl }}"
@@ -642,7 +655,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
                 throw new Error('QR Scanner not initialized.');
             } catch (error) {
-                console.error(error);
                 if (window.toastr) {
                     toastr.error('QR Scanner failed to load. Please refresh the page.');
                 }
@@ -681,7 +693,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
                 throw new Error('Phone scanner not initialized.');
             } catch (error) {
-                console.error(error);
                 if (window.toastr) {
                     toastr.error('Phone Scanner failed to load. Please refresh the page.');
                 }
@@ -707,7 +718,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             try {
                 return JSON.parse(configNode.textContent);
             } catch (error) {
-                console.error('Unable to parse sales form config.', error);
                 return null;
             }
         }

@@ -13,13 +13,6 @@ $breadcrumbs = [
 
 @section('content')
 <div class="w-full dashboard-shell">
-    <div class="dashboard-header">
-        <span class="dashboard-kicker">Broker Overview</span>
-        <div>
-            <h1 class="dashboard-title">Broker Dashboard</h1>
-        </div>
-    </div>
-
     <div class="metric-grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
         <a href="{{ route('broker.sales.sales') }}" class="metric-card metric-card--primary">
             <div class="metric-card__row">

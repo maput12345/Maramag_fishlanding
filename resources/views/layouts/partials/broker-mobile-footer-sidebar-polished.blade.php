@@ -1,5 +1,6 @@
 <!-- Broker Mobile Footer Sidebar Component -->
 @php
+    $isCashierStaff = auth()->check() && auth()->user()->isCashier();
     $isBrokerTrackingActive = request()->routeIs('broker.fish-boxes.tracking');
     $isTransactionActive = request()->routeIs('broker.transaction');
     $isSalesRecordsActive = request()->routeIs('broker.sales.sales');
@@ -7,6 +8,7 @@
 
 <div class="app-mobile-dock fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg md:hidden">
     <div class="flex items-center justify-around py-2">
+        @unless($isCashierStaff)
         <div class="group relative">
             <a href="{{ route('broker.dashboard') }}"
                class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ request()->routeIs('broker.dashboard') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
@@ -30,15 +32,16 @@
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>
+        @endunless
 
         <div class="group relative">
             <a href="{{ route('broker.transaction') }}"
                class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isTransactionActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <x-heroicon-o-plus-circle class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ $isTransactionActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                <span class="mt-1 text-xs font-medium">Cashier</span>
+                <span class="mt-1 text-xs font-medium">POS</span>
             </a>
             <div class="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                Cashier Transaction
+                POS Terminal
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>
@@ -47,14 +50,15 @@
             <a href="{{ route('broker.sales.sales') }}"
                class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isSalesRecordsActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                 <x-heroicon-o-banknotes class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ $isSalesRecordsActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                <span class="mt-1 text-xs font-medium">Sales</span>
+                <span class="mt-1 text-xs font-medium">{{ $isCashierStaff ? 'Mine' : 'Sales' }}</span>
             </a>
             <div class="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                Sales Records
+                {{ $isCashierStaff ? 'My Transactions' : 'Sales Records' }}
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>
 
+        @unless($isCashierStaff)
         <div class="group relative">
             <a href="{{ route('broker.fish-boxes.tracking') }}"
                class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isBrokerTrackingActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
@@ -90,6 +94,7 @@
                 <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
             </div>
         </div>
+        @endunless
     </div>
 
     <div class="border-t border-gray-200 bg-gray-50 px-4 py-2">
