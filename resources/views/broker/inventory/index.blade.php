@@ -46,7 +46,7 @@
 
 <div class="relative w-full workspace-modal-host">
                 <!-- Tab Navigation -->
-                <div class="bg-white rounded-xl shadow-lg mb-6">
+                <div class="bg-white rounded-xl shadow-lg mb-3">
                     <div class="border-b border-gray-200">
                         <nav class="-mb-px flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-8 px-4 md:px-6" aria-label="Tabs">
                             <a href="{{ route('broker.inventory.index') }}?tab=fishBoxes"

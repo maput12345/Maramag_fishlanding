@@ -3,6 +3,7 @@
         $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
             : false;
+        $fishTypeUpdateUrlTemplate = route('broker.fish-types.update', ['id' => '__ID__']);
     @endphp
     <!-- Fish Types Tab Content -->
     <div class="flex items-center justify-between mb-6">
@@ -214,10 +215,14 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     @unless($brokerViewReadOnly)
-                                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishTypes', 'modal' => 'edit', 'edit' => $fishType->id]) }}"
-                                           class="text-green-600 hover:text-green-900 transition-colors">
+                                        <button type="button"
+                                           class="text-green-600 hover:text-green-900 transition-colors"
+                                           data-fish-type-edit-open
+                                           data-fish-type-id="{{ $fishType->id }}"
+                                           data-fish-type-name="{{ $fishType->display_name }}"
+                                           data-fish-type-description="{{ $fishType->display_description }}">
                                             <x-heroicon-o-pencil-square class="w-6 h-6" />
-                                        </a>
+                                        </button>
                                         @if($fishType->isUsed($brokerId ?? null))
                                             <button type="button" class="text-gray-400 cursor-not-allowed" title="Cannot delete: Fish is in use">
                                                 <x-heroicon-o-trash class="w-6 h-6" />
@@ -251,4 +256,123 @@
             {{ $fishTypes->appends(request()->query())->links('components.pagination') }}
         </div>
     @endif
+
+    <div id="fish-type-edit-modal"
+         class="fixed inset-0 z-[9999] hidden overflow-y-auto"
+         role="dialog"
+         aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+            <button type="button"
+                    class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
+                    data-fish-type-edit-close
+                    aria-label="Close edit fish"></button>
+            <div class="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm">
+                            <x-heroicon-o-tag class="h-5 w-5" />
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-semibold text-slate-950">Edit Fish</h3>
+                            <p class="mt-1 text-sm text-slate-500">Update the fish details for cleaner inventory setup.</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            data-fish-type-edit-close
+                            aria-label="Close edit fish">
+                        <x-heroicon-o-x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+                <form method="POST" class="space-y-6 px-6 py-5" data-fish-type-edit-form>
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label for="fish-type-edit-name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Fish <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text"
+                               id="fish-type-edit-name"
+                               name="name"
+                               required
+                               class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500"
+                               placeholder="Enter fish name">
+                    </div>
+                    <div>
+                        <label for="fish-type-edit-description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                        </label>
+                        <textarea id="fish-type-edit-description"
+                                  name="description"
+                                  rows="4"
+                                  class="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500"
+                                  placeholder="Add a short description"></textarea>
+                    </div>
+                    <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                        <button type="button"
+                                class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
+                                data-fish-type-edit-close>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                            Update Fish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('fish-type-edit-modal');
+            if (modal && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            const form = modal?.querySelector('[data-fish-type-edit-form]');
+            const nameInput = modal?.querySelector('#fish-type-edit-name');
+            const descriptionInput = modal?.querySelector('#fish-type-edit-description');
+            const updateUrlTemplate = @json($fishTypeUpdateUrlTemplate);
+
+            const openModal = (button) => {
+                if (!modal || !form || !nameInput || !descriptionInput) {
+                    return;
+                }
+
+                form.action = updateUrlTemplate.replace('__ID__', encodeURIComponent(button.dataset.fishTypeId || ''));
+                nameInput.value = button.dataset.fishTypeName || '';
+                descriptionInput.value = button.dataset.fishTypeDescription || '';
+                modal.classList.remove('hidden');
+                document.documentElement.classList.add('modal-scroll-lock');
+                document.body.classList.add('modal-scroll-lock');
+                window.requestAnimationFrame(() => nameInput.focus({ preventScroll: true }));
+            };
+
+            const closeModal = () => {
+                if (!modal) {
+                    return;
+                }
+
+                modal.classList.add('hidden');
+                document.documentElement.classList.remove('modal-scroll-lock');
+                document.body.classList.remove('modal-scroll-lock');
+            };
+
+            document.querySelectorAll('[data-fish-type-edit-open]').forEach((button) => {
+                button.addEventListener('click', () => openModal(button));
+            });
+
+            modal?.querySelectorAll('[data-fish-type-edit-close]').forEach((button) => {
+                button.addEventListener('click', closeModal);
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
 </div>

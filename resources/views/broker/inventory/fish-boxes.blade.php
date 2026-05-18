@@ -13,6 +13,23 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             request('status') ? 'Status: ' . request('status') : null,
             $selectedFishTypeForBulkQr ? 'Fish: ' . $selectedFishTypeForBulkQr->display_name : null,
         ])->filter()->implode(' | ');
+        $fishBoxListQuery = array_merge(
+            request()->except(['modal', 'history', 'box_history_date']),
+            ['tab' => 'fishBoxes']
+        );
+        $fishBoxHistoryPayload = $fishBoxes->getCollection()
+            ->filter(fn ($fishBox) => $fishBox->purchases->isNotEmpty())
+            ->mapWithKeys(fn ($fishBox) => [
+                (string) $fishBox->id => [
+                    'name' => $fishBox->name,
+                    'records' => $fishBox->purchases->map(fn ($stockCycle) => [
+                        'date' => optional($stockCycle->purchase_date)->format('Y-m-d'),
+                        'date_label' => optional($stockCycle->purchase_date)->format('M d, Y') ?? 'Not set',
+                        'fish' => \App\Models\BrokerFishTypeAssignment::resolveDisplayName($fishBox->broker_id, $stockCycle->fishType) ?? 'Unassigned',
+                        'cost' => $stockCycle->cost_price !== null ? '₱' . number_format((float) $stockCycle->cost_price, 2) : 'Not set',
+                    ])->values(),
+                ],
+            ]);
     @endphp
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
         <div>
@@ -88,6 +105,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 
     <script id="bulk-qr-boxes-data" type="application/json">{!! json_encode($bulkQrFishBoxes ?? collect(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
     <script id="fish-box-default-cost-map" type="application/json">{!! json_encode($fishTypeDefaultCosts ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+    <script id="fish-box-history-data" type="application/json">{!! json_encode($fishBoxHistoryPayload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 
     <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6 summary-strip-wrap">
         <div class="summary-strip summary-strip--five">
@@ -348,7 +366,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
         <x-app-modal
             title="Fish Box History"
             :subtitle="$historyFishBox ? 'Previous stock records for ' . $historyFishBox->name . '.' : 'No fish box history was found.'"
-            :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
+            :close-url="route('broker.inventory.index', $fishBoxListQuery)"
         >
             <x-slot:icon>
                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm"
@@ -362,6 +380,11 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     <input type="hidden" name="tab" value="fishBoxes">
                     <input type="hidden" name="modal" value="history">
                     <input type="hidden" name="history" value="{{ $historyFishBox->id }}">
+                    @foreach(request()->except(['tab', 'modal', 'history', 'box_history_date']) as $queryKey => $queryValue)
+                        @if(is_scalar($queryValue) && $queryValue !== '')
+                            <input type="hidden" name="{{ $queryKey }}" value="{{ $queryValue }}">
+                        @endif
+                    @endforeach
                     <div class="flex flex-col gap-3 sm:flex-row">
                         <div class="flex-1">
                             <input type="date"
@@ -375,7 +398,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 Search
                             </button>
                             @if(request()->filled('box_history_date'))
-                                <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'history', 'history' => $historyFishBox->id]) }}"
+                                <a href="{{ route('broker.inventory.index', array_merge($fishBoxListQuery, ['modal' => 'history', 'history' => $historyFishBox->id])) }}"
                                    class="btn-clear">
                                     Clear
                                 </a>
@@ -429,7 +452,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
             @endif
 
             <div class="mt-6 flex justify-end border-t border-gray-100 pt-5">
-                <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
+                <a href="{{ route('broker.inventory.index', $fishBoxListQuery) }}"
                    class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
                     Close
                 </a>
@@ -527,12 +550,14 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     </div>
                     <div class="flex items-center space-x-2">
                         @if($fishBox->currentPurchase)
-                            <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'history', 'history' => $fishBox->id]) }}"
+                            <button type="button"
+                               data-fish-box-history-open
+                               data-fish-box-id="{{ $fishBox->id }}"
                                class="transition-colors"
                                style="color: #2563eb;"
                                title="View fish box history">
                                 <x-heroicon-o-clock class="w-6 h-6" />
-                            </a>
+                            </button>
                         @else
                             <button type="button" class="text-gray-400 cursor-not-allowed" title="No fish box history yet">
                                 <x-heroicon-o-clock class="w-6 h-6" />
@@ -632,6 +657,71 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
         </div>
     @endif
 
+    <div id="fish-box-history-modal"
+         class="fixed inset-0 z-[9999] hidden overflow-y-auto"
+         aria-labelledby="fish-box-history-title"
+         role="dialog"
+         aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+            <button type="button"
+                    class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
+                    data-fish-box-history-close
+                    aria-label="Close fish box history"></button>
+            <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                            <x-heroicon-o-clock class="h-5 w-5" />
+                        </div>
+                        <div class="min-w-0">
+                            <h3 id="fish-box-history-title" class="text-lg font-semibold text-slate-950">Fish Box History</h3>
+                            <p class="mt-1 text-sm text-slate-500" data-fish-box-history-subtitle></p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            data-fish-box-history-close
+                            aria-label="Close fish box history">
+                        <x-heroicon-o-x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+                <div class="space-y-4 px-6 py-5">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <input type="date"
+                               class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                               data-fish-box-history-date>
+                        <button type="button"
+                                class="btn-clear"
+                                data-fish-box-history-clear>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 bg-white" data-fish-box-history-rows></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="flex justify-end border-t border-gray-100 pt-5">
+                        <button type="button"
+                                class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                data-fish-box-history-close>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const costMapElement = document.getElementById('fish-box-default-cost-map');
@@ -715,6 +805,118 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
 
                 syncSelectAllState();
             }
+
+            const historyDataElement = document.getElementById('fish-box-history-data');
+            const historyModal = document.getElementById('fish-box-history-modal');
+
+            if (historyModal && historyModal.parentElement !== document.body) {
+                document.body.appendChild(historyModal);
+            }
+
+            const historyRows = historyModal?.querySelector('[data-fish-box-history-rows]');
+            const historySubtitle = historyModal?.querySelector('[data-fish-box-history-subtitle]');
+            const historyDateInput = historyModal?.querySelector('[data-fish-box-history-date]');
+            const historyClearButton = historyModal?.querySelector('[data-fish-box-history-clear]');
+            let activeHistoryRecords = [];
+
+            const historyData = historyDataElement
+                ? JSON.parse(historyDataElement.textContent || '{}')
+                : {};
+
+            const escapeHtml = (value) => String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const renderHistoryRows = () => {
+                if (!historyRows) {
+                    return;
+                }
+
+                const selectedDate = historyDateInput?.value || '';
+                const records = selectedDate
+                    ? activeHistoryRecords.filter((record) => record.date === selectedDate)
+                    : activeHistoryRecords;
+
+                if (records.length === 0) {
+                    historyRows.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                ${selectedDate ? 'No fish box history matched that date.' : 'No fish box history yet.'}
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                historyRows.innerHTML = records.map((record) => `
+                    <tr>
+                        <td class="whitespace-nowrap px-4 py-3 text-left text-sm text-gray-900">${escapeHtml(record.date_label)}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${escapeHtml(record.fish)}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">${escapeHtml(record.cost)}</td>
+                    </tr>
+                `).join('');
+            };
+
+            const openHistoryModal = (fishBoxId) => {
+                if (!historyModal) {
+                    return;
+                }
+
+                const history = historyData[String(fishBoxId)] || {};
+                activeHistoryRecords = Array.isArray(history.records) ? history.records : [];
+
+                if (historySubtitle) {
+                    historySubtitle.textContent = history.name
+                        ? `Previous stock records for ${history.name}.`
+                        : 'Previous stock records.';
+                }
+
+                if (historyDateInput) {
+                    historyDateInput.value = '';
+                }
+
+                renderHistoryRows();
+                historyModal.classList.remove('hidden');
+                document.documentElement.classList.add('modal-scroll-lock');
+                document.body.classList.add('modal-scroll-lock');
+            };
+
+            const closeHistoryModal = () => {
+                if (!historyModal) {
+                    return;
+                }
+
+                historyModal.classList.add('hidden');
+                document.documentElement.classList.remove('modal-scroll-lock');
+                document.body.classList.remove('modal-scroll-lock');
+            };
+
+            document.querySelectorAll('[data-fish-box-history-open]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    openHistoryModal(button.dataset.fishBoxId);
+                });
+            });
+
+            historyModal?.querySelectorAll('[data-fish-box-history-close]').forEach((button) => {
+                button.addEventListener('click', closeHistoryModal);
+            });
+
+            historyDateInput?.addEventListener('input', renderHistoryRows);
+            historyClearButton?.addEventListener('click', () => {
+                if (historyDateInput) {
+                    historyDateInput.value = '';
+                }
+                renderHistoryRows();
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && historyModal && !historyModal.classList.contains('hidden')) {
+                    closeHistoryModal();
+                }
+            });
         });
     </script>
 

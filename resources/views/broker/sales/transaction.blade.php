@@ -586,6 +586,8 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
     <script src="{{ $printReceiptScriptUrl }}" defer></script>
     <script src="{{ $salesFormScriptUrl }}" defer></script>
     <script src="{{ $salesPageScriptUrl }}" defer></script>
+    <script src="{{ $salesQrScannerScriptUrl }}" defer></script>
+    <script src="{{ $remoteSalesScannerScriptUrl }}" defer></script>
     <script>
         const brokerTransactionScriptPromises = {};
 

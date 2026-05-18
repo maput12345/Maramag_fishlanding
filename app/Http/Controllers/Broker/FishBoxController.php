@@ -56,6 +56,22 @@ class FishBoxController extends Controller
 
         // Filter fish boxes by current broker
         $fishBoxes = FishBox::getPaginatedWithFilters($search, $status, $fishType, 12, $brokerId);
+        $fishBoxes->getCollection()->load([
+            'purchases' => function ($query) {
+                $query->select([
+                        'id',
+                        'fish_box_id',
+                        'fish_type_id',
+                        'created_by_user_id',
+                        'purchase_date',
+                        'cost_price',
+                        'created_at',
+                    ])
+                    ->with(['fishType:id,name,description'])
+                    ->orderByDesc('purchase_date')
+                    ->orderByDesc('id');
+            },
+        ]);
         $bulkQrFishBoxes = FishBox::getFilteredForBulkQrPrint($search, $status, $fishType, $brokerId);
         $fishBoxSummary = FishBox::getStatusSummary($brokerId);
         $fishTypeDefaultCosts = FishBox::getDefaultCostMapForBroker($brokerId);

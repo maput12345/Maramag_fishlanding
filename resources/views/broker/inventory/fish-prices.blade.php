@@ -3,8 +3,24 @@
 $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             ? \App\Models\Broker::isAdminBrokerViewReadOnly(auth()->user())
             : false;
+        $fishPriceUpdateUrlTemplate = route('broker.fish-prices.update', ['id' => '__ID__']);
+        $fishPriceHistoryPayload = $brokerFishTypes->getCollection()
+            ->filter(fn ($assignment) => $assignment->prices->isNotEmpty())
+            ->mapWithKeys(fn ($assignment) => [
+                (string) $assignment->id => [
+                    'name' => $assignment->display_name ?? 'Unknown Fish',
+                    'records' => $assignment->prices->map(fn ($priceRecord) => [
+                        'date' => optional($priceRecord->price_date)->format('Y-m-d'),
+                        'date_label' => optional($priceRecord->price_date)->format('M d, Y') ?? 'Not set',
+                        'price' => '₱' . number_format((float) $priceRecord->price, 2),
+                        'cost' => $priceRecord->default_cost_price !== null
+                            ? '₱' . number_format((float) $priceRecord->default_cost_price, 2)
+                            : 'Not set',
+                    ])->values(),
+                ],
+            ]);
     @endphp
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
         <div>
             <h2 class="text-xl font-semibold text-gray-900">Fish Price List</h2>
         </div>
@@ -326,6 +342,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
     </div>
 
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <script id="fish-price-history-data" type="application/json">{!! json_encode($fishPriceHistoryPayload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50">
@@ -378,23 +395,31 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     @if((int) $assignment->prices_count > 0)
-                                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'history', 'history' => $assignment->id]) }}"
+                                        <button type="button"
+                                           data-fish-price-history-open
+                                           data-assignment-id="{{ $assignment->id }}"
                                            class="transition-colors"
                                            style="color: #2563eb;"
                                            title="View price history">
                                             <x-heroicon-o-clock class="w-6 h-6" />
-                                        </a>
+                                        </button>
                                     @else
                                         <button type="button" class="text-gray-400 cursor-not-allowed" title="No price history yet">
                                             <x-heroicon-o-clock class="w-6 h-6" />
                                         </button>
                                     @endif
                                     @unless($brokerViewReadOnly)
-                                        <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'edit', 'edit' => $assignment->id]) }}"
+                                        <button type="button"
+                                           data-fish-price-edit-open
+                                           data-assignment-id="{{ $assignment->id }}"
+                                           data-fish-name="{{ $assignment->display_name ?? 'Unknown Fish' }}"
+                                           data-price="{{ $assignment->latestPrice?->price }}"
+                                           data-cost="{{ $assignment->latestPrice?->default_cost_price }}"
+                                           data-date="{{ $assignment->latestPrice?->price_date?->format('Y-m-d') ?? now()->format('Y-m-d') }}"
                                            class="text-green-600 hover:text-green-900 transition-colors"
                                            title="{{ $assignment->latestPrice ? 'Edit price' : 'Set price' }}">
                                             <x-heroicon-o-pencil-square class="w-6 h-6" />
-                                        </a>
+                                        </button>
                                         @if($assignment->latestPrice)
                                             <form action="{{ route('broker.fish-prices.destroy', $assignment->id) }}"
                                                   method="POST"
@@ -429,4 +454,315 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             {{ $brokerFishTypes->appends(request()->query())->links('components.pagination') }}
         </div>
     @endif
+
+    <div id="fish-price-history-modal"
+         class="fixed inset-0 z-[9999] hidden overflow-y-auto"
+         role="dialog"
+         aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+            <button type="button"
+                    class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
+                    data-fish-price-history-close
+                    aria-label="Close price history"></button>
+            <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                            <x-heroicon-o-clock class="h-5 w-5" />
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-semibold text-slate-950">Price History</h3>
+                            <p class="mt-1 text-sm text-slate-500" data-fish-price-history-subtitle>Previous price records.</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            data-fish-price-history-close
+                            aria-label="Close price history">
+                        <x-heroicon-o-x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+                <div class="space-y-4 px-6 py-5">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <input type="date"
+                               class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                               data-fish-price-history-date>
+                        <button type="button" class="btn-clear" data-fish-price-history-clear>
+                            Clear
+                        </button>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 bg-white" data-fish-price-history-rows></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="flex justify-end border-t border-gray-100 pt-5">
+                        <button type="button"
+                                class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                data-fish-price-history-close>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="fish-price-edit-modal"
+         class="fixed inset-0 z-[9999] hidden overflow-y-auto"
+         role="dialog"
+         aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+            <button type="button"
+                    class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
+                    data-fish-price-edit-close
+                    aria-label="Close edit price"></button>
+            <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm">
+                            <x-heroicon-o-currency-dollar class="h-5 w-5" />
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-semibold text-slate-950">Update Fish Price</h3>
+                            <p class="mt-1 text-sm text-slate-500">Adjust the selling price and default daily cost for this broker fish.</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            data-fish-price-edit-close
+                            aria-label="Close edit price">
+                        <x-heroicon-o-x-mark class="h-5 w-5" />
+                    </button>
+                </div>
+                <form method="POST" class="space-y-6 px-6 py-5" data-fish-price-edit-form>
+                    @csrf
+                    @method('PUT')
+                    <div class="rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+                        <p class="text-xs uppercase tracking-wide text-green-700">Fish</p>
+                        <p class="mt-1 text-base font-semibold text-gray-900" data-fish-price-edit-name></p>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                            <label for="fish-price-edit-price" class="block text-sm font-medium text-gray-700 mb-2">
+                                Price <span class="text-red-500">*</span>
+                            </label>
+                            <div class="currency-input-group">
+                                <span class="currency-input-symbol">₱</span>
+                                <input type="number"
+                                       id="fish-price-edit-price"
+                                       name="price"
+                                       min="0"
+                                       step="0.01"
+                                       class="currency-input-field"
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="fish-price-edit-cost" class="block text-sm font-medium text-gray-700 mb-2">
+                                Cost per box
+                            </label>
+                            <div class="currency-input-group">
+                                <span class="currency-input-symbol">₱</span>
+                                <input type="number"
+                                       id="fish-price-edit-cost"
+                                       name="default_cost_price"
+                                       min="0"
+                                       step="0.01"
+                                       class="currency-input-field"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="fish-price-edit-date" class="block text-sm font-medium text-gray-700 mb-2">
+                                Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date"
+                                   id="fish-price-edit-date"
+                                   name="price_date"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500"
+                                   required>
+                        </div>
+                    </div>
+                    <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                        <button type="button"
+                                class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto"
+                                data-fish-price-edit-close>
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="inline-flex w-full justify-center rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
+                            Save Price
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const appendToBody = (modal) => {
+                if (modal && modal.parentElement !== document.body) {
+                    document.body.appendChild(modal);
+                }
+            };
+
+            const lockPage = () => {
+                document.documentElement.classList.add('modal-scroll-lock');
+                document.body.classList.add('modal-scroll-lock');
+            };
+
+            const unlockPage = () => {
+                document.documentElement.classList.remove('modal-scroll-lock');
+                document.body.classList.remove('modal-scroll-lock');
+            };
+
+            const historyModal = document.getElementById('fish-price-history-modal');
+            const historyDataElement = document.getElementById('fish-price-history-data');
+            const historyRows = historyModal?.querySelector('[data-fish-price-history-rows]');
+            const historyDateInput = historyModal?.querySelector('[data-fish-price-history-date]');
+            const historySubtitle = historyModal?.querySelector('[data-fish-price-history-subtitle]');
+            const historyData = historyDataElement ? JSON.parse(historyDataElement.textContent || '{}') : {};
+            let activeHistoryRecords = [];
+
+            appendToBody(historyModal);
+
+            const escapeHtml = (value) => String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const renderHistoryRows = () => {
+                if (!historyRows) {
+                    return;
+                }
+
+                const selectedDate = historyDateInput?.value || '';
+                const records = selectedDate
+                    ? activeHistoryRecords.filter((record) => record.date === selectedDate)
+                    : activeHistoryRecords;
+
+                if (records.length === 0) {
+                    historyRows.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                ${selectedDate ? 'No price history matched that date.' : 'No price history yet.'}
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                historyRows.innerHTML = records.map((record) => `
+                    <tr>
+                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">${escapeHtml(record.date_label)}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold tabular-nums text-gray-900">${escapeHtml(record.price)}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">${escapeHtml(record.cost)}</td>
+                    </tr>
+                `).join('');
+            };
+
+            const openHistoryModal = (button) => {
+                const history = historyData[String(button.dataset.assignmentId)] || {};
+                activeHistoryRecords = Array.isArray(history.records) ? history.records : [];
+                if (historySubtitle) {
+                    historySubtitle.textContent = history.name
+                        ? `Previous prices for ${history.name}.`
+                        : 'Previous price records.';
+                }
+                if (historyDateInput) {
+                    historyDateInput.value = '';
+                }
+                renderHistoryRows();
+                historyModal?.classList.remove('hidden');
+                lockPage();
+            };
+
+            const closeHistoryModal = () => {
+                historyModal?.classList.add('hidden');
+                unlockPage();
+            };
+
+            document.querySelectorAll('[data-fish-price-history-open]').forEach((button) => {
+                button.addEventListener('click', () => openHistoryModal(button));
+            });
+
+            historyModal?.querySelectorAll('[data-fish-price-history-close]').forEach((button) => {
+                button.addEventListener('click', closeHistoryModal);
+            });
+
+            historyDateInput?.addEventListener('input', renderHistoryRows);
+            historyModal?.querySelector('[data-fish-price-history-clear]')?.addEventListener('click', () => {
+                if (historyDateInput) {
+                    historyDateInput.value = '';
+                }
+                renderHistoryRows();
+            });
+
+            const editModal = document.getElementById('fish-price-edit-modal');
+            const editForm = editModal?.querySelector('[data-fish-price-edit-form]');
+            const editName = editModal?.querySelector('[data-fish-price-edit-name]');
+            const editPrice = editModal?.querySelector('#fish-price-edit-price');
+            const editCost = editModal?.querySelector('#fish-price-edit-cost');
+            const editDate = editModal?.querySelector('#fish-price-edit-date');
+            const updateUrlTemplate = @json($fishPriceUpdateUrlTemplate);
+
+            appendToBody(editModal);
+
+            const openEditModal = (button) => {
+                if (!editModal || !editForm || !editName || !editPrice || !editCost || !editDate) {
+                    return;
+                }
+
+                editForm.action = updateUrlTemplate.replace('__ID__', encodeURIComponent(button.dataset.assignmentId || ''));
+                editName.textContent = button.dataset.fishName || 'Unknown Fish';
+                editPrice.value = button.dataset.price || '';
+                editCost.value = button.dataset.cost || '';
+                editDate.value = button.dataset.date || new Date().toISOString().slice(0, 10);
+                editModal.classList.remove('hidden');
+                lockPage();
+                window.requestAnimationFrame(() => editPrice.focus({ preventScroll: true }));
+            };
+
+            const closeEditModal = () => {
+                editModal?.classList.add('hidden');
+                unlockPage();
+            };
+
+            document.querySelectorAll('[data-fish-price-edit-open]').forEach((button) => {
+                button.addEventListener('click', () => openEditModal(button));
+            });
+
+            editModal?.querySelectorAll('[data-fish-price-edit-close]').forEach((button) => {
+                button.addEventListener('click', closeEditModal);
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') {
+                    return;
+                }
+
+                if (historyModal && !historyModal.classList.contains('hidden')) {
+                    closeHistoryModal();
+                }
+
+                if (editModal && !editModal.classList.contains('hidden')) {
+                    closeEditModal();
+                }
+            });
+        });
+    </script>
 </div>

@@ -2,10 +2,12 @@ import QRCodeStyling from 'qr-code-styling';
 
 (function () {
     const SESSION_STORAGE_KEY = 'broker.remoteSalesScanner.activeSession';
+    const QUEUED_SCANS_STORAGE_KEY = 'broker.remoteSalesScanner.queuedScansForNextTransaction';
     let activeSession = null;
     let pollTimer = null;
     let modal = null;
     let qrCode = null;
+    let queuedScansForNextTransaction = [];
 
     function getConfig() {
         return window.remoteSalesScannerConfig || {};
@@ -89,6 +91,31 @@ import QRCodeStyling from 'qr-code-styling';
         }
 
         return activeSession;
+    }
+
+    function saveQueuedScans() {
+        try {
+            sessionStorage.setItem(QUEUED_SCANS_STORAGE_KEY, JSON.stringify(queuedScansForNextTransaction));
+        } catch (error) {
+            console.warn('Unable to remember queued phone scans.', error);
+        }
+    }
+
+    function restoreQueuedScans() {
+        try {
+            const scans = JSON.parse(sessionStorage.getItem(QUEUED_SCANS_STORAGE_KEY) || '[]');
+            queuedScansForNextTransaction = Array.isArray(scans) ? scans.filter((scan) => scan?.id) : [];
+        } catch (error) {
+            queuedScansForNextTransaction = [];
+        }
+    }
+
+    function clearQueuedScans() {
+        try {
+            sessionStorage.removeItem(QUEUED_SCANS_STORAGE_KEY);
+        } catch (error) {
+            console.warn('Unable to clear queued phone scans.', error);
+        }
     }
 
     async function fetchJson(url, options = {}) {
@@ -245,6 +272,62 @@ import QRCodeStyling from 'qr-code-styling';
         return true;
     }
 
+    function isTransactionSaving() {
+        return Boolean(window.BrokerSalesTransactionState?.isSaving);
+    }
+
+    function queueRemoteScanForNextTransaction(fishBox) {
+        if (!fishBox?.id) {
+            return false;
+        }
+
+        if (isFishBoxAlreadyInTransaction(fishBox.id)) {
+            notify(`${fishBox.name || 'Fish box'} is already in the transaction being saved.`, 'info');
+            return false;
+        }
+
+        const isAlreadyQueued = queuedScansForNextTransaction
+            .some((queuedFishBox) => String(queuedFishBox.id) === String(fishBox.id));
+
+        if (isAlreadyQueued) {
+            notify(`${fishBox.name || 'Fish box'} is already queued for the next transaction.`, 'info');
+            return false;
+        }
+
+        queuedScansForNextTransaction.push(fishBox);
+        saveQueuedScans();
+        notify(`${fishBox.name || 'Fish box'} will be added to the next transaction.`, 'info');
+        return true;
+    }
+
+    function processQueuedScansForNextTransaction(attempt = 0) {
+        if (isTransactionSaving() || queuedScansForNextTransaction.length === 0) {
+            return;
+        }
+
+        if (typeof window.SalesQRScanner !== 'function') {
+            if (attempt < 30) {
+                window.setTimeout(() => processQueuedScansForNextTransaction(attempt + 1), 100);
+            }
+            return;
+        }
+
+        const queuedScans = queuedScansForNextTransaction;
+        queuedScansForNextTransaction = [];
+        clearQueuedScans();
+
+        let addedCount = 0;
+        queuedScans.forEach((fishBox) => {
+            if (addRemoteScanToTransaction(fishBox)) {
+                addedCount += 1;
+            }
+        });
+
+        if (addedCount > 0) {
+            setStatus(`${addedCount} queued scan${addedCount === 1 ? '' : 's'} added to the new transaction.`, 'green');
+        }
+    }
+
     function isFishBoxAlreadyInTransaction(fishBoxId) {
         if (!fishBoxId) {
             return false;
@@ -271,6 +354,13 @@ import QRCodeStyling from 'qr-code-styling';
 
             (payload.items || []).forEach((item) => {
                 if (item.status === 'accepted' && item.data) {
+                    if (isTransactionSaving()) {
+                        if (queueRemoteScanForNextTransaction(item.data)) {
+                            acceptedCount += 1;
+                        }
+                        return;
+                    }
+
                     if (addRemoteScanToTransaction(item.data)) {
                         acceptedCount += 1;
                     }
@@ -283,7 +373,8 @@ import QRCodeStyling from 'qr-code-styling';
             });
 
             if (acceptedCount > 0) {
-                setStatus(`${acceptedCount} fish box scan${acceptedCount === 1 ? '' : 's'} added to this transaction.`, 'green');
+                const target = isTransactionSaving() ? 'queued for the next transaction' : 'added to this transaction';
+                setStatus(`${acceptedCount} fish box scan${acceptedCount === 1 ? '' : 's'} ${target}.`, 'green');
             }
         } catch (error) {
             setStatus(error.message || 'Phone scanner session stopped.', 'red');
@@ -371,8 +462,13 @@ import QRCodeStyling from 'qr-code-styling';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        restoreQueuedScans();
         bindButtons();
         resumeSessionIfPresent();
+        window.setTimeout(processQueuedScansForNextTransaction, 250);
+    });
+    window.addEventListener('broker-sales:save-succeeded', () => {
+        window.setTimeout(processQueuedScansForNextTransaction, 150);
     });
     window.bindRemoteSalesScannerButtons = bindButtons;
     window.openRemoteSalesScannerSession = openSession;

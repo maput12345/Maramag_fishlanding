@@ -40,6 +40,20 @@ class FishPricesController extends Controller
             })
             ->orderByDesc('id')
             ->paginate(12);
+        $brokerFishTypes->getCollection()->load([
+            'prices' => function ($query) {
+                $query->select([
+                        'id',
+                        'broker_fish_type_id',
+                        'price',
+                        'default_cost_price',
+                        'price_date',
+                        'created_at',
+                    ])
+                    ->orderByDesc('price_date')
+                    ->orderByDesc('id');
+            },
+        ]);
 
         $pricingAssignments = collect();
 

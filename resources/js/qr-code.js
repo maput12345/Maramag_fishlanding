@@ -167,6 +167,16 @@ window.QRCodeModal = {
         return labels[size] || 'Medium';
     },
 
+    getBulkQrPrintDimension(size) {
+        const dimensions = {
+            150: 220,
+            180: 320,
+            220: 560,
+        };
+
+        return dimensions[size] || 320;
+    },
+
     async renderBulkQrMarkup(qrData, size = 180) {
         const tempContainer = document.createElement('div');
         const qrCode = this.createQRCode(qrData, size, 'canvas');
@@ -187,15 +197,15 @@ window.QRCodeModal = {
             const findCanvas = () => {
                 const canvas = container.querySelector('canvas');
 
-                if (canvas) {
+                if (canvas && this.isCanvasReadyForPrint(canvas)) {
                     resolve(canvas);
                     return;
                 }
 
                 attempts += 1;
 
-                if (attempts >= 20) {
-                    resolve(null);
+                if (attempts >= 90) {
+                    resolve(canvas || null);
                     return;
                 }
 
@@ -204,6 +214,40 @@ window.QRCodeModal = {
 
             findCanvas();
         });
+    },
+
+    isCanvasReadyForPrint(canvas) {
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            return false;
+        }
+
+        try {
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+
+            if (!context) {
+                return true;
+            }
+
+            const sampleSize = Math.min(canvas.width, canvas.height, 80);
+            const offsetX = Math.max(0, Math.floor((canvas.width - sampleSize) / 2));
+            const offsetY = Math.max(0, Math.floor((canvas.height - sampleSize) / 2));
+            const pixels = context.getImageData(offsetX, offsetY, sampleSize, sampleSize).data;
+
+            for (let index = 0; index < pixels.length; index += 4) {
+                const red = pixels[index];
+                const green = pixels[index + 1];
+                const blue = pixels[index + 2];
+                const alpha = pixels[index + 3];
+
+                if (alpha > 0 && (red < 245 || green < 245 || blue < 245)) {
+                    return true;
+                }
+            }
+        } catch (error) {
+            return true;
+        }
+
+        return false;
     },
 
     async printBulkQRCodes(button) {
@@ -220,6 +264,7 @@ window.QRCodeModal = {
 
         const originalContent = button.innerHTML;
         const qrSize = this.getBulkQrPrintSize(button);
+        const printQrSize = this.getBulkQrPrintDimension(qrSize);
         const printWindow = this.openEdgePrintWindow();
         button.disabled = true;
         button.innerHTML = `
@@ -234,11 +279,11 @@ window.QRCodeModal = {
             const qrCards = await Promise.all(
                 fishBoxes.map(async (fishBox) => ({
                     ...fishBox,
-                    qrMarkup: await this.renderBulkQrMarkup(fishBox.qr_code, qrSize),
+                    qrMarkup: await this.renderBulkQrMarkup(fishBox.qr_code, printQrSize),
                 }))
             );
             await this.printDocument(
-                this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize),
+                this.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize, printQrSize),
                 printWindow
             );
         } catch (error) {
@@ -381,19 +426,17 @@ window.QRCodeModal = {
         }, 250);
     },
 
-    buildBulkPrintDocument(fishBoxes, filterSummary, qrSize = 180) {
-        const generatedAt = new Intl.DateTimeFormat('en-US', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-        }).format(new Date());
-        const gridColumns = qrSize <= 150 ? 4 : qrSize >= 220 ? 2 : 3;
-        const cardMinHeight = qrSize + 110;
+    buildBulkPrintDocument(fishBoxes, filterSummary, layoutSize = 180, qrSize = 320) {
+        const cardsPerPage = layoutSize <= 150 ? 4 : layoutSize >= 220 ? 1 : 2;
+        const gridColumns = cardsPerPage === 1 ? 1 : 2;
+        const cardMinHeight = cardsPerPage === 1 ? '250mm' : '125mm';
+        const pageChunks = [];
 
-        const filterLine = filterSummary
-            ? `<p class="subtitle">${this.escapeHtml(filterSummary)}</p>`
-            : `<p class="subtitle">All fish boxes matching the current filters are included in this printout.</p>`;
+        for (let index = 0; index < fishBoxes.length; index += cardsPerPage) {
+            pageChunks.push(fishBoxes.slice(index, index + cardsPerPage));
+        }
 
-        const cardsMarkup = fishBoxes.map((fishBox) => `
+        const renderCard = (fishBox) => `
             <article class="qr-card">
                 <div class="qr-card__code">
                     ${fishBox.qrMarkup}
@@ -405,6 +448,14 @@ window.QRCodeModal = {
                     <div class="qr-value">${this.escapeHtml(fishBox.qr_code)}</div>
                 </div>
             </article>
+        `;
+
+        const pagesMarkup = pageChunks.map((chunk) => `
+            <main class="sheet">
+                <section class="qr-grid">
+                    ${chunk.map(renderCard).join('')}
+                </section>
+            </main>
         `).join('');
 
         return `
@@ -426,54 +477,39 @@ window.QRCodeModal = {
                         }
 
                         .sheet {
-                            padding: 28px 30px 36px;
-                        }
-
-                        .sheet-header {
-                            border-bottom: 2px solid #0f172a;
-                            margin-bottom: 24px;
-                            padding-bottom: 14px;
-                        }
-
-                        .sheet-header h1 {
-                            margin: 0 0 8px;
-                            font-size: 24px;
-                        }
-
-                        .sheet-header p {
-                            margin: 4px 0;
-                            color: #475569;
-                            font-size: 13px;
-                        }
-
-                        .summary-row {
+                            min-height: 273mm;
+                            padding: 0;
                             display: flex;
-                            justify-content: space-between;
-                            align-items: baseline;
-                            gap: 16px;
-                            margin-top: 10px;
+                            align-items: center;
+                            justify-content: center;
+                            break-after: page;
+                            page-break-after: always;
                         }
 
-                        .summary-row strong {
-                            font-size: 14px;
+                        .sheet:last-child {
+                            break-after: auto;
+                            page-break-after: auto;
                         }
 
                         .qr-grid {
+                            width: 100%;
                             display: grid;
                             grid-template-columns: repeat(${gridColumns}, minmax(0, 1fr));
-                            gap: 16px;
+                            gap: 18px;
                         }
 
                         .qr-card {
                             border: 1px solid #cbd5e1;
                             border-radius: 18px;
-                            padding: 18px;
-                            min-height: ${cardMinHeight}px;
+                            padding: 22px;
+                            min-height: ${cardMinHeight};
                             display: flex;
                             flex-direction: column;
                             align-items: center;
-                            justify-content: space-between;
+                            justify-content: center;
+                            gap: 18px;
                             page-break-inside: avoid;
+                            break-inside: avoid;
                         }
 
                         .qr-card__code {
@@ -532,6 +568,7 @@ window.QRCodeModal = {
                         }
 
                         @page {
+                            size: A4 portrait;
                             margin: 12mm;
                         }
 
@@ -543,21 +580,7 @@ window.QRCodeModal = {
                     </style>
                 </head>
                 <body>
-                    <main class="sheet">
-                        <header class="sheet-header">
-                            <h1>Fish Box QR Codes</h1>
-                            ${filterLine}
-                            <div class="summary-row">
-                                <strong>Total Boxes: ${fishBoxes.length}</strong>
-                                <span>QR Size: ${this.escapeHtml(this.getBulkQrSizeLabel(qrSize))} (${qrSize}px) | Generated: ${this.escapeHtml(generatedAt)}</span>
-                            </div>
-                        </header>
-
-                        <section class="qr-grid">
-                            ${cardsMarkup}
-                        </section>
-                    </main>
-
+                    ${pagesMarkup}
                 </body>
             </html>
         `;

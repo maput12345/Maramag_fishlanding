@@ -8,6 +8,11 @@
     const SALES_UPDATED_STORAGE_KEY = 'broker-sales-updated-token';
     let pendingSalesRecordsRefresh = false;
 
+    window.BrokerSalesTransactionState = window.BrokerSalesTransactionState || {
+        isSaving: false,
+        lastSavedAt: null,
+    };
+
     function getSalesRoot() {
         return document.querySelector('[data-sales-page]');
     }
@@ -216,9 +221,17 @@
     }
 
     function setFormSubmitting(form, isSubmitting) {
+        window.BrokerSalesTransactionState.isSaving = isSubmitting;
+
         form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((submitControl) => {
             submitControl.disabled = isSubmitting;
         });
+    }
+
+    function dispatchSalesTransactionEvent(name, detail = {}) {
+        window.dispatchEvent(new CustomEvent(name, {
+            detail,
+        }));
     }
 
     async function parseJsonResponse(response) {
@@ -236,6 +249,7 @@
     async function handleAsyncFormSubmit(form) {
         clearFormErrors(form);
         setFormSubmitting(form, true);
+        dispatchSalesTransactionEvent('broker-sales:save-started', { form });
 
         try {
             const response = await fetch(form.action, {
@@ -275,6 +289,12 @@
 
             try {
                 await refreshSalesFragment(afterSaveUrl, 'replace');
+                window.BrokerSalesTransactionState.lastSavedAt = Date.now();
+                dispatchSalesTransactionEvent('broker-sales:save-succeeded', {
+                    form,
+                    payload,
+                    afterSaveUrl,
+                });
             } catch (refreshError) {
                 window.location.href = afterSaveUrl;
             }
@@ -282,8 +302,13 @@
             if (window.toastr) {
                 window.toastr.error(error.message || 'Something went wrong while saving the form.');
             }
+            dispatchSalesTransactionEvent('broker-sales:save-failed', {
+                form,
+                error,
+            });
         } finally {
             setFormSubmitting(form, false);
+            dispatchSalesTransactionEvent('broker-sales:save-finished', { form });
         }
     }
 
@@ -334,6 +359,8 @@
         }
 
         if (asyncForm.hasAttribute('data-sales-sync-submit')) {
+            setFormSubmitting(asyncForm, true);
+            dispatchSalesTransactionEvent('broker-sales:save-started', { form: asyncForm });
             return;
         }
 
