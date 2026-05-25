@@ -186,7 +186,13 @@ class FinancialStatementEntry extends Model
         $salesDiscounts = (float) (clone $costBaseQuery)->sum('TransactionLineItem.discount');
         $grossSales = $sales + $salesDiscounts;
         $collections = (float) (clone $collectionsBaseQuery)->sum('PaymentRecord.paid_amount');
-        $cashOnHand = SalesTransaction::getSummaryForFilters(null, null, $brokerId, $date, $date)['paid_total'];
+        $todaySalesCollectionsQuery = clone $collectionsBaseQuery;
+
+        SalesTransaction::applyDateConstraint($todaySalesCollectionsQuery, 'SalesTransaction.sales_date', '=', $date);
+
+        $collectionsFromTodaySales = (float) $todaySalesCollectionsQuery->sum('PaymentRecord.paid_amount');
+        $collectionsFromPreviousBalances = max(0, round($collections - $collectionsFromTodaySales, 2));
+        $cashOnHand = $collections;
         $outstandingReceivableBalance = SalesTransaction::getTotalSalesBalance($brokerId, $date);
 
         $entryTotals = static::getDailyEntryTotals($brokerId, $date);
@@ -212,6 +218,8 @@ class FinancialStatementEntry extends Model
             'loss_on_sale' => $lossOnSale,
             'net_income' => $netIncome,
             'collections' => $collections,
+            'collections_from_today_sales' => $collectionsFromTodaySales,
+            'collections_from_previous_balances' => $collectionsFromPreviousBalances,
             'cash_on_hand' => $cashOnHand,
             'outstanding_receivable_balance' => $outstandingReceivableBalance,
         ];

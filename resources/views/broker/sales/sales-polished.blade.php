@@ -25,6 +25,10 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         $breadcrumbs[] = ['title' => $salesModalBreadcrumbs[request('modal')]];
     }
 
+    $reportDateLabel = ($dateFrom ?? null) && ($dateTo ?? null)
+        ? \Illuminate\Support\Carbon::parse($dateFrom)->format('M d, Y') . (($dateFrom !== $dateTo) ? ' - ' . \Illuminate\Support\Carbon::parse($dateTo)->format('M d, Y') : '')
+        : 'All Dates';
+
     $printReceiptScriptUrl = asset('js/print-receipt.js') . '?v=' . filemtime(public_path('js/print-receipt.js'));
     $qrScannerLegacyScriptUrl = asset('js/qr-scanner-legacy.min.js') . '?v=' . filemtime(public_path('js/qr-scanner-legacy.min.js'));
     $salesQrScannerScriptUrl = asset('js/sales-qr-scanner.js') . '?v=' . filemtime(public_path('js/sales-qr-scanner.js'));
@@ -146,6 +150,15 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                 class="btn-search w-full sm:w-auto">
                             Search
                         </button>
+                        @unless($isCashierStaff)
+                            <button type="button"
+                                    class="app-button app-button--dark w-full px-4 py-2 text-sm sm:w-auto"
+                                    onclick="printDailySalesReport()"
+                                    @disabled(($reportSales ?? collect())->isEmpty())>
+                                <x-heroicon-o-printer class="h-4 w-4" />
+                                <span>Print</span>
+                            </button>
+                        @endunless
                     </div>
                 </div>
             </form>
@@ -306,6 +319,80 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         </div>
     </div>
 
+    @unless($isCashierStaff)
+        <div id="daily-sales-report"
+             data-watermark-logo-url="{{ asset('image/logo.png') }}"
+             hidden>
+            <div style="font-family: Arial, sans-serif; color: #111827;">
+                <div style="text-align: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 14px; margin-bottom: 16px;">
+                    <h1 style="margin: 0; font-size: 22px;">Daily Sales and Sold Boxes Report</h1>
+                    <p style="margin: 6px 0 0; font-size: 13px; color: #4b5563;">{{ $broker?->name ?? auth()->user()?->name }}</p>
+                    @if($broker?->stall_name)
+                        <p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">{{ $broker->stall_name }}</p>
+                    @endif
+                    <p style="margin: 8px 0 0; font-size: 12px; color: #6b7280;">Date: {{ $reportDateLabel }}</p>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+                    <tr>
+                        <td style="border: 1px solid #e5e7eb; padding: 10px;">
+                            <strong>Sales Records</strong><br>{{ number_format($salesSummary['count'] ?? 0) }}
+                        </td>
+                        <td style="border: 1px solid #e5e7eb; padding: 10px;">
+                            <strong>Sold Boxes</strong><br>{{ number_format($reportSoldBoxCount ?? 0) }}
+                        </td>
+                        <td style="border: 1px solid #e5e7eb; padding: 10px;">
+                            <strong>Sales Amount</strong><br>PHP {{ number_format($salesSummary['gross_total'] ?? 0, 2) }}
+                        </td>
+                        <td style="border: 1px solid #e5e7eb; padding: 10px;">
+                            <strong>Total Collection</strong><br>PHP {{ number_format($salesSummary['paid_total'] ?? 0, 2) }}
+                        </td>
+                        <td style="border: 1px solid #e5e7eb; padding: 10px;">
+                            <strong>Balance</strong><br>PHP {{ number_format($salesSummary['balance_total'] ?? 0, 2) }}
+                        </td>
+                    </tr>
+                </table>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Date</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Transaction</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Buyer</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Fish Box</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Fish</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: right;">Price</th>
+                            <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($reportSales ?? collect()) as $reportSale)
+                            @foreach($reportSale->salesDetails as $detail)
+                                @php
+                                    $reportFishBox = $detail->fishBoxPurchase?->fishBox;
+                                    $reportFish = $detail->fishBoxPurchase?->fishType;
+                                @endphp
+                                <tr>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $reportSale->sales_date?->format('M d, Y') }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">#{{ $reportSale->id }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $reportSale->buyer_name }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $reportFishBox?->name ?? 'Unassigned' }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ \App\Models\BrokerFishTypeAssignment::resolveDisplayName($reportSale->broker_id, $reportFish) ?? 'Unassigned' }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px; text-align: right;">PHP {{ number_format((float) $detail->unit_price, 2) }}</td>
+                                    <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $salesStatusesWithDisplayNames[$reportSale->status] ?? $reportSale->status }}</td>
+                                </tr>
+                            @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="7" style="border: 1px solid #e5e7eb; padding: 16px; text-align: center; color: #6b7280;">No sales found for this report.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endunless
+
     <template id="sales-detail-row-template">
         <div class="sales-detail-row rounded-2xl border border-gray-200 bg-white/80 p-6">
             <div class="flex flex-wrap gap-3 xl:flex-nowrap xl:items-start">
@@ -408,6 +495,10 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             return modalRoots.reverse().find((modalRoot) => modalRoot.offsetParent !== null)
                 || modalRoots.at(-1)
                 || null;
+        }
+
+        function printDailySalesReport() {
+            window.printReceipt('daily-sales-report', 'Daily Sales Report');
         }
 
         function getCurrentSalesFormConfig(modalRoot = getActiveSalesModalRoot()) {

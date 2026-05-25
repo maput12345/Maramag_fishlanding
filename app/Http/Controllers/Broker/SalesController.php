@@ -82,6 +82,7 @@ class SalesController extends Controller
         $userId = Auth::id();
         $user = Auth::user();
         $brokerId = Broker::getBrokerIdByUserId($userId);
+        $broker = $brokerId ? Broker::find($brokerId) : null;
 
         if ($user?->isCashier()) {
             $cashierDate = now()->toDateString();
@@ -89,6 +90,7 @@ class SalesController extends Controller
             $dateTo = $cashierDate;
             $sales = SalesTransaction::getPaginatedForCashier($search, $status, $brokerId, $userId, $cashierDate);
             $salesSummary = SalesTransaction::getSummaryForCashier($search, $status, $brokerId, $userId, $cashierDate);
+            $reportSales = collect();
         } else {
             if (!$request->filled('date_from') && !$request->filled('date_to')) {
                 $dateFrom = now()->toDateString();
@@ -97,7 +99,9 @@ class SalesController extends Controller
 
             $sales = SalesTransaction::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
             $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
+            $reportSales = SalesTransaction::getReportWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
         }
+        $reportSoldBoxCount = $reportSales->sum(fn (SalesTransaction $sale) => $sale->salesDetails->count());
         $fishBoxes = FishBox::getAvailableForSale($brokerId);
         $allFishTypes = FishType::getFishTypeByBrokerId($brokerId);
 
@@ -158,7 +162,7 @@ class SalesController extends Controller
             'viewingSales', 'salesStatuses',
             'salesStatusesWithDisplayNames', 'salesStatusesWithColorClasses',
             'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap',
-            'dateFrom', 'dateTo', 'regularBuyers'
+            'dateFrom', 'dateTo', 'regularBuyers', 'reportSales', 'reportSoldBoxCount', 'broker'
         );
     }
 
@@ -485,6 +489,15 @@ class SalesController extends Controller
 
         if ($this->shouldReturnJson($request)) {
             return $this->jsonSuccessResponse('Payment recorded successfully!');
+        }
+
+        if ($request->input('return_to') === 'buyer_ledger') {
+            return redirect()->route('broker.buyers.index', array_filter([
+                'buyer' => $sale->buyer_id,
+                'search' => $request->input('buyer_search'),
+                'page' => $request->input('buyer_page'),
+            ], fn ($value) => $value !== null && $value !== ''))
+                ->with('success', 'Payment recorded successfully!');
         }
 
         return redirect()->route('broker.sales.sales')

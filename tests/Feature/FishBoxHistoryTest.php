@@ -71,7 +71,8 @@ class FishBoxHistoryTest extends TestCase
             'tab' => 'fishBoxes',
             'modal' => 'history',
             'history' => $fishBox->id,
-            'box_history_date' => '2026-04-29',
+            'box_history_date_from' => '2026-04-29',
+            'box_history_date_to' => '2026-04-29',
         ]);
 
         $data = app(FishBoxController::class)->getIndexData($request);
@@ -82,7 +83,8 @@ class FishBoxHistoryTest extends TestCase
             'tab' => 'fishBoxes',
             'modal' => 'history',
             'history' => $fishBox->id,
-            'box_history_date' => '2026-04-29',
+            'box_history_date_from' => '2026-04-29',
+            'box_history_date_to' => '2026-04-29',
         ]));
 
         $response->assertOk();

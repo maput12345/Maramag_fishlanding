@@ -14,7 +14,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             $selectedFishTypeForBulkQr ? 'Fish: ' . $selectedFishTypeForBulkQr->display_name : null,
         ])->filter()->implode(' | ');
         $fishBoxListQuery = array_merge(
-            request()->except(['modal', 'history', 'box_history_date']),
+            request()->except(['modal', 'history', 'box_history_date', 'box_history_date_from', 'box_history_date_to']),
             ['tab' => 'fishBoxes']
         );
         $fishBoxHistoryPayload = $fishBoxes->getCollection()
@@ -73,7 +73,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     </button>
                 </form>
                 @if(($bulkRestockEligibleCount ?? 0) > 0)
-                    <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'bulk-restock']) }}"
+                    <a href="{{ route('broker.inventory.index', array_merge($fishBoxListQuery, ['modal' => 'bulk-restock'])) }}"
                        class="app-button app-button--dark w-full sm:w-auto px-4 py-2 text-sm">
                         <x-heroicon-o-squares-2x2 class="w-4 h-4" />
                         <span class="hidden sm:inline">Restock</span>
@@ -108,7 +108,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
     <script id="fish-box-history-data" type="application/json">{!! json_encode($fishBoxHistoryPayload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 
     <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mb-6 summary-strip-wrap">
-        <div class="summary-strip summary-strip--five">
+        <div class="summary-strip summary-strip--six">
             <div class="summary-strip-item">
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Boxes</p>
                 <p class="summary-stat-value text-gray-900" data-fish-box-summary="total">{{ number_format($fishBoxSummary['total'] ?? 0) }}</p>
@@ -129,6 +129,10 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Returned</p>
                 <p class="summary-stat-value text-yellow-600" data-fish-box-summary="returned">{{ number_format($fishBoxSummary['returned'] ?? 0) }}</p>
             </div>
+            <div class="summary-strip-item">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Inactive</p>
+                <p class="summary-stat-value text-red-600" data-fish-box-summary="retired">{{ number_format($fishBoxSummary['retired'] ?? 0) }}</p>
+            </div>
         </div>
     </div>
 
@@ -137,7 +141,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         <x-app-modal
             title="Support Actions Required"
             subtitle="Broker inventory is read-only until an admin explicitly enables support actions."
-            :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
+            :close-url="route('broker.inventory.index', $fishBoxListQuery)"
         >
             <x-slot:icon>
                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
@@ -182,7 +186,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 </div>
             </x-slot:icon>
 
-            <form action="{{ route('broker.fish-boxes.bulk-restock') }}"
+            <form action="{{ route('broker.fish-boxes.bulk-restock', $fishBoxListQuery) }}"
                   method="POST"
                   class="space-y-6"
                   data-cost-autofill-form>
@@ -315,7 +319,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 </div>
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
-                    <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
+                    <a href="{{ route('broker.inventory.index', $fishBoxListQuery) }}"
                        class="app-button app-button--secondary w-full px-4 py-2.5 text-sm sm:w-auto">
                         Cancel
                     </a>
@@ -411,16 +415,30 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     <input type="hidden" name="tab" value="fishBoxes">
                     <input type="hidden" name="modal" value="history">
                     <input type="hidden" name="history" value="{{ $historyFishBox->id }}">
-                    @foreach(request()->except(['tab', 'modal', 'history', 'box_history_date']) as $queryKey => $queryValue)
+                    @foreach(request()->except(['tab', 'modal', 'history', 'box_history_date', 'box_history_date_from', 'box_history_date_to']) as $queryKey => $queryValue)
                         @if(is_scalar($queryValue) && $queryValue !== '')
                             <input type="hidden" name="{{ $queryKey }}" value="{{ $queryValue }}">
                         @endif
                     @endforeach
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                        <div class="flex-1">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="sm:flex-1">
+                            <label for="box_history_date_from" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date From
+                            </label>
                             <input type="date"
-                                   name="box_history_date"
-                                   value="{{ request('box_history_date') }}"
+                                   id="box_history_date_from"
+                                   name="box_history_date_from"
+                                   value="{{ request('box_history_date_from') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="sm:flex-1">
+                            <label for="box_history_date_to" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date To
+                            </label>
+                            <input type="date"
+                                   id="box_history_date_to"
+                                   name="box_history_date_to"
+                                   value="{{ request('box_history_date_to') }}"
                                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="filter-action-group">
@@ -428,7 +446,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                     class="btn-search">
                                 Search
                             </button>
-                            @if(request()->filled('box_history_date'))
+                            @if(request()->filled('box_history_date_from') || request()->filled('box_history_date_to'))
                                 <a href="{{ route('broker.inventory.index', array_merge($fishBoxListQuery, ['modal' => 'history', 'history' => $historyFishBox->id])) }}"
                                    class="btn-clear">
                                     Clear
@@ -468,7 +486,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 @empty
                                     <tr>
                                         <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
-                                            {{ request()->filled('box_history_date') ? 'No fish box history matched that date.' : 'No fish box history yet.' }}
+                                            {{ request()->filled('box_history_date_from') || request()->filled('box_history_date_to') ? 'No fish box history matched that date range.' : 'No fish box history yet.' }}
                                         </td>
                                     </tr>
                                 @endforelse
@@ -522,7 +540,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                         <option value="">All Status</option>
                         @foreach($fishBoxStatuses as $status)
                             <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $status)) }}
+                                {{ \App\Constants\FishBoxStatusConstant::label($status) }}
                             </option>
                         @endforeach
                     </select>
@@ -618,6 +636,24 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 data-fish-box-name="{{ $fishBox->name }}">
                             <x-heroicon-o-qr-code class="w-6 h-6" />
                         </button>
+                        @if(!$brokerViewReadOnly && $fishBox->canBeRestored())
+                            <form method="POST"
+                                  action="{{ route('broker.fish-boxes.restore', $fishBox->id) }}"
+                                  data-swal="confirm"
+                                  data-swal-title="Restore fish box?"
+                                  data-swal-text="This will restore {{ $fishBox->name }} to unassigned so it can be restocked again."
+                                  data-swal-confirm="Yes, restore"
+                                  data-swal-icon="question"
+                                  class="inline">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit"
+                                        class="text-gray-400 hover:text-green-600 transition-colors"
+                                        title="Restore Fish Box">
+                                    <x-heroicon-o-arrow-uturn-left class="w-6 h-6" />
+                                </button>
+                            </form>
+                        @endif
                         @if(!$brokerViewReadOnly && $fishBox->canBeMarkedAsMissing())
                             <form method="POST" action="{{ route('broker.fish-boxes.mark-missing', $fishBox->id) }}"
                                   data-inventory-async="mark-missing"
@@ -648,14 +684,26 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 </button>
                             </form>
                         @endif
-                        @if(!$brokerViewReadOnly && $fishBox->canBeDeleted())
-                            <form action="{{ route('broker.fish-boxes.destroy', $fishBox->id) }}" method="POST" class="inline-block" data-swal="delete">
+                        @if(!$brokerViewReadOnly && ($fishBox->canBeDeleted() || $fishBox->canBeRetired()))
+                            @php($willRetireFishBox = !$fishBox->canBeDeleted() && $fishBox->canBeRetired())
+                            <form action="{{ route('broker.fish-boxes.destroy', $fishBox->id) }}"
+                                  method="POST"
+                                  class="inline-block"
+                                  data-swal="{{ $willRetireFishBox ? 'confirm' : 'delete' }}"
+                                  data-swal-title="{{ $willRetireFishBox ? 'Make fish box inactive?' : 'Delete fish box?' }}"
+                                  data-swal-text="{{ $willRetireFishBox ? 'This will make ' . $fishBox->name . ' inactive and keep its history for receipts and reports.' : 'This will permanently delete ' . $fishBox->name . ' because it has no history yet.' }}"
+                                  data-swal-confirm="{{ $willRetireFishBox ? 'Yes, make inactive' : 'Yes, delete' }}"
+                                  data-swal-icon="{{ $willRetireFishBox ? 'question' : 'warning' }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
                                         class="text-gray-400 hover:text-red-600 transition-colors"
-                                        title="Delete Fish Box">
-                                    <x-heroicon-o-trash class="w-6 h-6" />
+                                        title="{{ $willRetireFishBox ? 'Make Fish Box Inactive' : 'Delete Fish Box' }}">
+                                    @if($willRetireFishBox)
+                                        <x-heroicon-o-archive-box class="w-6 h-6" />
+                                    @else
+                                        <x-heroicon-o-trash class="w-6 h-6" />
+                                    @endif
                                 </button>
                             </form>
                         @endif
@@ -723,7 +771,8 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
                     data-fish-box-history-close
                     aria-label="Close fish box history"></button>
-            <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div class="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                 style="max-height: calc(100vh - 3rem);">
                 <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
                     <div class="flex min-w-0 items-start gap-3">
                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
@@ -741,31 +790,46 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                         <x-heroicon-o-x-mark class="h-5 w-5" />
                     </button>
                 </div>
-                <div class="space-y-4 px-6 py-5">
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                        <input type="date"
-                               class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                               data-fish-box-history-date>
+                <div class="flex min-h-0 flex-1 flex-col space-y-4 px-6 py-5">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="sm:flex-1">
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date From
+                            </label>
+                            <input type="date"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                   data-fish-box-history-date-from>
+                        </div>
+                        <div class="sm:flex-1">
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date To
+                            </label>
+                            <input type="date"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                   data-fish-box-history-date-to>
+                        </div>
                         <button type="button"
-                                class="btn-clear"
+                                class="btn-clear sm:w-32"
                                 data-fish-box-history-clear>
                             Clear
                         </button>
                     </div>
-                    <div class="overflow-hidden rounded-xl border border-gray-200">
-                        <div class="overflow-x-auto">
+                    <div class="min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200">
+                        <div class="overflow-auto" style="max-height: 38vh;">
                             <table class="w-full">
-                                <thead class="bg-gray-50">
+                                <thead class="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white" data-fish-box-history-rows></tbody>
                             </table>
                         </div>
                     </div>
+                    <div class="flex flex-col gap-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+                         data-fish-box-history-pagination></div>
                     <div class="flex justify-end border-t border-gray-100 pt-5">
                         <button type="button"
                                 class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -1083,9 +1147,13 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
 
             const historyRows = historyModal?.querySelector('[data-fish-box-history-rows]');
             const historySubtitle = historyModal?.querySelector('[data-fish-box-history-subtitle]');
-            const historyDateInput = historyModal?.querySelector('[data-fish-box-history-date]');
+            const historyDateFromInput = historyModal?.querySelector('[data-fish-box-history-date-from]');
+            const historyDateToInput = historyModal?.querySelector('[data-fish-box-history-date-to]');
             const historyClearButton = historyModal?.querySelector('[data-fish-box-history-clear]');
+            const historyPagination = historyModal?.querySelector('[data-fish-box-history-pagination]');
+            const historyPageSize = 12;
             let activeHistoryRecords = [];
+            let activeHistoryPage = 1;
 
             const historyData = historyDataElement
                 ? JSON.parse(historyDataElement.textContent || '{}')
@@ -1103,23 +1171,55 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     return;
                 }
 
-                const selectedDate = historyDateInput?.value || '';
-                const records = selectedDate
-                    ? activeHistoryRecords.filter((record) => record.date === selectedDate)
-                    : activeHistoryRecords;
+                const dateFrom = historyDateFromInput?.value || '';
+                const dateTo = historyDateToInput?.value || '';
+                const hasDateRange = dateFrom !== '' || dateTo !== '';
+                const records = activeHistoryRecords.filter((record) => {
+                    const recordDate = record.date || '';
+
+                    return (!dateFrom || recordDate >= dateFrom)
+                        && (!dateTo || recordDate <= dateTo);
+                });
+                const totalPages = Math.max(1, Math.ceil(records.length / historyPageSize));
+                activeHistoryPage = Math.min(activeHistoryPage, totalPages);
+                const pageStart = (activeHistoryPage - 1) * historyPageSize;
+                const pageRecords = records.slice(pageStart, pageStart + historyPageSize);
+
+                if (historyPagination) {
+                    historyPagination.innerHTML = records.length > historyPageSize
+                        ? `
+                            <span>Showing ${pageStart + 1}-${Math.min(pageStart + historyPageSize, records.length)} of ${records.length}</span>
+                            <span class="inline-flex items-center gap-2">
+                                <button type="button"
+                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-fish-box-history-page="prev"
+                                        ${activeHistoryPage === 1 ? 'disabled' : ''}>
+                                    Previous
+                                </button>
+                                <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
+                                <button type="button"
+                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-fish-box-history-page="next"
+                                        ${activeHistoryPage === totalPages ? 'disabled' : ''}>
+                                    Next
+                                </button>
+                            </span>
+                        `
+                        : '';
+                }
 
                 if (records.length === 0) {
                     historyRows.innerHTML = `
                         <tr>
                             <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
-                                ${selectedDate ? 'No fish box history matched that date.' : 'No fish box history yet.'}
+                                ${hasDateRange ? 'No fish box history matched that date range.' : 'No fish box history yet.'}
                             </td>
                         </tr>
                     `;
                     return;
                 }
 
-                historyRows.innerHTML = records.map((record) => `
+                historyRows.innerHTML = pageRecords.map((record) => `
                     <tr>
                         <td class="whitespace-nowrap px-4 py-3 text-left text-sm text-gray-900">${escapeHtml(record.date_label)}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${escapeHtml(record.fish)}</td>
@@ -1135,6 +1235,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
 
                 const history = historyData[String(fishBoxId)] || {};
                 activeHistoryRecords = Array.isArray(history.records) ? history.records : [];
+                activeHistoryPage = 1;
 
                 if (historySubtitle) {
                     historySubtitle.textContent = history.name
@@ -1142,8 +1243,12 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                         : 'Previous stock records.';
                 }
 
-                if (historyDateInput) {
-                    historyDateInput.value = '';
+                if (historyDateFromInput) {
+                    historyDateFromInput.value = '';
+                }
+
+                if (historyDateToInput) {
+                    historyDateToInput.value = '';
                 }
 
                 renderHistoryRows();
@@ -1172,11 +1277,33 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 button.addEventListener('click', closeHistoryModal);
             });
 
-            historyDateInput?.addEventListener('input', renderHistoryRows);
-            historyClearButton?.addEventListener('click', () => {
-                if (historyDateInput) {
-                    historyDateInput.value = '';
+            historyDateFromInput?.addEventListener('input', () => {
+                activeHistoryPage = 1;
+                renderHistoryRows();
+            });
+            historyDateToInput?.addEventListener('input', () => {
+                activeHistoryPage = 1;
+                renderHistoryRows();
+            });
+            historyPagination?.addEventListener('click', (event) => {
+                const pageAction = event.target.closest('[data-fish-box-history-page]')?.dataset.fishBoxHistoryPage;
+
+                if (!pageAction) {
+                    return;
                 }
+
+                activeHistoryPage += pageAction === 'next' ? 1 : -1;
+                renderHistoryRows();
+            });
+            historyClearButton?.addEventListener('click', () => {
+                if (historyDateFromInput) {
+                    historyDateFromInput.value = '';
+                }
+
+                if (historyDateToInput) {
+                    historyDateToInput.value = '';
+                }
+                activeHistoryPage = 1;
                 renderHistoryRows();
             });
 

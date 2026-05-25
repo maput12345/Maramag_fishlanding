@@ -236,7 +236,7 @@ $breadcrumbs = [
 
             @if($sales->hasPages())
                 <div class="pt-4">
-                    {{ $sales->appends(request()->query())->links() }}
+                    {{ $sales->appends(request()->query())->links('components.pagination') }}
                 </div>
             @endif
         </div>

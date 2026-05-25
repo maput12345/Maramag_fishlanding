@@ -9,6 +9,7 @@ class FishBoxStatusConstant
     public const SOLD = 'Sold';
     public const RETURNED = 'Returned';
     public const MISSING = 'Missing';
+    public const RETIRED = 'Retired';
 
     /**
      * @return array
@@ -21,7 +22,13 @@ class FishBoxStatusConstant
             self::SOLD,
             self::RETURNED,
             self::MISSING,
+            self::RETIRED,
         ];
+    }
+
+    public static function label(string $status): string
+    {
+        return $status === self::RETIRED ? 'Inactive' : $status;
     }
 
     public static function getEditableStatuses(): array

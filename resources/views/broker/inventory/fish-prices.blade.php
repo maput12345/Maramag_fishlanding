@@ -254,11 +254,25 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     <input type="hidden" name="tab" value="fishPrices">
                     <input type="hidden" name="modal" value="history">
                     <input type="hidden" name="history" value="{{ $historyBrokerFishType->id }}">
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                        <div class="flex-1">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="sm:flex-1">
+                            <label for="history_date_from" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date From
+                            </label>
                             <input type="date"
-                                   name="history_date"
-                                   value="{{ request('history_date') }}"
+                                   id="history_date_from"
+                                   name="history_date_from"
+                                   value="{{ request('history_date_from') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="sm:flex-1">
+                            <label for="history_date_to" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date To
+                            </label>
+                            <input type="date"
+                                   id="history_date_to"
+                                   name="history_date_to"
+                                   value="{{ request('history_date_to') }}"
                                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="filter-action-group">
@@ -266,7 +280,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                     class="btn-search">
                                 Search
                             </button>
-                            @if(request()->filled('history_date'))
+                            @if(request()->filled('history_date_from') || request()->filled('history_date_to'))
                                 <a href="{{ route('broker.inventory.index', ['tab' => 'fishPrices', 'modal' => 'history', 'history' => $historyBrokerFishType->id]) }}"
                                    class="btn-clear">
                                     Clear
@@ -308,7 +322,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                 @empty
                                     <tr>
                                         <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
-                                            {{ request()->filled('history_date') ? 'No price history matched that date.' : 'No price history yet.' }}
+                                            {{ request()->filled('history_date_from') || request()->filled('history_date_to') ? 'No price history matched that date range.' : 'No price history yet.' }}
                                         </td>
                                     </tr>
                                 @endforelse
@@ -386,6 +400,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     @forelse($brokerFishTypes as $assignment)
+                        @php($canDeleteFromPriceList = $assignment->canBeDeletedFromPriceList())
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -449,15 +464,15 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                            title="{{ $assignment->latestPrice ? 'Edit price' : 'Set price' }}">
                                             <x-heroicon-o-pencil-square class="w-6 h-6" />
                                         </button>
-                                        @if($assignment->latestPrice)
+                                        @if($canDeleteFromPriceList)
                                             <form action="{{ route('broker.fish-prices.destroy', $assignment->id) }}"
                                                   method="POST"
                                                   class="inline"
                                                   data-swal="delete"
-                                                  data-record-name="{{ $assignment->display_name ?? 'fish price' }}">
+                                                  data-record-name="{{ $assignment->display_name ?? 'fish' }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Remove price">
+                                                <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Remove fish from price list">
                                                     <x-heroicon-o-trash class="w-6 h-6" />
                                                 </button>
                                             </form>
@@ -493,7 +508,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     class="fixed inset-0 bg-slate-900/35 backdrop-blur-[2px]"
                     data-fish-price-history-close
                     aria-label="Close price history"></button>
-            <div class="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div class="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                 style="max-height: calc(100vh - 3rem);">
                 <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
                     <div class="flex min-w-0 items-start gap-3">
                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
@@ -511,29 +527,44 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                         <x-heroicon-o-x-mark class="h-5 w-5" />
                     </button>
                 </div>
-                <div class="space-y-4 px-6 py-5">
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                        <input type="date"
-                               class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                               data-fish-price-history-date>
-                        <button type="button" class="btn-clear" data-fish-price-history-clear>
+                <div class="flex min-h-0 flex-1 flex-col space-y-4 px-6 py-5">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="sm:flex-1">
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date From
+                            </label>
+                            <input type="date"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                   data-fish-price-history-date-from>
+                        </div>
+                        <div class="sm:flex-1">
+                            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                Date To
+                            </label>
+                            <input type="date"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                   data-fish-price-history-date-to>
+                        </div>
+                        <button type="button" class="btn-clear sm:w-32" data-fish-price-history-clear>
                             Clear
                         </button>
                     </div>
-                    <div class="overflow-hidden rounded-xl border border-gray-200">
-                        <div class="overflow-x-auto">
+                    <div class="min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200">
+                        <div class="overflow-auto" style="max-height: 38vh;">
                             <table class="w-full">
-                                <thead class="bg-gray-50">
+                                <thead class="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white" data-fish-price-history-rows></tbody>
                             </table>
                         </div>
                     </div>
+                    <div class="flex flex-col gap-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+                         data-fish-price-history-pagination></div>
                     <div class="flex justify-end border-t border-gray-100 pt-5">
                         <button type="button"
                                 class="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -663,10 +694,14 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             const historyModal = document.getElementById('fish-price-history-modal');
             const historyDataElement = document.getElementById('fish-price-history-data');
             const historyRows = historyModal?.querySelector('[data-fish-price-history-rows]');
-            const historyDateInput = historyModal?.querySelector('[data-fish-price-history-date]');
+            const historyDateFromInput = historyModal?.querySelector('[data-fish-price-history-date-from]');
+            const historyDateToInput = historyModal?.querySelector('[data-fish-price-history-date-to]');
             const historySubtitle = historyModal?.querySelector('[data-fish-price-history-subtitle]');
+            const historyPagination = historyModal?.querySelector('[data-fish-price-history-pagination]');
             const historyData = historyDataElement ? JSON.parse(historyDataElement.textContent || '{}') : {};
+            const historyPageSize = 12;
             let activeHistoryRecords = [];
+            let activeHistoryPage = 1;
 
             appendToBody(historyModal);
 
@@ -808,23 +843,55 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     return;
                 }
 
-                const selectedDate = historyDateInput?.value || '';
-                const records = selectedDate
-                    ? activeHistoryRecords.filter((record) => record.date === selectedDate)
-                    : activeHistoryRecords;
+                const dateFrom = historyDateFromInput?.value || '';
+                const dateTo = historyDateToInput?.value || '';
+                const hasDateRange = dateFrom !== '' || dateTo !== '';
+                const records = activeHistoryRecords.filter((record) => {
+                    const recordDate = record.date || '';
+
+                    return (!dateFrom || recordDate >= dateFrom)
+                        && (!dateTo || recordDate <= dateTo);
+                });
+                const totalPages = Math.max(1, Math.ceil(records.length / historyPageSize));
+                activeHistoryPage = Math.min(activeHistoryPage, totalPages);
+                const pageStart = (activeHistoryPage - 1) * historyPageSize;
+                const pageRecords = records.slice(pageStart, pageStart + historyPageSize);
+
+                if (historyPagination) {
+                    historyPagination.innerHTML = records.length > historyPageSize
+                        ? `
+                            <span>Showing ${pageStart + 1}-${Math.min(pageStart + historyPageSize, records.length)} of ${records.length}</span>
+                            <span class="inline-flex items-center gap-2">
+                                <button type="button"
+                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-fish-price-history-page="prev"
+                                        ${activeHistoryPage === 1 ? 'disabled' : ''}>
+                                    Previous
+                                </button>
+                                <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
+                                <button type="button"
+                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        data-fish-price-history-page="next"
+                                        ${activeHistoryPage === totalPages ? 'disabled' : ''}>
+                                    Next
+                                </button>
+                            </span>
+                        `
+                        : '';
+                }
 
                 if (records.length === 0) {
                     historyRows.innerHTML = `
                         <tr>
                             <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
-                                ${selectedDate ? 'No price history matched that date.' : 'No price history yet.'}
+                                ${hasDateRange ? 'No price history matched that date range.' : 'No price history yet.'}
                             </td>
                         </tr>
                     `;
                     return;
                 }
 
-                historyRows.innerHTML = records.map((record) => `
+                historyRows.innerHTML = pageRecords.map((record) => `
                     <tr>
                         <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">${escapeHtml(record.date_label)}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold tabular-nums text-gray-900">${escapeHtml(record.price)}</td>
@@ -836,13 +903,18 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             const openHistoryModal = (button) => {
                 const history = historyData[String(button.dataset.assignmentId)] || {};
                 activeHistoryRecords = Array.isArray(history.records) ? history.records : [];
+                activeHistoryPage = 1;
                 if (historySubtitle) {
                     historySubtitle.textContent = history.name
                         ? `Previous prices for ${history.name}.`
                         : 'Previous price records.';
                 }
-                if (historyDateInput) {
-                    historyDateInput.value = '';
+                if (historyDateFromInput) {
+                    historyDateFromInput.value = '';
+                }
+
+                if (historyDateToInput) {
+                    historyDateToInput.value = '';
                 }
                 renderHistoryRows();
                 historyModal?.classList.remove('hidden');
@@ -862,11 +934,33 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 button.addEventListener('click', closeHistoryModal);
             });
 
-            historyDateInput?.addEventListener('input', renderHistoryRows);
-            historyModal?.querySelector('[data-fish-price-history-clear]')?.addEventListener('click', () => {
-                if (historyDateInput) {
-                    historyDateInput.value = '';
+            historyDateFromInput?.addEventListener('input', () => {
+                activeHistoryPage = 1;
+                renderHistoryRows();
+            });
+            historyDateToInput?.addEventListener('input', () => {
+                activeHistoryPage = 1;
+                renderHistoryRows();
+            });
+            historyPagination?.addEventListener('click', (event) => {
+                const pageAction = event.target.closest('[data-fish-price-history-page]')?.dataset.fishPriceHistoryPage;
+
+                if (!pageAction) {
+                    return;
                 }
+
+                activeHistoryPage += pageAction === 'next' ? 1 : -1;
+                renderHistoryRows();
+            });
+            historyModal?.querySelector('[data-fish-price-history-clear]')?.addEventListener('click', () => {
+                if (historyDateFromInput) {
+                    historyDateFromInput.value = '';
+                }
+
+                if (historyDateToInput) {
+                    historyDateToInput.value = '';
+                }
+                activeHistoryPage = 1;
                 renderHistoryRows();
             });
 

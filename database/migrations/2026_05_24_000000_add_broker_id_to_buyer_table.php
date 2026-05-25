@@ -21,20 +21,21 @@ return new class extends Migration
             });
         }
 
-        DB::table('Buyer')
-            ->joinSub(
-                DB::table('SalesTransaction')
-                    ->select('buyer_id')
-                    ->selectRaw('MIN(broker_id) as broker_id')
-                    ->groupBy('buyer_id')
-                    ->havingRaw('COUNT(DISTINCT broker_id) = 1'),
-                'single_broker_sales',
-                'Buyer.id',
-                '=',
-                'single_broker_sales.buyer_id'
-            )
-            ->whereNull('Buyer.broker_id')
-            ->update(['Buyer.broker_id' => DB::raw('single_broker_sales.broker_id')]);
+        DB::table('SalesTransaction')
+            ->select('buyer_id')
+            ->selectRaw('MIN(broker_id) as broker_id')
+            ->whereNotNull('buyer_id')
+            ->groupBy('buyer_id')
+            ->havingRaw('COUNT(DISTINCT broker_id) = 1')
+            ->orderBy('buyer_id')
+            ->chunk(500, function ($singleBrokerSales): void {
+                foreach ($singleBrokerSales as $saleGroup) {
+                    DB::table('Buyer')
+                        ->where('id', $saleGroup->buyer_id)
+                        ->whereNull('broker_id')
+                        ->update(['broker_id' => $saleGroup->broker_id]);
+                }
+            });
     }
 
     public function down(): void

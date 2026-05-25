@@ -74,6 +74,7 @@ class InventorySummaryConsistencyTest extends TestCase
             'sold' => 1,
             'returned' => 1,
             'missing' => 1,
+            'retired' => 0,
             'total' => 4,
         ], $summary);
     }

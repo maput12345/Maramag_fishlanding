@@ -4,6 +4,7 @@
     $isBrokerTrackingActive = request()->routeIs('broker.fish-boxes.tracking');
     $isTransactionActive = request()->routeIs('broker.transaction');
     $isSalesRecordsActive = request()->routeIs('broker.sales.sales');
+    $isBuyersActive = request()->routeIs('broker.buyers.*');
 @endphp
 
 <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="app-sidebar broker-sidebar fixed left-0 top-0 z-40 hidden min-h-screen overflow-hidden transition-all duration-200 ease-out md:block">
@@ -70,6 +71,16 @@
                 </a>
             </div>
             @unless($isCashierStaff)
+            <!-- Buyer Ledger -->
+            <div>
+                <a href="{{ route('broker.buyers.index') }}"
+                class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
+                        {{ $isBuyersActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                    <x-heroicon-o-user-group class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
+                            {{ $isBuyersActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                    <span class="transition-all duration-200" x-show="sidebarOpen">Buyer Ledger</span>
+                </a>
+            </div>
             <!-- Fish Box Tracking -->
             <div>
                 <a href="{{ route('broker.fish-boxes.tracking') }}"

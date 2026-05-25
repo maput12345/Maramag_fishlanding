@@ -108,7 +108,8 @@ class FishPriceHistoryTest extends TestCase
             'tab' => 'fishPrices',
             'modal' => 'history',
             'history' => $assignment->id,
-            'history_date' => '2026-05-06',
+            'history_date_from' => '2026-05-06',
+            'history_date_to' => '2026-05-06',
         ]);
 
         $data = app(FishPricesController::class)->getIndexData($request);
@@ -119,7 +120,8 @@ class FishPriceHistoryTest extends TestCase
             'tab' => 'fishPrices',
             'modal' => 'history',
             'history' => $assignment->id,
-            'history_date' => '2026-05-06',
+            'history_date_from' => '2026-05-06',
+            'history_date_to' => '2026-05-06',
         ]));
 
         $response->assertOk();

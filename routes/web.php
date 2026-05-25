@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ApplicationManagementController;
 use App\Http\Controllers\ApplicationPortalController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Broker\FinancialStatementController;
+use App\Http\Controllers\Broker\BuyerLedgerController;
 use App\Http\Controllers\Broker\FishTypesController;
 use App\Http\Controllers\Broker\FishBoxController;
 use App\Http\Controllers\Broker\FishPricesController;
@@ -142,6 +143,8 @@ Route::middleware(['auth', 'broker', 'prevent.back.history'])->group(function ()
     Route::get('/broker/analytics', [SalesManagementController::class, 'analytics'])->name('broker.sales.analytics');
     Route::get('/broker/transaction', [SalesManagementController::class, 'transaction'])->name('broker.transaction');
     Route::get('/broker/sales', [SalesManagementController::class, 'sales'])->name('broker.sales.sales');
+    Route::get('/broker/buyers', [BuyerLedgerController::class, 'index'])->name('broker.buyers.index');
+    Route::post('/broker/buyers/payments', [BuyerLedgerController::class, 'storePayment'])->name('broker.buyers.payments.store');
     Route::get('/broker/financial-statement', [FinancialStatementController::class, 'index'])->name('broker.financial-statements.index');
     Route::post('/broker/financial-statement/entries', [FinancialStatementController::class, 'store'])->name('broker.financial-statements.entries.store');
     Route::patch('/broker/financial-statement/entries/{entry}', [FinancialStatementController::class, 'update'])->name('broker.financial-statements.entries.update');
@@ -175,6 +178,7 @@ Route::middleware(['auth', 'broker', 'prevent.back.history'])->group(function ()
         Route::post('/fish-boxes/bulk-restock', 'bulkRestock')->name('fish-boxes.bulk-restock');
         Route::post('/fish-boxes/return-to-stock', 'returnToStock')->name('fish-boxes.return-to-stock');
         Route::post('/fish-boxes/return-via-qr', 'returnFishBoxViaQr')->name('fish-boxes.return-via-qr');
+        Route::patch('/fish-boxes/{id}/restore', 'restoreRetired')->name('fish-boxes.restore');
         Route::patch('/fish-boxes/{id}/mark-missing', 'markAsMissing')->name('fish-boxes.mark-missing');
         Route::patch('/fish-boxes/{id}/return', 'returnFishBox')->name('fish-boxes.return');
     });

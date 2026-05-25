@@ -172,8 +172,12 @@ class FinancialStatementFeatureTest extends TestCase
 
         $this->assertEqualsWithDelta(420.0, $statementApr25['outstanding_receivable_balance'], 0.01);
         $this->assertEqualsWithDelta(400.0, $statementApr26['outstanding_receivable_balance'], 0.01);
-        $this->assertEqualsWithDelta(100.0, $statementApr25['cash_on_hand'], 0.01);
-        $this->assertEqualsWithDelta(0.0, $statementApr26['cash_on_hand'], 0.01);
+        $this->assertEqualsWithDelta(80.0, $statementApr25['cash_on_hand'], 0.01);
+        $this->assertEqualsWithDelta(20.0, $statementApr26['cash_on_hand'], 0.01);
+        $this->assertEqualsWithDelta(80.0, $statementApr25['collections_from_today_sales'], 0.01);
+        $this->assertEqualsWithDelta(0.0, $statementApr25['collections_from_previous_balances'], 0.01);
+        $this->assertEqualsWithDelta(0.0, $statementApr26['collections_from_today_sales'], 0.01);
+        $this->assertEqualsWithDelta(20.0, $statementApr26['collections_from_previous_balances'], 0.01);
     }
 
     /**

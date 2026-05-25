@@ -27,7 +27,12 @@ class FishPricesController extends Controller
                 'latestPrice' => $this->latestPriceSelect(),
             ])
             ->select(['id', 'broker_id', 'fish_type_id', 'display_name', 'display_description'])
-            ->withCount('prices')
+            ->withCount([
+                'prices',
+                'stockCycles as broker_stock_cycles_count' => function ($stockCycleQuery) use ($brokerId) {
+                    $stockCycleQuery->byBroker($brokerId);
+                },
+            ])
             ->where('broker_id', $brokerId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($searchQuery) use ($search) {
@@ -82,11 +87,12 @@ class FishPricesController extends Controller
         }
 
         if ($request->get('modal') === 'history' && $request->filled('history')) {
-            $historyDate = trim((string) $request->get('history_date'));
+            $historyDateFrom = trim((string) $request->get('history_date_from'));
+            $historyDateTo = trim((string) $request->get('history_date_to'));
 
             $historyBrokerFishType = BrokerFishTypeAssignment::with([
                     'fishType:id,name',
-                    'prices' => function ($query) use ($historyDate) {
+                    'prices' => function ($query) use ($historyDateFrom, $historyDateTo) {
                         $query->select([
                                 'id',
                                 'broker_fish_type_id',
@@ -95,8 +101,11 @@ class FishPricesController extends Controller
                                 'price_date',
                                 'created_at',
                             ])
-                            ->when($historyDate !== '', function ($searchQuery) use ($historyDate) {
-                                $searchQuery->whereDate('price_date', $historyDate);
+                            ->when($historyDateFrom !== '', function ($searchQuery) use ($historyDateFrom) {
+                                $searchQuery->whereDate('price_date', '>=', $historyDateFrom);
+                            })
+                            ->when($historyDateTo !== '', function ($searchQuery) use ($historyDateTo) {
+                                $searchQuery->whereDate('price_date', '<=', $historyDateTo);
                             })
                             ->orderByDesc('price_date')
                             ->orderByDesc('id');
@@ -187,7 +196,7 @@ class FishPricesController extends Controller
     }
 
     /**
-     * Delete the current price for a broker fish type assignment.
+     * Delete an unused fish assignment from the price list.
      */
     public function destroy(int $id): RedirectResponse
     {
@@ -195,15 +204,15 @@ class FishPricesController extends Controller
 
         $assignment = $this->findMutableAssignment($brokerId, $id);
 
-        if (!$assignment->latestPrice) {
+        if (! $assignment->canBeDeletedFromPriceList()) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishPrices'])
-                ->with('error', 'No current fish price was found for that fish type.');
+                ->with('error', 'This fish has price or stock history, so it cannot be removed from the price list.');
         }
 
-        $assignment->latestPrice->delete();
+        $assignment->delete();
 
         return redirect()->route('broker.inventory.index', ['tab' => 'fishPrices'])
-            ->with('success', 'Fish price removed successfully.');
+            ->with('success', 'Fish removed from the price list successfully.');
     }
 
     /**
@@ -213,6 +222,12 @@ class FishPricesController extends Controller
     {
         return BrokerFishTypeAssignment::query()
             ->select(['id', 'broker_id', 'fish_type_id'])
+            ->withCount([
+                'prices',
+                'stockCycles as broker_stock_cycles_count' => function ($stockCycleQuery) use ($brokerId) {
+                    $stockCycleQuery->byBroker($brokerId);
+                },
+            ])
             ->with([
                 'latestPrice' => $this->latestPriceSelect(),
             ])

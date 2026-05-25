@@ -85,13 +85,14 @@ class FishBoxController extends Controller
         }
 
         if ($request && $request->get('modal') === 'history' && $request->filled('history')) {
-            $historyDate = trim((string) $request->get('box_history_date'));
+            $historyDateFrom = trim((string) $request->get('box_history_date_from'));
+            $historyDateTo = trim((string) $request->get('box_history_date_to'));
 
             $historyFishBox = FishBox::query()
                 ->select('FishBox.*')
                 ->withBrokerBoxNumber()
                 ->with([
-                    'purchases' => function ($query) use ($historyDate) {
+                    'purchases' => function ($query) use ($historyDateFrom, $historyDateTo) {
                         $query->select([
                                 'id',
                                 'fish_box_id',
@@ -102,8 +103,11 @@ class FishBoxController extends Controller
                                 'created_at',
                             ])
                             ->with(['fishType:id,name,description'])
-                            ->when($historyDate !== '', function ($searchQuery) use ($historyDate) {
-                                $searchQuery->whereDate('purchase_date', $historyDate);
+                            ->when($historyDateFrom !== '', function ($searchQuery) use ($historyDateFrom) {
+                                $searchQuery->whereDate('purchase_date', '>=', $historyDateFrom);
+                            })
+                            ->when($historyDateTo !== '', function ($searchQuery) use ($historyDateTo) {
+                                $searchQuery->whereDate('purchase_date', '<=', $historyDateTo);
                             })
                             ->orderByDesc('purchase_date')
                             ->orderByDesc('id');
@@ -200,10 +204,16 @@ class FishBoxController extends Controller
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
 
-        // Check if fish box can be deleted
+        if ($fishBox->canBeRetired()) {
+            FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::RETIRED, Auth::id());
+
+            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+                ->with('success', 'Fish box marked inactive successfully. Its history remains available for receipts and reports.');
+        }
+
         if (!$fishBox->canBeDeleted()) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
-                ->with('error', 'Cannot delete fish box that has been sold or returned.');
+                ->with('error', 'This fish box has history or is still active. Return or clear it before retiring; historical boxes are not deleted.');
         }
 
         $fishBox->delete();
@@ -304,6 +314,25 @@ class FishBoxController extends Controller
     }
 
     /**
+     * Restore a retired fish box so it can be restocked again.
+     */
+    public function restoreRetired($id): RedirectResponse
+    {
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
+
+        if (!$fishBox->canBeRestored()) {
+            return redirect()->back()
+                ->with('error', 'Only inactive fish boxes can be restored.');
+        }
+
+        FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::UNASSIGNED, Auth::id());
+
+        return redirect()->back()
+            ->with('success', 'Fish box restored successfully. It is now available for restocking.');
+    }
+
+    /**
      * Return fish box
      *
      * @param int $id
@@ -380,8 +409,22 @@ class FishBoxController extends Controller
             ? 'Fish box restocked successfully.'
             : "{$restockedCount} fish boxes restocked successfully.";
 
-        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        return redirect()->route('broker.inventory.index', $this->fishBoxReturnQuery($request))
             ->with('success', $message);
+    }
+
+    /**
+     * Keep the broker on the same fish-box list page after an action.
+     */
+    private function fishBoxReturnQuery(Request $request): array
+    {
+        return array_filter([
+            'tab' => 'fishBoxes',
+            'page' => $request->query('page'),
+            'search' => $request->query('search'),
+            'status' => $request->query('status'),
+            'fish_type' => $request->query('fish_type'),
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     /**

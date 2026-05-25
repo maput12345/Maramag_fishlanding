@@ -5,11 +5,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
     $breadcrumbs = [
         ['title' => 'Cashier Transaction'],
     ];
-    $isPosMode = request()->boolean('pos')
-        || request()->boolean('auto_print')
-        || $errors->any()
-        || old('after_save') === 'transaction';
     $isCashierStaff = auth()->check() && auth()->user()->isCashier();
+    $isPosMode = $isCashierStaff || request()->boolean('pos');
     $transactionUrl = route('broker.transaction', $isPosMode ? ['pos' => 1] : []);
     $posLaunchUrl = route('broker.transaction', ['pos' => 1]);
     $salesBaseUrl = $transactionUrl;

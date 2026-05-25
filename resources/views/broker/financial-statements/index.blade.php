@@ -11,6 +11,16 @@ use Carbon\Carbon;
     $todayDate = now()->toDateString();
     $dailyExpensesTotal = $statement['selling_general_and_administrative_expenses'] + $statement['loss_on_sale'];
     $printReceiptScriptUrl = asset('js/print-receipt.js') . '?v=' . filemtime(public_path('js/print-receipt.js'));
+    $peso = fn ($amount) => ((float) $amount < 0 ? '-₱' : '₱') . number_format(abs((float) $amount), 2);
+    $netIncomeIsLoss = (float) $statement['net_income'] < 0;
+    $operatingIncomeIsLoss = (float) $statement['operating_income'] < 0;
+    $operatingIncomeCardStyle = $operatingIncomeIsLoss
+        ? 'background-color: #fef2f2; border: 1px solid #fecaca;'
+        : 'background-color: #eef2ff; border: 1px solid #c7d2fe;';
+    $operatingIncomeTextStyle = $operatingIncomeIsLoss ? 'color: #7f1d1d;' : 'color: #312e81;';
+    $netIncomeCardStyle = $netIncomeIsLoss
+        ? 'background-color: #7f1d1d; border: 1px solid #991b1b; color: #ffffff;'
+        : 'background-color: #0f172a; border: 1px solid #0f172a; color: #ffffff;';
 @endphp
 @extends('layouts.broker')
 
@@ -113,28 +123,28 @@ use Carbon\Carbon;
                             <p class="text-sm font-semibold text-emerald-900">Gross Sales</p>
                             <span class="sr-only">Sales Revenue</span>
                         </div>
-                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['gross_sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-emerald-900">{{ $peso($statement['gross_sales']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-orange-100 bg-orange-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-orange-900">Less: Sales Discounts</p>
                         </div>
-                        <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['sales_discounts'], 2) }}</p>
+                        <p class="text-lg font-semibold text-orange-900">{{ $peso($statement['sales_discounts']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-emerald-900">Net Sales</p>
                         </div>
-                        <p class="text-lg font-semibold text-emerald-900">₱{{ number_format($statement['net_sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-emerald-900">{{ $peso($statement['net_sales']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-rose-900">Less: Cost of Sales</p>
                         </div>
-                        <p class="text-lg font-semibold text-rose-900">₱{{ number_format($statement['cost_of_sales'], 2) }}</p>
+                        <p class="text-lg font-semibold text-rose-900">{{ $peso($statement['cost_of_sales']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
@@ -142,38 +152,38 @@ use Carbon\Carbon;
                             <p class="text-sm font-semibold text-blue-900">Gross Profit</p>
 
                         </div>
-                        <p class="text-lg font-semibold text-blue-900">₱{{ number_format($statement['gross_profit'], 2) }}</p>
+                        <p class="text-lg font-semibold text-blue-900">{{ $peso($statement['gross_profit']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-amber-900">Less: Selling, General and Administrative Expenses</p>
                         </div>
-                        <p class="text-lg font-semibold text-amber-900">₱{{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</p>
+                        <p class="text-lg font-semibold text-amber-900">{{ $peso($statement['selling_general_and_administrative_expenses']) }}</p>
                     </div>
 
-                    <div class="flex items-start justify-between rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
+                    <div class="flex items-start justify-between rounded-2xl px-4 py-4" style="{{ $operatingIncomeCardStyle }}">
                         <div>
-                            <p class="text-sm font-semibold text-indigo-900">Operating Income</p>
+                            <p class="text-sm font-semibold" style="{{ $operatingIncomeTextStyle }}">Operating Income</p>
                         </div>
-                        <p class="text-lg font-semibold text-indigo-900">₱{{ number_format($statement['operating_income'], 2) }}</p>
+                        <p class="text-lg font-semibold" style="{{ $operatingIncomeTextStyle }}">{{ $peso($statement['operating_income']) }}</p>
                     </div>
 
                     <div class="flex items-start justify-between rounded-2xl border border-fuchsia-100 bg-fuchsia-50 px-4 py-4">
                         <div>
                             <p class="text-sm font-semibold text-fuchsia-900">Less: Loss on Sale</p>
                         </div>
-                        <p class="text-lg font-semibold text-fuchsia-900">₱{{ number_format($statement['loss_on_sale'], 2) }}</p>
+                        <p class="text-lg font-semibold text-fuchsia-900">{{ $peso($statement['loss_on_sale']) }}</p>
                     </div>
 
-                    <div class="flex items-start justify-between gap-4 rounded-2xl bg-slate-900 px-4 py-4 text-white">
+                    <div class="flex items-start justify-between gap-4 rounded-2xl px-4 py-4" style="{{ $netIncomeCardStyle }}">
                         <div>
-                            <p class="text-sm font-semibold">Net Income</p>
+                            <p class="text-sm font-semibold" style="color: #ffffff;">Net Income</p>
                         </div>
                         <span
                             class="shrink-0 text-right text-xl font-semibold tabular-nums"
                             style="display: block; min-width: max-content; color: #ffffff !important; opacity: 1 !important; visibility: visible !important;"
-                        >₱{{ number_format($statement['net_income'], 2) }}</span>
+                        >{{ $peso($statement['net_income']) }}</span>
                     </div>
                 </div>
 
@@ -184,13 +194,21 @@ use Carbon\Carbon;
                                 <p class="text-sm font-semibold text-orange-900">Outstanding Receivable Balance</p>
                                 <p class="mt-1 text-xs text-orange-700/80">As of {{ $statementDateCarbon->format('M d, Y') }}</p>
                             </div>
-                            <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['outstanding_receivable_balance'], 2) }}</p>
+                            <p class="text-lg font-semibold text-orange-900">{{ $peso($statement['outstanding_receivable_balance']) }}</p>
                         </div>
-                        <div class="mt-4 flex items-start justify-between gap-4 border-t border-orange-200 pt-4">
-                            <div>
-                                <p class="text-sm font-semibold text-orange-900">Cash on Hand</p>
+                        <div class="mt-4 space-y-3 border-t border-orange-200 pt-4">
+                            <div class="flex items-center justify-between gap-4 text-sm">
+                                <span class="text-orange-800">Collections from Today's Sales</span>
+                                <span class="font-semibold tabular-nums text-orange-900">{{ $peso($statement['collections_from_today_sales']) }}</span>
                             </div>
-                            <p class="text-lg font-semibold text-orange-900">₱{{ number_format($statement['cash_on_hand'], 2) }}</p>
+                            <div class="flex items-center justify-between gap-4 text-sm">
+                                <span class="text-orange-800">Collections from Previous Balances</span>
+                                <span class="font-semibold tabular-nums text-orange-900">{{ $peso($statement['collections_from_previous_balances']) }}</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 border-t border-orange-200 pt-3">
+                                <span class="text-sm font-semibold text-orange-900">Cash on Hand</span>
+                                <span class="text-lg font-semibold text-orange-900">{{ $peso($statement['cash_on_hand']) }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -408,21 +426,26 @@ use Carbon\Carbon;
                 <div class="panel-card__inner">
                     <div class="panel-card__header">
                         <div>
-                            <h3 class="panel-card__title">Expenses</h3>
+                            <h3 class="panel-card__title">Expense Entries</h3>
                         </div>
-                        <span class="panel-card__hint">₱{{ number_format($dailyExpensesTotal, 2) }}</span>
+                        <span class="panel-card__hint">{{ $peso($dailyExpensesTotal) }}</span>
                     </div>
 
                     <div class="space-y-4">
                         @foreach($entryGroups as $group)
+                            @php
+                                $entryGroupLabel = $group['type'] === \App\Models\FinancialStatementEntry::TYPE_SGA
+                                    ? 'Operating Expenses'
+                                    : $group['label'];
+                            @endphp
                             <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4"
                                  data-entry-group="{{ $group['type'] }}">
                                 <div class="flex items-center justify-between gap-4">
                                     <div>
-                                        <h4 class="text-sm font-semibold text-gray-900">{{ $group['label'] }}</h4>
-                                        <p class="text-xs text-gray-500" data-entry-group-count>{{ $group['entries_count'] }} item{{ $group['entries_count'] === 1 ? '' : 's' }}</p>
+                                        <h4 class="text-sm font-semibold text-gray-900">{{ $entryGroupLabel }}</h4>
+                                        <p class="text-xs text-gray-500" data-entry-group-count>{{ $group['entries_count'] }} entr{{ $group['entries_count'] === 1 ? 'y' : 'ies' }}</p>
                                     </div>
-                                    <div class="text-right text-sm font-semibold tabular-nums text-gray-900" data-entry-group-total>₱{{ number_format($group['total'], 2) }}</div>
+                                    <div class="text-right text-sm font-semibold tabular-nums text-gray-900" data-entry-group-total>{{ $peso($group['total']) }}</div>
                                 </div>
 
                                 @if($group['entries']->isEmpty())
@@ -436,7 +459,7 @@ use Carbon\Carbon;
                                         @click="openEntries = @js($group['type']); editingEntry = null"
                                     >
                                         <span>View entries</span>
-                                        <span class="text-xs text-gray-500">Show {{ $group['entries_count'] }}</span>
+                                        <span class="text-xs text-gray-500">{{ $group['entries_count'] }} entr{{ $group['entries_count'] === 1 ? 'y' : 'ies' }}</span>
                                     </button>
                                 @endif
                             </div>
@@ -653,6 +676,9 @@ use Carbon\Carbon;
             <div class="grid gap-4 xl:grid-cols-2">
                 @foreach($expenseAnalytics['series'] as $expenseSeries)
                     @php
+                        $chartId = 'expense-trend-' . $loop->index;
+                        $lineGradientId = $chartId . '-line-fill';
+                        $barGradientId = $chartId . '-bar-fill';
                         $seriesMax = max(1, (float) collect($expenseSeries['values'])->max('amount'));
                         $seriesPoints = collect($expenseSeries['values'])->map(function ($point, $pointIndex) use ($miniChartLeft, $miniPlotWidth, $miniPlotHeight, $miniChartTop, $seriesMax, $miniLabelCount) {
                             $x = $miniChartLeft + ($miniLabelCount === 1 ? 0 : (($miniPlotWidth / ($miniLabelCount - 1)) * $pointIndex));
@@ -660,9 +686,10 @@ use Carbon\Carbon;
 
                             return number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
                         })->implode(' ');
+                        $seriesAreaPoints = $miniChartLeft . ',' . ($miniChartTop + $miniPlotHeight) . ' ' . $seriesPoints . ' ' . ($miniChartLeft + $miniPlotWidth) . ',' . ($miniChartTop + $miniPlotHeight);
                     @endphp
 
-                    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4">
+                    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
@@ -679,14 +706,25 @@ use Carbon\Carbon;
                             </div>
                         </div>
 
-                        <div class="mt-4 overflow-x-auto">
+                        <div class="mt-4 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white px-3 py-3">
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Line Trend</p>
+                                <p class="text-xs font-medium text-gray-500">7 days</p>
+                            </div>
+                        <div class="overflow-x-auto">
                             <svg viewBox="0 0 {{ $miniChartWidth }} {{ $miniChartHeight }}" role="img" aria-label="{{ $expenseSeries['label'] }} daily expense line chart" class="min-w-[340px] w-full">
+                                <defs>
+                                    <linearGradient id="{{ $lineGradientId }}" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="{{ $expenseSeries['color'] }}" stop-opacity="0.2" />
+                                        <stop offset="100%" stop-color="{{ $expenseSeries['color'] }}" stop-opacity="0.02" />
+                                    </linearGradient>
+                                </defs>
                                 @for($i = 0; $i <= 3; $i++)
                                     @php
                                         $gridValue = ($seriesMax / 3) * $i;
                                         $y = $miniChartTop + $miniPlotHeight - (($gridValue / $seriesMax) * $miniPlotHeight);
                                     @endphp
-                                    <line x1="{{ $miniChartLeft }}" y1="{{ $y }}" x2="{{ $miniChartWidth - $miniChartRight }}" y2="{{ $y }}" stroke="#e5e7eb" stroke-width="1" />
+                                    <line x1="{{ $miniChartLeft }}" y1="{{ $y }}" x2="{{ $miniChartWidth - $miniChartRight }}" y2="{{ $y }}" stroke="#dbe3ee" stroke-width="1" />
                                     <text x="{{ $miniChartLeft - 8 }}" y="{{ $y + 4 }}" text-anchor="end" class="fill-gray-500" style="font-size: 10px;">₱{{ number_format($gridValue, 0) }}</text>
                                 @endfor
 
@@ -697,16 +735,99 @@ use Carbon\Carbon;
                                     <text x="{{ $x }}" y="{{ $miniChartHeight - 12 }}" text-anchor="middle" class="fill-gray-500" style="font-size: 10px;">{{ $label }}</text>
                                 @endforeach
 
-                                <polyline points="{{ $seriesPoints }}" fill="none" stroke="{{ $expenseSeries['color'] }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                                <polygon points="{{ $seriesAreaPoints }}" fill="url(#{{ $lineGradientId }})" />
+                                <polyline points="{{ $seriesPoints }}" fill="none" stroke="{{ $expenseSeries['color'] }}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0 5px 8px rgba(15, 23, 42, 0.12))" />
 
                                 @foreach($expenseSeries['values'] as $pointIndex => $point)
                                     @php
                                         $x = $miniChartLeft + ($miniLabelCount === 1 ? 0 : (($miniPlotWidth / ($miniLabelCount - 1)) * $pointIndex));
                                         $y = $miniChartTop + $miniPlotHeight - (((float) $point['amount'] / $seriesMax) * $miniPlotHeight);
                                     @endphp
-                                    <circle cx="{{ $x }}" cy="{{ $y }}" r="4" fill="#ffffff" stroke="{{ $expenseSeries['color'] }}" stroke-width="2">
+                                    <circle
+                                        cx="{{ $x }}"
+                                        cy="{{ $y }}"
+                                        r="10"
+                                        fill="transparent"
+                                        data-expense-chart-point
+                                        data-tooltip-title="{{ $expenseSeries['label'] }}"
+                                        data-tooltip-date="{{ $point['label'] }}"
+                                        data-tooltip-amount="₱{{ number_format((float) $point['amount'], 2) }}"
+                                    ></circle>
+                                    <circle
+                                        cx="{{ $x }}"
+                                        cy="{{ $y }}"
+                                        r="5"
+                                        fill="#ffffff"
+                                        stroke="{{ $expenseSeries['color'] }}"
+                                        stroke-width="3"
+                                        data-expense-chart-point
+                                        data-tooltip-title="{{ $expenseSeries['label'] }}"
+                                        data-tooltip-date="{{ $point['label'] }}"
+                                        data-tooltip-amount="₱{{ number_format((float) $point['amount'], 2) }}"
+                                    >
                                         <title>{{ $expenseSeries['label'] }} {{ $point['label'] }}: ₱{{ number_format((float) $point['amount'], 2) }}</title>
                                     </circle>
+                                @endforeach
+                            </svg>
+                        </div>
+                        </div>
+
+                        <div class="mt-4 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white px-3 py-3">
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Daily Bar Chart</p>
+                                <p class="text-xs font-medium text-gray-500">Max ₱{{ number_format($seriesMax, 2) }}</p>
+                            </div>
+                            @php
+                                $barChartWidth = 360;
+                                $barChartHeight = 116;
+                                $barChartLeft = 20;
+                                $barChartRight = 14;
+                                $barChartTop = 10;
+                                $barChartBottom = 24;
+                                $barPlotWidth = $barChartWidth - $barChartLeft - $barChartRight;
+                                $barPlotHeight = $barChartHeight - $barChartTop - $barChartBottom;
+                                $barCount = max(1, count($expenseSeries['values']));
+                                $barSlotWidth = $barPlotWidth / $barCount;
+                                $barWidth = min(28, max(12, $barSlotWidth * 0.58));
+                            @endphp
+
+                            <svg viewBox="0 0 {{ $barChartWidth }} {{ $barChartHeight }}" role="img" aria-label="{{ $expenseSeries['label'] }} daily expense bar chart" class="w-full">
+                                <defs>
+                                    <linearGradient id="{{ $barGradientId }}" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="0%" stop-color="{{ $expenseSeries['color'] }}" stop-opacity="0.86" />
+                                        <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95" />
+                                    </linearGradient>
+                                </defs>
+                                <line x1="{{ $barChartLeft }}" y1="{{ $barChartTop + $barPlotHeight }}" x2="{{ $barChartWidth - $barChartRight }}" y2="{{ $barChartTop + $barPlotHeight }}" stroke="#cbd5e1" stroke-width="1" />
+                                @foreach($expenseSeries['values'] as $point)
+                                    @php
+                                        $barAmount = (float) $point['amount'];
+                                        $barHeight = $barAmount > 0 ? max(5, (($barAmount / $seriesMax) * $barPlotHeight)) : 0;
+                                        $x = $barChartLeft + ($barSlotWidth * $loop->index) + (($barSlotWidth - $barWidth) / 2);
+                                        $y = $barChartTop + $barPlotHeight - $barHeight;
+                                        $labelX = $barChartLeft + ($barSlotWidth * $loop->index) + ($barSlotWidth / 2);
+                                    @endphp
+                                    @if($barAmount > 0)
+                                        <text x="{{ $labelX }}" y="{{ max(9, $y - 7) }}" text-anchor="middle" class="fill-slate-900" style="font-size: 10px; font-weight: 700;">₱{{ number_format($barAmount, 0) }}</text>
+                                    @else
+                                        <text x="{{ $labelX }}" y="{{ $barChartTop + $barPlotHeight - 7 }}" text-anchor="middle" class="fill-slate-500" style="font-size: 10px; font-weight: 700;">₱0</text>
+                                    @endif
+                                    <rect
+                                        x="{{ $x }}"
+                                        y="{{ $y }}"
+                                        width="{{ $barWidth }}"
+                                        height="{{ $barHeight }}"
+                                        rx="7"
+                                        fill="url(#{{ $barGradientId }})"
+                                        filter="drop-shadow(0 8px 12px rgba(15, 23, 42, 0.16))"
+                                        data-expense-chart-point
+                                        data-tooltip-title="{{ $expenseSeries['label'] }}"
+                                        data-tooltip-date="{{ $point['label'] }}"
+                                        data-tooltip-amount="₱{{ number_format($barAmount, 2) }}"
+                                    >
+                                        <title>{{ $expenseSeries['label'] }} {{ $point['label'] }}: ₱{{ number_format($barAmount, 2) }}</title>
+                                    </rect>
+                                    <text x="{{ $labelX }}" y="{{ $barChartHeight - 7 }}" text-anchor="middle" class="fill-gray-500" style="font-size: 10px;">{{ $point['label'] }}</text>
                                 @endforeach
                             </svg>
                         </div>
@@ -745,7 +866,15 @@ use Carbon\Carbon;
                 </div>
                 <div class="mb-2 flex justify-between text-sm">
                     <span class="text-gray-600">Collections:</span>
-                    <span class="font-medium">₱{{ number_format($statement['collections'], 2) }}</span>
+                    <span class="font-medium">{{ $peso($statement['collections']) }}</span>
+                </div>
+                <div class="mb-2 flex justify-between text-sm">
+                    <span class="text-gray-600">Collections from Today's Sales:</span>
+                    <span class="font-medium">{{ $peso($statement['collections_from_today_sales']) }}</span>
+                </div>
+                <div class="mb-2 flex justify-between text-sm">
+                    <span class="text-gray-600">Collections from Previous Balances:</span>
+                    <span class="font-medium">{{ $peso($statement['collections_from_previous_balances']) }}</span>
                 </div>
             </div>
 
@@ -755,49 +884,49 @@ use Carbon\Carbon;
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Gross Sales</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['gross_sales'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['gross_sales']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Sales Discounts</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['sales_discounts'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['sales_discounts']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Net Sales</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['net_sales'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['net_sales']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Cost of Sales</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['cost_of_sales'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['cost_of_sales']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Gross Profit</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['gross_profit'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['gross_profit']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Selling, General and Administrative Expenses</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['selling_general_and_administrative_expenses'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['selling_general_and_administrative_expenses']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Operating Income</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['operating_income'], 2) }}</span>
+                            <span class="font-semibold {{ $operatingIncomeIsLoss ? 'text-red-700' : 'text-gray-900' }}">{{ $peso($statement['operating_income']) }}</span>
                         </div>
                     </div>
                     <div class="rounded-lg bg-gray-50 p-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="font-medium text-gray-900">Less: Loss on Sale</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($statement['loss_on_sale'], 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $peso($statement['loss_on_sale']) }}</span>
                         </div>
                     </div>
                 </div>
@@ -807,25 +936,32 @@ use Carbon\Carbon;
                 <div class="space-y-2">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Daily Expenses Total:</span>
-                        <span class="font-semibold">₱{{ number_format($dailyExpensesTotal, 2) }}</span>
+                        <span class="font-semibold">{{ $peso($dailyExpensesTotal) }}</span>
                     </div>
                     <div class="flex justify-between border-t pt-2 text-sm">
                         <span class="font-semibold text-gray-600">Net Income:</span>
-                        <span class="font-bold text-green-600">₱{{ number_format($statement['net_income'], 2) }}</span>
+                        <span class="font-bold {{ $netIncomeIsLoss ? 'text-red-600' : 'text-green-600' }}">{{ $peso($statement['net_income']) }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="mb-4 border-t border-gray-200 pt-4">
-                <h3 class="mb-3 text-sm font-semibold text-gray-900">Outstanding Receivable Balance</h3>
                 <div class="rounded-lg bg-orange-50 p-3">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="font-medium text-orange-900">As of {{ $statementDateCarbon->format('M d, Y') }}</span>
-                        <span class="font-semibold text-orange-900">₱{{ number_format($statement['outstanding_receivable_balance'], 2) }}</span>
+                        <span class="font-medium text-orange-900">Outstanding Receivable Balance</span>
+                        <span class="font-semibold text-orange-900">{{ $peso($statement['outstanding_receivable_balance']) }}</span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between border-t border-orange-100 pt-2 text-sm">
+                        <span class="font-medium text-orange-900">Collections from Today's Sales</span>
+                        <span class="font-semibold text-orange-900">{{ $peso($statement['collections_from_today_sales']) }}</span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between text-sm">
+                        <span class="font-medium text-orange-900">Collections from Previous Balances</span>
+                        <span class="font-semibold text-orange-900">{{ $peso($statement['collections_from_previous_balances']) }}</span>
                     </div>
                     <div class="mt-2 flex items-center justify-between border-t border-orange-100 pt-2 text-sm">
                         <span class="font-medium text-orange-900">Cash on Hand</span>
-                        <span class="font-semibold text-orange-900">₱{{ number_format($statement['cash_on_hand'], 2) }}</span>
+                        <span class="font-semibold text-orange-900">{{ $peso($statement['cash_on_hand']) }}</span>
                     </div>
                 </div>
             </div>
@@ -998,6 +1134,54 @@ use Carbon\Carbon;
                         });
                     }
                 }
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const tooltipTargets = document.querySelectorAll('[data-expense-chart-point]');
+
+        if (tooltipTargets.length === 0) {
+            return;
+        }
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'pointer-events-none fixed z-[1000] hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-lg';
+        tooltip.style.maxWidth = '14rem';
+        document.body.appendChild(tooltip);
+
+        const moveTooltip = (event) => {
+            const offset = 14;
+            const tooltipRect = tooltip.getBoundingClientRect();
+            let left = event.clientX + offset;
+            let top = event.clientY + offset;
+
+            if (left + tooltipRect.width > window.innerWidth - 8) {
+                left = event.clientX - tooltipRect.width - offset;
+            }
+
+            if (top + tooltipRect.height > window.innerHeight - 8) {
+                top = event.clientY - tooltipRect.height - offset;
+            }
+
+            tooltip.style.left = `${Math.max(8, left)}px`;
+            tooltip.style.top = `${Math.max(8, top)}px`;
+        };
+
+        tooltipTargets.forEach((target) => {
+            target.addEventListener('mouseenter', (event) => {
+                tooltip.innerHTML = `
+                    <div class="font-semibold text-slate-900">${target.dataset.tooltipTitle || 'Expense'}</div>
+                    <div class="mt-1 text-slate-500">${target.dataset.tooltipDate || ''}</div>
+                    <div class="mt-1 font-semibold tabular-nums text-slate-900">${target.dataset.tooltipAmount || '₱0.00'}</div>
+                `;
+                tooltip.classList.remove('hidden');
+                moveTooltip(event);
+            });
+
+            target.addEventListener('mousemove', moveTooltip);
+            target.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
             });
         });
     });

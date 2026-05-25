@@ -8,6 +8,34 @@ use Illuminate\Validation\Rule;
 
 class FinancialStatementEntryRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('entry_form_mode') || ! $this->filled('entry_type')) {
+            return;
+        }
+
+        if ($this->input('entry_type') === FinancialStatementEntry::TYPE_SGA) {
+            $this->merge([
+                'entry_form_mode' => 'expenses',
+                'expenses' => [[
+                    'category' => FinancialStatementEntry::EXPENSE_CATEGORY_OTHER,
+                    'description' => $this->input('description'),
+                    'amount' => $this->input('amount'),
+                ]],
+            ]);
+
+            return;
+        }
+
+        if ($this->input('entry_type') === FinancialStatementEntry::TYPE_LOSS_ON_SALE) {
+            $this->merge([
+                'entry_form_mode' => 'loss_on_sale',
+                'loss_description' => $this->input('description'),
+                'loss_amount' => $this->input('amount'),
+            ]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

@@ -1338,6 +1338,11 @@ details[open] > .app-user-trigger svg:last-child {
     min-width: 760px;
 }
 
+.summary-strip--six {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    min-width: 900px;
+}
+
 .summary-strip--four {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     min-width: 620px;

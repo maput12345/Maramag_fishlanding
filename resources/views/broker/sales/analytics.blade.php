@@ -282,7 +282,7 @@
                     <!-- Pagination -->
                     @if($sales->hasPages())
                         <div class="px-6 py-4 border-t border-gray-200">
-                            {{ $sales->appends(request()->query())->links() }}
+                            {{ $sales->appends(request()->query())->links('components.pagination') }}
                         </div>
                     @endif
                 </div>

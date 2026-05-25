@@ -356,7 +356,7 @@
         @endif
 
         <div class="mt-6">
-            {{ $applications->withQueryString()->links() }}
+            {{ $applications->withQueryString()->links('components.pagination') }}
         </div>
     </section>
 </div>

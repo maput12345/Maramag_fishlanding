@@ -46,6 +46,14 @@ class BrokerFishTypeAssignment extends Model
     }
 
     /**
+     * Get stock cycles that used this assignment's fish type.
+     */
+    public function stockCycles(): HasMany
+    {
+        return $this->hasMany(FishBoxStockCycle::class, 'fish_type_id', 'fish_type_id');
+    }
+
+    /**
      * Get the most recent price for this broker fish type pair.
      */
     public function latestPrice(): HasOne
@@ -61,6 +69,31 @@ class BrokerFishTypeAssignment extends Model
     public function getDisplayDescriptionAttribute(?string $value): ?string
     {
         return $value ?: $this->fishType?->description;
+    }
+
+    public function hasPriceHistory(): bool
+    {
+        if (array_key_exists('prices_count', $this->attributes)) {
+            return (int) $this->attributes['prices_count'] > 0;
+        }
+
+        return $this->prices()->exists();
+    }
+
+    public function hasStockHistory(): bool
+    {
+        if (array_key_exists('broker_stock_cycles_count', $this->attributes)) {
+            return (int) $this->attributes['broker_stock_cycles_count'] > 0;
+        }
+
+        return $this->stockCycles()
+            ->byBroker((int) $this->broker_id)
+            ->exists();
+    }
+
+    public function canBeDeletedFromPriceList(): bool
+    {
+        return ! $this->hasPriceHistory() && ! $this->hasStockHistory();
     }
 
     public static function resolveDisplayName(?int $brokerId, ?FishType $fishType): ?string

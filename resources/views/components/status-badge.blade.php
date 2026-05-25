@@ -13,7 +13,7 @@
         : $defaultLabel;
     $displayLabel = $slotText !== ''
         ? $slotText
-        : ($label ?? $defaultLabel);
+        : ($label ?? (\App\Constants\FishBoxStatusConstant::label($defaultLabel)));
     $normalizedStatus = trim(preg_replace('/\s+/', ' ', str_replace(['_', '-'], ' ', mb_strtolower($rawStatus))));
 
     $variant = match (true) {
@@ -52,6 +52,7 @@
             'deactivated',
             'inactive',
             'archived',
+            'retired',
         ], true) => 'danger',
         in_array($normalizedStatus, [
             'open',

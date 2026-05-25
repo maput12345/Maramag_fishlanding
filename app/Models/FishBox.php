@@ -215,6 +215,14 @@ class FishBox extends Model
     }
 
     /**
+     * Scope retired boxes.
+     */
+    public function scopeRetired($query)
+    {
+        return $query->where('box_status', FishBoxStatusConstant::RETIRED);
+    }
+
+    /**
      * Select the broker-local box number up front to avoid per-row count lookups.
      */
     public function scopeWithBrokerBoxNumber(Builder $query): Builder
@@ -501,6 +509,7 @@ class FishBox extends Model
             'sold' => (int) ($counts[FishBoxStatusConstant::SOLD] ?? 0),
             'returned' => (int) ($counts[FishBoxStatusConstant::RETURNED] ?? 0),
             'missing' => (int) ($counts[FishBoxStatusConstant::MISSING] ?? 0),
+            'retired' => (int) ($counts[FishBoxStatusConstant::RETIRED] ?? 0),
         ];
 
         $summary['total'] = array_sum($summary);
@@ -639,22 +648,29 @@ class FishBox extends Model
             ->missing();
 
         if ($search) {
+            $search = trim($search);
             $normalizedSearch = preg_replace('/[^0-9]/', '', $search);
+            $isPlainBoxNumberSearch = preg_match('/^#?\d+$/', $search) === 1;
 
-            $query->where(function (Builder $trackingQuery) use ($search, $normalizedSearch, $buyerNameExpression) {
-                $trackingQuery->where('FishBox.qr_code', 'like', '%' . $search . '%')
-                    ->orWhereHas('currentPurchase.fishType', function ($fishTypeQuery) use ($search) {
-                        $fishTypeQuery->where('name', 'like', '%' . $search . '%');
-                    })
-                    ->orWhereHas('salesDetails.sale.buyer', function ($buyerQuery) use ($search, $buyerNameExpression) {
-                        $buyerQuery->whereRaw("{$buyerNameExpression} like ?", ['%' . $search . '%']);
-                    });
+            $query->where(function (Builder $trackingQuery) use ($search, $normalizedSearch, $isPlainBoxNumberSearch, $buyerNameExpression) {
+                if (! $isPlainBoxNumberSearch) {
+                    $trackingQuery->where('FishBox.qr_code', 'like', '%' . $search . '%')
+                        ->orWhereHas('currentPurchase.fishType', function ($fishTypeQuery) use ($search) {
+                            $fishTypeQuery->where('name', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('salesDetails.sale.buyer', function ($buyerQuery) use ($search, $buyerNameExpression) {
+                            $buyerQuery->whereRaw("{$buyerNameExpression} like ?", ['%' . $search . '%']);
+                        });
+                } else {
+                    $trackingQuery->whereRaw('1 = 0');
+                }
 
                 if ($normalizedSearch !== '') {
                     $trackingQuery->orWhereRaw(
                         '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id) = ?',
                         [(int) $normalizedSearch]
-                    );
+                    )
+                    ->orWhere('FishBox.id', (int) $normalizedSearch);
                 }
             });
         }
@@ -888,6 +904,7 @@ class FishBox extends Model
             FishBoxStatusConstant::IN_STOCK,
             FishBoxStatusConstant::MISSING,
             FishBoxStatusConstant::RETURNED,
+            FishBoxStatusConstant::RETIRED,
         ], true);
     }
 
@@ -907,18 +924,49 @@ class FishBox extends Model
      */
     public function canBeEdited(): bool
     {
-        return $this->status !== FishBoxStatusConstant::SOLD && $this->currentPurchase !== null;
+        return !in_array($this->status, [
+            FishBoxStatusConstant::SOLD,
+            FishBoxStatusConstant::RETIRED,
+        ], true) && $this->currentPurchase !== null;
     }
 
     /**
-     * Check if the fish box can be deleted.
+     * Determine whether the fish box has any audit/history records.
+     */
+    public function hasAuditHistory(): bool
+    {
+        return $this->purchases()->exists()
+            || $this->inventoryLogs()->exists()
+            || $this->salesDetails()->exists();
+    }
+
+    /**
+     * Check if the fish box can be hard-deleted.
      */
     public function canBeDeleted(): bool
     {
-        return !in_array($this->status, [
-            FishBoxStatusConstant::SOLD,
-            FishBoxStatusConstant::RETURNED,
-        ], true);
+        return !$this->hasAuditHistory();
+    }
+
+    /**
+     * Check if the fish box can be retired instead of deleted.
+     */
+    public function canBeRetired(): bool
+    {
+        return $this->hasAuditHistory()
+            && in_array($this->status, [
+                FishBoxStatusConstant::UNASSIGNED,
+                FishBoxStatusConstant::RETURNED,
+                FishBoxStatusConstant::MISSING,
+            ], true);
+    }
+
+    /**
+     * Check if a retired fish box can be restored for future restocking.
+     */
+    public function canBeRestored(): bool
+    {
+        return $this->status === FishBoxStatusConstant::RETIRED;
     }
 
     /**

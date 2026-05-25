@@ -4,6 +4,7 @@
     $isBrokerTrackingActive = request()->routeIs('broker.fish-boxes.tracking');
     $isTransactionActive = request()->routeIs('broker.transaction');
     $isSalesRecordsActive = request()->routeIs('broker.sales.sales');
+    $isBuyersActive = request()->routeIs('broker.buyers.*');
 @endphp
 
 <div class="app-mobile-dock fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg md:hidden">
@@ -59,6 +60,18 @@
         </div>
 
         @unless($isCashierStaff)
+        <div class="group relative">
+            <a href="{{ route('broker.buyers.index') }}"
+               class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isBuyersActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                <x-heroicon-o-user-group class="h-6 w-6 transition-transform duration-200 group-hover:scale-110 {{ $isBuyersActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" />
+                <span class="mt-1 text-xs font-medium">Buyers</span>
+            </a>
+            <div class="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                Buyer Ledger
+                <div class="absolute left-1/2 top-full -translate-x-1/2 transform border-4 border-transparent border-t-gray-800"></div>
+            </div>
+        </div>
+
         <div class="group relative">
             <a href="{{ route('broker.fish-boxes.tracking') }}"
                class="flex flex-col items-center justify-center rounded-lg p-2 transition-all duration-200 ease-in-out {{ $isBrokerTrackingActive ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">

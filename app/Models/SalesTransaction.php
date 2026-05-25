@@ -773,6 +773,32 @@ class SalesTransaction extends Model
         return $sales;
     }
 
+    public static function getReportWithFilters(?string $search = null, ?string $status = null, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null): Collection
+    {
+        $query = self::query()
+            ->withPaidAmount()
+            ->with([
+                'buyer',
+                'creator.employee',
+                'creator.roles',
+                'broker.user',
+                'salesDetails.fishBoxPurchase.fishType',
+                'salesDetails.fishBoxPurchase.fishBox',
+            ]);
+
+        $query = self::applySalesFilters($query, $search, $status, $brokerId, $dateFrom, $dateTo);
+
+        $sales = $query->orderBy('SalesTransaction.sales_date', 'desc')
+            ->orderBy('SalesTransaction.created_at', 'desc')
+            ->get();
+
+        $sales->each(function ($sale) {
+            $sale->formatted_items = $sale->getFormattedItems();
+        });
+
+        return $sales;
+    }
+
     public static function getPaginatedForCashier(?string $search, ?string $status, int $brokerId, int $cashierId, string $date): LengthAwarePaginator
     {
         $query = self::query()
