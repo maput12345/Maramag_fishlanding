@@ -138,7 +138,7 @@ class FishTypesController extends Controller
         if ($isChangingFishType && $isAssignmentLocked) {
             return redirect()->route('broker.inventory.index', ['tab' => 'fishTypes'])
                 ->withInput()
-                ->with('error', 'This fish already has purchases or prices. Add the new fish instead so old history stays accurate.');
+                ->with('error', 'This fish is already used in purchases or prices. Add the new fish instead to keep history accurate.');
         }
 
         $targetFishType = $currentFishType;

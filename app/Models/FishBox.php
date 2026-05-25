@@ -393,7 +393,7 @@ class FishBox extends Model
     }
 
     /**
-     * Count fish boxes that can be reused in today's bulk restock flow.
+     * Count inactive fish boxes that can start a new daily stock cycle.
      */
     public static function countEligibleForBulkRestock(int $brokerId): int
     {
@@ -401,14 +401,13 @@ class FishBox extends Model
             ->where('broker_id', $brokerId)
             ->whereIn('box_status', [
                 FishBoxStatusConstant::UNASSIGNED,
-                FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
             ->count();
     }
 
     /**
-     * Get reusable boxes that can be selected for daily restocking.
+     * Get inactive boxes that can be selected for daily restocking.
      */
     public static function getEligibleForBulkRestock(int $brokerId): Collection
     {
@@ -419,7 +418,6 @@ class FishBox extends Model
             ->where('broker_id', $brokerId)
             ->whereIn('box_status', [
                 FishBoxStatusConstant::UNASSIGNED,
-                FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
             ])
             ->orderBy('FishBox.id')
@@ -441,8 +439,8 @@ class FishBox extends Model
             ->whereIn('id', $fishBoxIds)
             ->whereIn('box_status', [
                 FishBoxStatusConstant::UNASSIGNED,
-                FishBoxStatusConstant::IN_STOCK,
                 FishBoxStatusConstant::RETURNED,
+                FishBoxStatusConstant::IN_STOCK,
             ])
             ->orderBy('id')
             ->get();

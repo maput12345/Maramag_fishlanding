@@ -355,7 +355,7 @@ class FishBoxController extends Controller
         $costPrice = $this->resolveCostPriceForBroker(
             $brokerId,
             (int) $validated['fish_type_id'],
-            $validated['cost_price'] ?? null
+            null
         );
 
         if ($costPrice === null) {
@@ -413,7 +413,7 @@ class FishBoxController extends Controller
     {
         return redirect()->back()
             ->withErrors([
-                'cost_price' => 'Set a default cost price in Fish Prices or enter a manual cost price.',
+                'cost_price' => 'Set today\'s stock cost in Fish Prices before assigning stock.',
             ])
             ->withInput();
     }

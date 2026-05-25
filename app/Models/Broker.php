@@ -267,6 +267,27 @@ class Broker extends Model
     public function deleteBroker(): bool
     {
         $this->user->update(['status' => UserStatusConstant::DEACTIVATED]);
+        $this->stall?->update(['stall_status' => 'Vacant']);
+        $this->update([
+            'stall_id' => null,
+            'broker_status' => UserStatusConstant::DEACTIVATED,
+        ]);
+
+        return (bool) $this->delete();
+    }
+
+    /**
+     * Release the stall while keeping the user account available as an applicant.
+     */
+    public function releaseStallForReapplication(): bool
+    {
+        $this->stall?->update(['stall_status' => 'Vacant']);
+
+        $this->update([
+            'stall_id' => null,
+            'stall_name' => null,
+            'broker_status' => 'Released',
+        ]);
 
         return (bool) $this->delete();
     }
@@ -416,7 +437,11 @@ class Broker extends Model
     {
         $selectedStall = $application->selectedStall ?: $application->applicationOpening?->stall;
 
-        return static::create([
+        $broker = static::withTrashed()
+            ->where('user_id', $application->user_id)
+            ->first();
+
+        $payload = [
             'user_id' => $application->user_id,
             'application_id' => $application->id,
             'stall_id' => $selectedStall?->id,
@@ -430,6 +455,15 @@ class Broker extends Model
             'stall_name' => $selectedStall?->display_name,
             'broker_status' => 'Active',
             'approval_date' => now()->toDateString(),
-        ]);
+        ];
+
+        if ($broker) {
+            $broker->restore();
+            $broker->update($payload);
+
+            return $broker;
+        }
+
+        return static::create($payload);
     }
 }

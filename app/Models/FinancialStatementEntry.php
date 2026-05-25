@@ -18,6 +18,7 @@ class FinancialStatementEntry extends Model
 
     public const TYPE_SGA = 'selling_general_and_administrative';
     public const TYPE_LOSS_ON_SALE = 'loss_on_sale';
+    public const EXPENSE_CATEGORY_OTHER = 'Other';
 
     protected $fillable = [
         'broker_id',
@@ -87,8 +88,24 @@ class FinancialStatementEntry extends Model
     public static function typeOptions(): array
     {
         return [
-            self::TYPE_SGA => 'Selling, General and Administrative Expenses',
+            self::TYPE_SGA => 'Expenses',
             self::TYPE_LOSS_ON_SALE => 'Loss on Sale',
+        ];
+    }
+
+    /**
+     * Get the daily expense categories shown to brokers.
+     *
+     * @return array<string, string>
+     */
+    public static function expenseCategoryOptions(): array
+    {
+        return [
+            'Gas' => 'Gas',
+            'Driver/Helper/Allowance' => 'Driver/Helper/Allowance',
+            'Ice/Cellophane' => 'Ice/Cellophane',
+            'Labor' => 'Labor',
+            self::EXPENSE_CATEGORY_OTHER => 'Other',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Constants\OpeningStatusConstant;
 use App\Constants\RequirementVerificationStatusConstant;
 use App\Http\Requests\StoreBrokerApplicationRequest;
 use App\Http\Requests\UpdateBrokerApplicationRevisionRequest;
+use App\Models\ApplicationReviewDraft;
 use App\Models\ApplicationOpening;
 use App\Models\SubmittedRequirement;
 use App\Models\BrokerApplication;
@@ -293,10 +294,15 @@ class ApplicationPortalController extends Controller
                 'application_status' => ApplicationStatusConstant::SUBMITTED,
                 'reviewed_by_employee_id' => null,
                 'review_date' => null,
+                'remarks' => null,
                 'submitted_at' => $resubmittedAt,
                 'revision_resubmitted_at' => $resubmittedAt,
                 'revision_count' => ((int) $application->revision_count) + 1,
             ]);
+
+            ApplicationReviewDraft::query()
+                ->where('broker_application_id', $application->id)
+                ->delete();
 
             /** @var User $user */
             $user = Auth::user();

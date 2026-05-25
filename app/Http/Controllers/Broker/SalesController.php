@@ -11,6 +11,7 @@ use App\Models\TransactionLineItem;
 use App\Models\PaymentRecord;
 use App\Models\FishBox;
 use App\Models\BrokerFishTypeAssignment;
+use App\Models\Buyer;
 use App\Models\FishType;
 use App\Constants\SalesStatusConstant;
 use App\Models\Broker;
@@ -59,7 +60,7 @@ class SalesController extends Controller
         // Get weekly sales data for this month only
         $thisMonthStart = Carbon::now()->startOfMonth()->format('Y-m-d');
         $thisMonthEnd = Carbon::now()->format('Y-m-d');
-        $weeklySalesData = SalesTransaction::getDailySalesForPeriod($brokerId, $thisMonthStart, $thisMonthEnd, null);
+        $weeklySalesData = SalesTransaction::getWeeklySalesForPeriod($brokerId, $thisMonthStart, $thisMonthEnd, null);
 
         return compact('ordersToday', 'salesToday', 'salesBalance',
             'recentSales', 'paidAmountGrowthPercent', 'totalFishBoxes',
@@ -89,6 +90,11 @@ class SalesController extends Controller
             $sales = SalesTransaction::getPaginatedForCashier($search, $status, $brokerId, $userId, $cashierDate);
             $salesSummary = SalesTransaction::getSummaryForCashier($search, $status, $brokerId, $userId, $cashierDate);
         } else {
+            if (!$request->filled('date_from') && !$request->filled('date_to')) {
+                $dateFrom = now()->toDateString();
+                $dateTo = now()->toDateString();
+            }
+
             $sales = SalesTransaction::getPaginatedWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
             $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
         }
@@ -145,13 +151,14 @@ class SalesController extends Controller
 
         // Prepare sales details for the form
         $salesDetails = $this->prepareSalesDetailsForForm($request, $editingSales);
+        $regularBuyers = Buyer::getRegularOptionsForBroker($brokerId);
 
         return compact('sales',
             'fishBoxes', 'fishTypes', 'editingSales',
             'viewingSales', 'salesStatuses',
             'salesStatusesWithDisplayNames', 'salesStatusesWithColorClasses',
             'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap',
-            'dateFrom', 'dateTo'
+            'dateFrom', 'dateTo', 'regularBuyers'
         );
     }
 
@@ -204,6 +211,7 @@ class SalesController extends Controller
         $saleForPayment = null;
         $printingSales = $this->getModalSales($request, 'print', 'print', ['buyer', 'salesDetails.fishBoxPurchase.fishType', 'salesDetails.fishBoxPurchase.fishBox', 'salesPayments', 'broker.user', 'broker']);
         $salesDetails = $this->prepareSalesDetailsForForm($request, $editingSales);
+        $regularBuyers = Buyer::getRegularOptionsForBroker($brokerId);
         $sales = collect();
         $salesSummary = [];
         $salesStatuses = SalesStatusConstant::getAllStatuses();
@@ -227,7 +235,8 @@ class SalesController extends Controller
             'printingSales',
             'salesDetails',
             'salesSummary',
-            'fishPriceMap'
+            'fishPriceMap',
+            'regularBuyers'
         );
     }
 
@@ -237,13 +246,18 @@ class SalesController extends Controller
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        // Get date filters from request, default to 1st of current month to today
-        $dateFrom = $request->get('date_from', now()->startOfMonth()->format('Y-m-d'));
-        $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+        // Analytics summaries follow the daily operation filter; the trend chart uses a rolling week.
+        $dateFrom = $request->get('date_from', now()->toDateString());
+        $dateTo = $request->get('date_to', now()->toDateString());
         $status = $request->get('status');
 
         // Get analytics data using sales history for the selected period.
         $analyticsData = SalesTransaction::getAnalyticsData($brokerId, $dateFrom, $dateTo, $status);
+        $trendDateTo = Carbon::parse($dateTo)->toDateString();
+        $trendDateFrom = Carbon::parse($trendDateTo)->subDays(6)->toDateString();
+        $analyticsData['weeklySalesData'] = SalesTransaction::getDailySalesForPeriod($brokerId, $trendDateFrom, $trendDateTo, $status);
+        $analyticsData['trendDateFrom'] = $trendDateFrom;
+        $analyticsData['trendDateTo'] = $trendDateTo;
 
         // Get paginated sales for the period
         $sales = SalesTransaction::getPaginatedWithFilters(
@@ -282,6 +296,7 @@ class SalesController extends Controller
             'buyer_last_name' => $validated['buyer_last_name'],
             'buyer_name' => $validated['buyer_name'],
             'buyer_contact' => $validated['buyer_contact'],
+            'buyer_id' => $validated['buyer_id'] ?? null,
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
@@ -357,6 +372,7 @@ class SalesController extends Controller
             'buyer_last_name' => $validated['buyer_last_name'],
             'buyer_name' => $validated['buyer_name'],
             'buyer_contact' => $validated['buyer_contact'],
+            'buyer_id' => $validated['buyer_id'] ?? null,
         ];
 
         $salesDetails = $validated['sales_details'] ?? [];
@@ -562,6 +578,23 @@ class SalesController extends Controller
                 ], 400);
             }
 
+            $latestPrice = BrokerFishTypeAssignment::query()
+                ->select(['id', 'broker_id', 'fish_type_id'])
+                ->with([
+                    'latestPrice' => function ($query) {
+                        $query->select([
+                            'FishPriceRecord.id',
+                            'FishPriceRecord.broker_fish_type_id',
+                            'FishPriceRecord.price',
+                        ]);
+                    },
+                ])
+                ->where('broker_id', $brokerId)
+                ->where('fish_type_id', $fishBox->fish_type_id)
+                ->first()
+                ?->latestPrice
+                ?->price;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -570,6 +603,8 @@ class SalesController extends Controller
                     'qr_code' => $fishBox->qr_code,
                     'fish_type_id' => $fishBox->fish_type_id,
                     'fish_type' => $fishBox->fish_type_name,
+                    'fish_type_name' => $fishBox->fish_type_name,
+                    'unit_price' => $latestPrice !== null ? (float) $latestPrice : null,
                     'status' => $fishBox->status
                 ]
             ]);

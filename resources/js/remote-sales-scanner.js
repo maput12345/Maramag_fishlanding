@@ -276,6 +276,26 @@ import QRCodeStyling from 'qr-code-styling';
         return Boolean(window.BrokerSalesTransactionState?.isSaving);
     }
 
+    function isBuyerStepVisible() {
+        const form = document.querySelector('[data-transaction-step-form]');
+
+        return form?.dataset.buyerSectionVisible === 'true';
+    }
+
+    function isTransactionLockedForNewScans() {
+        return isTransactionSaving() || isBuyerStepVisible();
+    }
+
+    function isTransactionScreenReady() {
+        const root = document.querySelector('[data-sales-form-root]');
+
+        return Boolean(
+            root
+            && root.querySelector('#sales-details-container')
+            && typeof window.SalesQRScanner === 'function'
+        );
+    }
+
     function queueRemoteScanForNextTransaction(fishBox) {
         if (!fishBox?.id) {
             return false;
@@ -301,11 +321,11 @@ import QRCodeStyling from 'qr-code-styling';
     }
 
     function processQueuedScansForNextTransaction(attempt = 0) {
-        if (isTransactionSaving() || queuedScansForNextTransaction.length === 0) {
+        if (isTransactionLockedForNewScans() || queuedScansForNextTransaction.length === 0) {
             return;
         }
 
-        if (typeof window.SalesQRScanner !== 'function') {
+        if (!isTransactionScreenReady()) {
             if (attempt < 30) {
                 window.setTimeout(() => processQueuedScansForNextTransaction(attempt + 1), 100);
             }
@@ -354,7 +374,7 @@ import QRCodeStyling from 'qr-code-styling';
 
             (payload.items || []).forEach((item) => {
                 if (item.status === 'accepted' && item.data) {
-                    if (isTransactionSaving()) {
+                    if (isTransactionLockedForNewScans() || !isTransactionScreenReady()) {
                         if (queueRemoteScanForNextTransaction(item.data)) {
                             acceptedCount += 1;
                         }
@@ -373,7 +393,7 @@ import QRCodeStyling from 'qr-code-styling';
             });
 
             if (acceptedCount > 0) {
-                const target = isTransactionSaving() ? 'queued for the next transaction' : 'added to this transaction';
+                const target = isTransactionLockedForNewScans() ? 'queued for the next transaction' : 'added to this transaction';
                 setStatus(`${acceptedCount} fish box scan${acceptedCount === 1 ? '' : 's'} ${target}.`, 'green');
             }
         } catch (error) {
@@ -459,6 +479,7 @@ import QRCodeStyling from 'qr-code-styling';
         }
 
         startPolling();
+        window.setTimeout(processQueuedScansForNextTransaction, 250);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -469,7 +490,9 @@ import QRCodeStyling from 'qr-code-styling';
     });
     window.addEventListener('broker-sales:save-succeeded', () => {
         window.setTimeout(processQueuedScansForNextTransaction, 150);
+        window.setTimeout(resumeSessionIfPresent, 250);
     });
     window.bindRemoteSalesScannerButtons = bindButtons;
     window.openRemoteSalesScannerSession = openSession;
+    window.resumeRemoteSalesScannerSession = resumeSessionIfPresent;
 })();

@@ -184,7 +184,9 @@ class SalesTransaction extends Model
                 $salesData['buyer_first_name'],
                 $salesData['buyer_middle_name'] ?? null,
                 $salesData['buyer_last_name'],
-                $salesData['buyer_contact'] ?? null
+                $salesData['buyer_contact'] ?? null,
+                $brokerId,
+                $salesData['buyer_id'] ?? null
             );
             $salesDetails = static::assignAutomaticFishBoxes($salesDetails, $brokerId);
             static::ensureFishBoxesMatchSaleDetails($salesDetails, $brokerId);
@@ -240,7 +242,9 @@ class SalesTransaction extends Model
                 $salesData['buyer_first_name'],
                 $salesData['buyer_middle_name'] ?? null,
                 $salesData['buyer_last_name'],
-                $salesData['buyer_contact'] ?? null
+                $salesData['buyer_contact'] ?? null,
+                $brokerId,
+                $salesData['buyer_id'] ?? null
             );
             $lockedSale = self::query()
                 ->with('salesDetails.fishBoxPurchase')
@@ -341,11 +345,12 @@ class SalesTransaction extends Model
             }
 
             $fishTypeId = (int) ($detail['fish_type_id'] ?? 0);
-            $unitPrice = $priceMap->get($fishTypeId);
+            $unitPrice = $priceMap->get($fishTypeId)
+                ?? static::parseMoneyValue($detail['unit_price'] ?? null);
 
-            if ($fishTypeId <= 0 || $unitPrice === null) {
+            if ($fishTypeId <= 0 || $unitPrice === null || $unitPrice <= 0) {
                 throw ValidationException::withMessages([
-                    "sales_details.{$index}.fish_type_id" => 'Set a current price for the selected fish before saving the sale.',
+                    "sales_details.{$index}.unit_price" => 'Enter a valid price for the selected fish before saving the sale.',
                 ]);
             }
 
@@ -1116,16 +1121,49 @@ class SalesTransaction extends Model
         ];
     }
 
-    /**
-     * Get daily sales data for a specific period
-     *
-     * @param int|null $brokerId
-     * @param string $dateFrom
-     * @param string $dateTo
-     * @param string|null $status
-     * @return \Illuminate\Support\Collection
-     */
     public static function getDailySalesForPeriod(?int $brokerId, string $dateFrom, string $dateTo, ?string $status = null): \Illuminate\Support\Collection
+    {
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateRange($query, 'sales_date', $dateFrom, $dateTo);
+
+        if ($brokerId) {
+            $query->where('broker_id', $brokerId);
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $dailySales = $query->selectRaw('DATE(sales_date) as date, SUM(total_amount) as total_sales')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $periodDays = [];
+        $currentDate = Carbon::parse($dateFrom)->startOfDay();
+        $endDate = Carbon::parse($dateTo)->startOfDay();
+
+        while ($currentDate->lte($endDate)) {
+            $date = $currentDate->format('Y-m-d');
+            $salesData = $dailySales->firstWhere('date', $date);
+
+            $periodDays[] = [
+                'date' => $date,
+                'day' => $currentDate->format('M. j'),
+                'sales' => $salesData ? (float) $salesData->total_sales : 0,
+            ];
+
+            $currentDate->addDay();
+        }
+
+        return collect($periodDays);
+    }
+
+    /**
+     * Get weekly sales data for a specific period.
+     */
+    public static function getWeeklySalesForPeriod(?int $brokerId, string $dateFrom, string $dateTo, ?string $status = null): \Illuminate\Support\Collection
     {
         $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
 

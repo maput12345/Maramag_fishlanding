@@ -356,11 +356,35 @@ window.QRCodeModal = {
         });
 
         const waitForFonts = iframeDocument.fonts?.ready?.catch(() => null) || Promise.resolve();
+        const waitForImages = Promise.all(
+            Array.from(iframeDocument.images || []).map((image) => {
+                if (image.complete) {
+                    return Promise.resolve();
+                }
+
+                if (typeof image.decode === 'function') {
+                    return image.decode().catch(() => null);
+                }
+
+                return new Promise((resolve) => {
+                    image.addEventListener('load', resolve, { once: true });
+                    image.addEventListener('error', resolve, { once: true });
+                });
+            })
+        );
 
         return Promise.race([
-            Promise.all([waitForReadyState, waitForFonts]),
+            Promise.all([waitForReadyState, waitForFonts, waitForImages]),
             new Promise((resolve) => window.setTimeout(resolve, 1200)),
         ]);
+    },
+
+    waitForPaint() {
+        return new Promise((resolve) => {
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(resolve);
+            });
+        });
     },
 
     async printDocument(printMarkup, printWindow = null) {
@@ -403,6 +427,7 @@ window.QRCodeModal = {
         iframeDocument.close();
 
         await this.waitForPrintDocument(iframeDocument);
+        await this.waitForPaint();
 
         iframeWindow.addEventListener('afterprint', cleanup, { once: true });
         cleanupTimer = window.setTimeout(cleanup, 60000);
@@ -419,11 +444,12 @@ window.QRCodeModal = {
         printDocument.close();
 
         await this.waitForPrintDocument(printDocument);
+        await this.waitForPaint();
 
         printWindow.focus();
         window.setTimeout(() => {
             printWindow.print();
-        }, 250);
+        }, 500);
     },
 
     buildBulkPrintDocument(fishBoxes, filterSummary, layoutSize = 180, qrSize = 320) {
@@ -443,9 +469,6 @@ window.QRCodeModal = {
                 </div>
                 <div class="qr-card__meta">
                     <h2>${this.escapeHtml(fishBox.name)}</h2>
-                    <p>${this.escapeHtml(fishBox.fish_name || 'Unassigned')}</p>
-                    <span class="status">${this.escapeHtml(fishBox.status)}</span>
-                    <div class="qr-value">${this.escapeHtml(fishBox.qr_code)}</div>
                 </div>
             </article>
         `;
@@ -537,34 +560,6 @@ window.QRCodeModal = {
                             margin: 0;
                             font-size: 18px;
                             line-height: 1.2;
-                        }
-
-                        .qr-card__meta p {
-                            margin: 6px 0 10px;
-                            color: #475569;
-                            font-size: 13px;
-                        }
-
-                        .status {
-                            display: inline-flex;
-                            align-items: center;
-                            justify-content: center;
-                            border-radius: 999px;
-                            background: #dbeafe;
-                            color: #1d4ed8;
-                            font-size: 11px;
-                            font-weight: 700;
-                            letter-spacing: 0.08em;
-                            padding: 5px 10px;
-                            text-transform: uppercase;
-                        }
-
-                        .qr-value {
-                            margin-top: 12px;
-                            color: #64748b;
-                            font-family: "Courier New", monospace;
-                            font-size: 11px;
-                            word-break: break-all;
                         }
 
                         @page {

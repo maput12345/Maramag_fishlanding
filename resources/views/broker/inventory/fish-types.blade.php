@@ -325,7 +325,8 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
+            const initializeFishTypeModals = function () {
             const modal = document.getElementById('fish-type-edit-modal');
             if (modal && modal.parentElement !== document.body) {
                 document.body.appendChild(modal);
@@ -373,6 +374,13 @@
                     closeModal();
                 }
             });
-        });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeFishTypeModals, { once: true });
+            } else {
+                initializeFishTypeModals();
+            }
+        })();
     </script>
 </div>

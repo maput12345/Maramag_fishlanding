@@ -1,1 +1,215 @@
-.filter-layout{align-items:end;display:grid;gap:1rem;grid-template-columns:repeat(12,minmax(0,1fr))}.filter-layout .search-field{grid-column:span 12}.filter-layout .fish-type-field,.filter-layout .status-field{grid-column:span 6}.filter-layout .buttons-field{grid-column:span 12}@media (min-width:768px){.filter-layout .fish-type-field,.filter-layout .search-field,.filter-layout .status-field{grid-column:span 4}.filter-layout .buttons-field{grid-column:9/13}}@media (min-width:1280px){.filter-layout .search-field{grid-column:span 4}.filter-layout .fish-type-field,.filter-layout .status-field{grid-column:span 2}.filter-layout .buttons-field{grid-column:span 4}}.sales-filter-layout{align-items:end;display:grid;gap:1rem;grid-template-columns:repeat(12,minmax(0,1fr))}.sales-filter-layout .fish-type-field,.sales-filter-layout .search-field,.sales-filter-layout .status-field{grid-column:span 6}.sales-filter-layout .buttons-field{grid-column:9/13}@media (min-width:768px){.sales-filter-layout .search-field,.sales-filter-layout .status-field{grid-column:span 6}.sales-filter-layout .buttons-field,.sales-filter-layout .fish-type-field{grid-column:span 4}}@media (min-width:1280px){.sales-filter-layout .search-field{grid-column:span 4}.sales-filter-layout .buttons-field,.sales-filter-layout .fish-type-field,.sales-filter-layout .status-field{grid-column:span 2}}.analytics-filter-layout{align-items:end;display:grid;gap:1rem;grid-template-columns:repeat(12,minmax(0,1fr))}.analytics-filter-layout .buttons-field,.analytics-filter-layout .fish-type-field,.analytics-filter-layout .search-field,.analytics-filter-layout .status-field{grid-column:span 6}@media (min-width:768px){.analytics-filter-layout .fish-type-field,.analytics-filter-layout .search-field,.analytics-filter-layout .status-field{grid-column:span 4}.analytics-filter-layout .buttons-field{grid-column:9/13}}@media (min-width:1280px){.analytics-filter-layout .buttons-field,.analytics-filter-layout .fish-type-field,.analytics-filter-layout .search-field,.analytics-filter-layout .status-field{grid-column:span 3}}.user-filter-layout{align-items:end;display:grid;gap:1rem;grid-template-columns:1fr}.user-filter-layout .buttons-field,.user-filter-layout .role-field,.user-filter-layout .search-field,.user-filter-layout .status-field{grid-column:span 1}@media (min-width:1024px){.user-filter-layout{grid-template-columns:minmax(0,2.5fr) minmax(220px,1fr) minmax(220px,1fr) auto}.user-filter-layout--brokers{grid-template-columns:minmax(0,3fr) minmax(220px,1fr) auto}.user-filter-layout .buttons-field{white-space:nowrap}}
+/* Custom Filter Layout CSS */
+.filter-layout {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-layout .search-field {
+    grid-column: span 12;
+}
+
+.filter-layout .status-field {
+    grid-column: span 6;
+}
+
+.filter-layout .fish-type-field {
+    grid-column: span 6;
+}
+
+.filter-layout .buttons-field {
+    grid-column: span 12;
+}
+
+/* Medium devices (768px and up) */
+@media (min-width: 768px) {
+    .filter-layout .search-field {
+        grid-column: span 4;
+    }
+
+    .filter-layout .status-field {
+        grid-column: span 4;
+    }
+
+    .filter-layout .fish-type-field {
+        grid-column: span 4;
+    }
+
+    .filter-layout .buttons-field {
+        grid-column: 9 / 13;
+    }
+}
+
+/* Large devices (1280px and up) */
+@media (min-width: 1280px) {
+    .filter-layout .search-field {
+        grid-column: span 4;
+    }
+
+    .filter-layout .status-field {
+        grid-column: span 2;
+    }
+
+    .filter-layout .fish-type-field {
+        grid-column: span 2;
+    }
+
+    .filter-layout .buttons-field {
+        grid-column: span 4;
+    }
+}
+
+/* Sales Page Specific Layout - 5 elements */
+.sales-filter-layout {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.sales-filter-layout .search-field {
+    grid-column: span 6;
+}
+
+.sales-filter-layout .status-field {
+    grid-column: span 6;
+}
+
+.sales-filter-layout .fish-type-field {
+    grid-column: span 6;
+}
+
+.sales-filter-layout .buttons-field {
+    grid-column: 9 / 13;
+}
+
+/* Medium devices (768px and up) - Sales Layout */
+@media (min-width: 768px) {
+    .sales-filter-layout .search-field {
+        grid-column: span 6;
+    }
+
+    .sales-filter-layout .status-field {
+        grid-column: span 6;
+    }
+
+    .sales-filter-layout .fish-type-field {
+        grid-column: span 4;
+    }
+
+    .sales-filter-layout .buttons-field {
+        grid-column: span 4;
+    }
+}
+
+/* Large devices (1280px and up) - Sales Layout */
+@media (min-width: 1280px) {
+    .sales-filter-layout .search-field {
+        grid-column: span 4;
+    }
+
+    .sales-filter-layout .status-field {
+        grid-column: span 2;
+    }
+
+    .sales-filter-layout .fish-type-field {
+        grid-column: span 2;
+    }
+
+    .sales-filter-layout .buttons-field {
+        grid-column: span 2;
+    }
+}
+
+/* Analytics Page Specific Layout - 4 elements */
+.analytics-filter-layout {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.analytics-filter-layout .search-field {
+    grid-column: span 6;
+}
+
+.analytics-filter-layout .status-field {
+    grid-column: span 6;
+}
+
+.analytics-filter-layout .fish-type-field {
+    grid-column: span 6;
+}
+
+.analytics-filter-layout .buttons-field {
+    grid-column: span 6;
+}
+
+/* Medium devices (768px and up) - Analytics Layout */
+@media (min-width: 768px) {
+    .analytics-filter-layout .search-field {
+        grid-column: span 4;
+    }
+
+    .analytics-filter-layout .status-field {
+        grid-column: span 4;
+    }
+
+    .analytics-filter-layout .fish-type-field {
+        grid-column: span 4;
+    }
+
+    .analytics-filter-layout .buttons-field {
+        grid-column: 9 / 13;
+    }
+}
+
+/* Large devices (1280px and up) - Analytics Layout */
+@media (min-width: 1280px) {
+    .analytics-filter-layout .search-field {
+        grid-column: span 3;
+    }
+
+    .analytics-filter-layout .status-field {
+        grid-column: span 3;
+    }
+
+    .analytics-filter-layout .fish-type-field {
+        grid-column: span 3;
+    }
+
+    .analytics-filter-layout .buttons-field {
+        grid-column: span 3;
+    }
+}
+
+/* User Management filter layout */
+.user-filter-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    align-items: end;
+}
+
+.user-filter-layout .search-field,
+.user-filter-layout .status-field,
+.user-filter-layout .role-field,
+.user-filter-layout .buttons-field {
+    grid-column: span 1;
+}
+
+@media (min-width: 1024px) {
+    .user-filter-layout {
+        grid-template-columns: minmax(0, 2.5fr) minmax(220px, 1fr) minmax(220px, 1fr) auto;
+    }
+
+    .user-filter-layout--brokers {
+        grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr) auto;
+    }
+
+    .user-filter-layout .buttons-field {
+        white-space: nowrap;
+    }
+}
+

@@ -91,6 +91,8 @@ Route::middleware(['auth', 'admin', 'prevent.back.history'])->group(function () 
 
     Route::post('/admin/brokers/{broker}/switch-view', [UserManagementController::class, 'startBrokerView'])
         ->name('admin.broker-view.start');
+    Route::patch('/admin/brokers/{broker}/release-stall', [UserManagementController::class, 'releaseBrokerStall'])
+        ->name('admin.brokers.release-stall');
     Route::delete('/admin/broker-view', [UserManagementController::class, 'stopBrokerView'])
         ->name('admin.broker-view.stop');
     Route::post('/admin/broker-view/support-actions', [UserManagementController::class, 'enableBrokerSupportActions'])
@@ -142,6 +144,7 @@ Route::middleware(['auth', 'broker', 'prevent.back.history'])->group(function ()
     Route::get('/broker/sales', [SalesManagementController::class, 'sales'])->name('broker.sales.sales');
     Route::get('/broker/financial-statement', [FinancialStatementController::class, 'index'])->name('broker.financial-statements.index');
     Route::post('/broker/financial-statement/entries', [FinancialStatementController::class, 'store'])->name('broker.financial-statements.entries.store');
+    Route::patch('/broker/financial-statement/entries/{entry}', [FinancialStatementController::class, 'update'])->name('broker.financial-statements.entries.update');
     Route::delete('/broker/financial-statement/entries/{entry}', [FinancialStatementController::class, 'destroy'])->name('broker.financial-statements.entries.destroy');
 
     // Fishbox Management routes for brokers

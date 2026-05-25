@@ -278,6 +278,25 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                 </div>
 
                 {{-- Buyer Information --}}
+                <div>
+                    <div class="relative" data-regular-buyer-picker>
+                        <label for="regular_buyer_search_modal" class="mb-2 block text-sm font-medium text-gray-700">Regular Customer</label>
+                        <script type="application/json" data-regular-buyers-json>{!! json_encode($regularBuyers ?? collect(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+                        <input type="hidden"
+                               name="buyer_id"
+                               value="{{ old('buyer_id', request('modal') === 'edit' && $editingSales ? $editingSales->buyer_id : '') }}"
+                               data-regular-buyer-id>
+                        <input type="search"
+                               id="regular_buyer_search_modal"
+                               data-regular-buyer-search
+                               autocomplete="off"
+                               class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                               placeholder="Search name or contact...">
+                        <div class="absolute left-0 right-0 top-full z-30 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+                             data-regular-buyer-results></div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
                         <label for="buyer_first_name" class="mb-2 block text-sm font-medium text-gray-700">
@@ -366,7 +385,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                 Payment Date
                             </label>
                             <input type="date" id="initial_payment_date" name="initial_payment_date"
-                                   value="{{ old('initial_payment_date', '') }}"
+                                   value="{{ old('initial_payment_date', date('Y-m-d')) }}"
                                    class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                             @error('initial_payment_date')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

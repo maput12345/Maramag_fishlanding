@@ -2,6 +2,11 @@
     $breadcrumbs = [
         ['title' => 'Sales & Analytics']
     ];
+    $periodLabel = \Carbon\Carbon::parse($dateFrom)->format('M d, Y')
+        . ($dateFrom !== $dateTo ? ' - ' . \Carbon\Carbon::parse($dateTo)->format('M d, Y') : '');
+    $trendPeriodLabel = \Carbon\Carbon::parse($trendDateFrom ?? $dateFrom)->format('M d')
+        . ' - '
+        . \Carbon\Carbon::parse($trendDateTo ?? $dateTo)->format('M d, Y');
 @endphp
 
 @extends('layouts.broker')
@@ -13,7 +18,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">Sales Analytics</h1>
-                            <p class="text-gray-600 mt-2">Review sales activity, collections, and top-performing commodities from {{ \Carbon\Carbon::parse($dateFrom)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($dateTo)->format('M d, Y') }}.</p>
+                            <p class="text-gray-600 mt-2">Review sales activity, collections, and top-performing commodities for {{ $periodLabel }}.</p>
                         </div>
                     </div>
                 </div>
@@ -31,7 +36,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                 <select name="status" x-model="status" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">All Status</option>
-                                    <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Pending Payment</option>
+                                    <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Unpaid</option>
                                     <option value="{{ \App\Constants\SalesStatusConstant::PAID }}">Paid</option>
                                     <option value="{{ \App\Constants\SalesStatusConstant::PARTIALLY_PAID }}">Partially Paid</option>
                                 </select>
@@ -86,11 +91,11 @@
                         </div>
                     </div>
 
-                    <!-- Total Revenue -->
+                    <!-- Daily Sales -->
                     <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-blue-100 text-sm font-medium">Total Revenue</p>
+                                <p class="text-blue-100 text-sm font-medium">Period Sales</p>
                                 <p class="text-3xl font-bold">₱{{ number_format($totalRevenue, 2) }}</p>
                                 <p class="text-blue-100 text-sm mt-1">Revenue in period</p>
                             </div>
@@ -133,7 +138,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <!-- Sales Trend Chart -->
                     <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Weekly Sales Trend</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales Trend</h3>
+                        <p class="-mt-2 mb-4 text-sm text-gray-500">Rolling week: {{ $trendPeriodLabel }}</p>
 
                         <!-- Sales Amount Labels - Outside/Above Chart Container -->
                         <div class="flex justify-between space-x-2 mb-4">
@@ -173,7 +179,7 @@
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-gray-900">Top Selling Commodities</h3>
-                            <div class="text-sm text-gray-500">Period: {{ \Carbon\Carbon::parse($dateFrom)->format('M d') }} - {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}</div>
+                            <div class="text-sm text-gray-500">Period: {{ $periodLabel }}</div>
                         </div>
                         <div class="space-y-4">
                             @forelse($topItems as $index => $item)
@@ -210,7 +216,7 @@
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-gray-900">Sales Performance</h3>
                             <div class="text-sm text-gray-500">
-                                Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }} results
+                                Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }} results for {{ $periodLabel }}
                             </div>
                         </div>
                     </div>

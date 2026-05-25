@@ -4,6 +4,11 @@ $breadcrumbs = [
     ];
 
     $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
+    $periodLabel = \Carbon\Carbon::parse($dateFrom)->format('M d, Y')
+        . ($dateFrom !== $dateTo ? ' - ' . \Carbon\Carbon::parse($dateTo)->format('M d, Y') : '');
+    $trendPeriodLabel = \Carbon\Carbon::parse($trendDateFrom ?? $dateFrom)->format('M d')
+        . ' - '
+        . \Carbon\Carbon::parse($trendDateTo ?? $dateTo)->format('M d, Y');
 @endphp
 @extends('layouts.broker')
 
@@ -27,7 +32,7 @@ $breadcrumbs = [
                         <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select name="status" x-model="status" class="app-select w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Status</option>
-                            <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Pending Payment</option>
+                            <option value="{{ \App\Constants\SalesStatusConstant::ACTIVE }}">Unpaid</option>
                             <option value="{{ \App\Constants\SalesStatusConstant::PAID }}">Paid</option>
                             <option value="{{ \App\Constants\SalesStatusConstant::PARTIALLY_PAID }}">Partially Paid</option>
                         </select>
@@ -62,6 +67,7 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow">Transactions</p>
                     <p class="metric-card__value">{{ number_format($totalOrders) }}</p>
+                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-document-text />
@@ -72,8 +78,9 @@ $breadcrumbs = [
         <div class="metric-card metric-card--success">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow">Total Sales</p>
+                    <p class="metric-card__eyebrow">Period Sales</p>
                     <p class="metric-card__value metric-card__value--money">₱{{ number_format($totalRevenue, 2) }}</p>
+                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-chart-pie />
@@ -86,6 +93,7 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow" title="Outstanding Receivable Balance">Outstanding Balance</p>
                     <p class="metric-card__value metric-card__value--money">₱{{ number_format($totalBalance, 2) }}</p>
+                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-currency-dollar />
@@ -98,6 +106,7 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow">Fish Boxes Sold</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxes) }}</p>
+                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-cube />
@@ -111,7 +120,8 @@ $breadcrumbs = [
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Weekly Sales Trend</h3>
+                        <h3 class="panel-card__title">Sales Trend</h3>
+                        <p class="mt-1 text-sm text-gray-500">Rolling week: {{ $trendPeriodLabel }}</p>
                     </div>
                 </div>
 
@@ -137,7 +147,7 @@ $breadcrumbs = [
                     <div>
                         <h3 class="panel-card__title">Top Selling Commodities</h3>
                     </div>
-                    <span class="panel-card__hint">{{ \Carbon\Carbon::parse($dateFrom)->format('M d') }} - {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}</span>
+                    <span class="panel-card__hint">{{ $periodLabel }}</span>
                 </div>
 
                 <div class="top-item-list">
@@ -176,7 +186,7 @@ $breadcrumbs = [
                 <div>
                     <h3 class="panel-card__title">Sales Performance</h3>
                 </div>
-                <span class="panel-card__hint">Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }}</span>
+                <span class="panel-card__hint">Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }} for {{ $periodLabel }}</span>
             </div>
 
             <div class="overflow-x-auto">

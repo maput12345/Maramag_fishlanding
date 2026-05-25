@@ -141,6 +141,26 @@
                                     </form>
                                 @endif
 
+                                @if($broker->stall_id && $broker->status === 'active')
+                                    <form method="POST"
+                                          action="{{ route('admin.brokers.release-stall', $broker) }}"
+                                          class="inline"
+                                          data-swal="release"
+                                          data-swal-title="Release this stall?"
+                                          data-swal-text="This will make {{ $broker->stall_name ?: 'the stall' }} vacant and return {{ $broker->user->email }} to applicant access. The account can apply again."
+                                          data-swal-confirm="Yes, release stall"
+                                          data-swal-icon="warning">
+                                        @csrf
+                                        @method('PATCH')
+                                        <span class="relative group inline-block">
+                                            <button type="submit" class="app-icon-button app-icon-button--release" aria-label="Release Stall">
+                                                <x-heroicon-o-arrow-path class="w-6 h-6" />
+                                            </button>
+                                            <span class="app-tooltip">Release Stall</span>
+                                        </span>
+                                    </form>
+                                @endif
+
                                 <form method="POST" action="{{ route('admin.users.destroy', $broker->user->id) }}" class="inline" data-swal="delete">
                                     @csrf
                                     @method('DELETE')

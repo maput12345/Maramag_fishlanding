@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Constants\OpeningStatusConstant;
 use App\Models\ApplicationOpening;
+use App\Models\Broker;
 use App\Models\RequirementType;
 use App\Models\Stall;
 use Illuminate\Foundation\Http\FormRequest;
@@ -51,6 +52,22 @@ class StoreApplicationOpeningRequest extends FormRequest
                     $validator->errors()->add(
                         'stall_ids',
                         'Only vacant stalls can be opened. Please remove: ' . $nonVacantStallNames->implode(', ') . '.'
+                    );
+                }
+
+                $stallsAssignedToBrokers = Broker::query()
+                    ->whereIn('stall_id', $stallIds)
+                    ->with('stall:id,stall_number')
+                    ->get()
+                    ->map(fn (Broker $broker) => $broker->stall?->display_name)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($stallsAssignedToBrokers->isNotEmpty()) {
+                    $validator->errors()->add(
+                        'stall_ids',
+                        'These stalls are still assigned to broker accounts: ' . $stallsAssignedToBrokers->implode(', ') . '. Release or delete the existing broker assignment before opening them again.'
                     );
                 }
 

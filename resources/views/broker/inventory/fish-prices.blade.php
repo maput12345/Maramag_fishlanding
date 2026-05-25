@@ -89,7 +89,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
     @elseif(request('modal') === 'create' || request('modal') === 'edit')
         <x-app-modal
             :title="request('modal') === 'edit' ? 'Update Fish Price' : 'Set Price'"
-            :subtitle="request('modal') === 'edit' ? 'Adjust the selling price and default daily cost for this broker fish.' : 'Set a selling price and default daily cost for an assigned fish.'"
+            :subtitle="request('modal') === 'edit' ? 'Adjust today\'s selling price and stock cost for this broker fish.' : 'Set today\'s selling price and stock cost for an assigned fish.'"
             :close-url="route('broker.inventory.index', ['tab' => 'fishPrices'])"
         >
             <x-slot:icon>
@@ -100,31 +100,56 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 
             <form action="{{ request('modal') === 'edit' && $editingBrokerFishType ? route('broker.fish-prices.update', $editingBrokerFishType->id) : route('broker.fish-prices.store') }}"
                   method="POST"
-                  class="space-y-6">
+                  class="space-y-6"
+                  data-price-form>
                 @csrf
                 @if(request('modal') === 'edit')
                     @method('PUT')
                 @endif
 
                 @if(request('modal') === 'create')
-                    <div>
-                        <label for="broker_fish_type_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    @php
+                        $selectedPricingAssignment = old('broker_fish_type_id')
+                            ? $pricingAssignments->firstWhere('id', (int) old('broker_fish_type_id'))
+                            : null;
+                    @endphp
+                    <div data-price-fish-combobox class="relative">
+                        <label for="broker_fish_type_search" class="block text-sm font-medium text-gray-700 mb-2">
                             Fish <span class="text-red-500">*</span>
                         </label>
-                        <select id="broker_fish_type_id" name="broker_fish_type_id"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                required>
-                            <option value="">Select Fish</option>
+                        <input type="hidden"
+                               id="broker_fish_type_id"
+                               name="broker_fish_type_id"
+                               value="{{ old('broker_fish_type_id') }}"
+                               data-price-fish-value>
+                        <input type="search"
+                               id="broker_fish_type_search"
+                               data-price-fish-search
+                               autocomplete="off"
+                               value="{{ $selectedPricingAssignment?->display_name ?? '' }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                               placeholder="Search and select fish type..."
+                               required>
+                        <div class="absolute left-0 right-0 z-50 mt-1 hidden max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-xl ring-1 ring-black/5"
+                             style="z-index: 80;"
+                             data-price-fish-list>
                             @foreach($pricingAssignments as $assignment)
-                                <option value="{{ $assignment->id }}"
-                                    {{ (string) old('broker_fish_type_id') === (string) $assignment->id ? 'selected' : '' }}>
+                                <button type="button"
+                                        class="block w-full px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-green-50 hover:text-green-700"
+                                        data-price-fish-option
+                                        data-value="{{ $assignment->id }}"
+                                        data-label="{{ $assignment->display_name ?? 'Unknown Fish' }}"
+                                        data-search="{{ \Illuminate\Support\Str::lower(($assignment->display_name ?? 'Unknown Fish') . ' ' . $assignment->id) }}">
                                     {{ $assignment->display_name ?? 'Unknown Fish' }}
                                     @if($assignment->latestPrice)
                                         - Current: ₱{{ number_format((float) $assignment->latestPrice->price, 2) }}
                                     @endif
-                                </option>
+                                </button>
                             @endforeach
-                        </select>
+                            <p class="hidden px-4 py-3 text-sm text-gray-500" data-price-fish-empty>
+                                No fish type found.
+                            </p>
+                        </div>
                         @error('broker_fish_type_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -143,13 +168,14 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                         </label>
                         <div class="currency-input-group">
                             <span class="currency-input-symbol">₱</span>
-                            <input type="number"
+                            <input type="text"
                                    id="price"
                                    name="price"
-                                   min="0"
-                                   step="0.01"
                                    value="{{ old('price', $editingBrokerFishType?->latestPrice?->price) }}"
                                    class="currency-input-field"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   data-currency-format
                                    placeholder="0.00"
                                    required>
                         </div>
@@ -159,21 +185,22 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     </div>
                     <div>
                         <label for="default_cost_price" class="block text-sm font-medium text-gray-700 mb-2">
-                            Cost per box
+                            Stock Cost
                         </label>
                         <div class="currency-input-group">
                             <span class="currency-input-symbol">₱</span>
-                            <input type="number"
+                            <input type="text"
                                    id="default_cost_price"
                                    name="default_cost_price"
-                                   min="0"
-                                   step="0.01"
                                    value="{{ old('default_cost_price', $editingBrokerFishType?->latestPrice?->default_cost_price) }}"
                                    class="currency-input-field"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   data-currency-format
                                    placeholder="0.00">
                         </div>
                         <p class="mt-1 text-xs text-gray-500">
-                            Used to auto-fill fish box cost when adding stock or running daily restock.
+                            Used as the stock cost for daily restock and cost reporting.
                         </p>
                         @error('default_cost_price')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -256,7 +283,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
@@ -267,10 +294,12 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold tabular-nums text-gray-900">
                                             ₱{{ number_format((float) $priceRecord->price, 2) }}
+                                            <span class="sr-only">PHP {{ number_format((float) $priceRecord->price, 2) }}</span>
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">
                                             @if($priceRecord->default_cost_price !== null)
                                                 ₱{{ number_format((float) $priceRecord->default_cost_price, 2) }}
+                                                <span class="sr-only">PHP {{ number_format((float) $priceRecord->default_cost_price, 2) }}</span>
                                             @else
                                                 <span class="text-gray-400">Not set</span>
                                             @endif
@@ -348,8 +377,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fish</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Cost</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -498,7 +527,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                                         <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Price</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white" data-fish-price-history-rows></tbody>
@@ -534,7 +563,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                         </div>
                         <div class="min-w-0">
                             <h3 class="text-lg font-semibold text-slate-950">Update Fish Price</h3>
-                            <p class="mt-1 text-sm text-slate-500">Adjust the selling price and default daily cost for this broker fish.</p>
+                            <p class="mt-1 text-sm text-slate-500">Adjust today's selling price and stock cost for this broker fish.</p>
                         </div>
                     </div>
                     <button type="button"
@@ -558,28 +587,30 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             </label>
                             <div class="currency-input-group">
                                 <span class="currency-input-symbol">₱</span>
-                                <input type="number"
+                                <input type="text"
                                        id="fish-price-edit-price"
                                        name="price"
-                                       min="0"
-                                       step="0.01"
                                        class="currency-input-field"
+                                       inputmode="decimal"
+                                       autocomplete="off"
+                                       data-currency-format
                                        placeholder="0.00"
                                        required>
                             </div>
                         </div>
                         <div>
                             <label for="fish-price-edit-cost" class="block text-sm font-medium text-gray-700 mb-2">
-                                Cost per box
+                                Stock Cost
                             </label>
                             <div class="currency-input-group">
                                 <span class="currency-input-symbol">₱</span>
-                                <input type="number"
+                                <input type="text"
                                        id="fish-price-edit-cost"
                                        name="default_cost_price"
-                                       min="0"
-                                       step="0.01"
                                        class="currency-input-field"
+                                       inputmode="decimal"
+                                       autocomplete="off"
+                                       data-currency-format
                                        placeholder="0.00">
                             </div>
                         </div>
@@ -611,7 +642,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
+            const initializeFishPriceModals = function () {
             const appendToBody = (modal) => {
                 if (modal && modal.parentElement !== document.body) {
                     document.body.appendChild(modal);
@@ -637,6 +669,132 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             let activeHistoryRecords = [];
 
             appendToBody(historyModal);
+
+            const priceFishCombobox = document.querySelector('[data-price-fish-combobox]');
+            const priceFishSearch = document.querySelector('[data-price-fish-search]');
+            const priceFishValue = document.querySelector('[data-price-fish-value]');
+            const priceFishList = document.querySelector('[data-price-fish-list]');
+            const priceFishOptions = Array.from(document.querySelectorAll('[data-price-fish-option]'));
+            const priceFishEmpty = document.querySelector('[data-price-fish-empty]');
+            const priceForm = document.querySelector('[data-price-form]');
+            const currencyInputs = Array.from(document.querySelectorAll('[data-currency-format]'));
+
+            const normalizeCurrencyInput = (value) => String(value || '')
+                .replace(/,/g, '')
+                .replace(/[^\d.]/g, '')
+                .replace(/(\..*)\./g, '$1');
+
+            const formatCurrencyInput = (input) => {
+                const normalized = normalizeCurrencyInput(input.value);
+
+                if (normalized === '') {
+                    input.value = '';
+                    return;
+                }
+
+                const [wholePart, decimalPart] = normalized.split('.');
+                const formattedWhole = wholePart === ''
+                    ? ''
+                    : Number(wholePart).toLocaleString('en-US');
+
+                input.value = decimalPart !== undefined
+                    ? `${formattedWhole}.${decimalPart.slice(0, 2)}`
+                    : formattedWhole;
+            };
+
+            currencyInputs.forEach((input) => {
+                formatCurrencyInput(input);
+                input.addEventListener('input', () => formatCurrencyInput(input));
+            });
+
+            if (priceFishCombobox && priceFishSearch && priceFishValue && priceFishList) {
+                const syncPriceFishValidity = () => {
+                    priceFishSearch.setCustomValidity(priceFishValue.value ? '' : 'Select a fish type from the list.');
+                };
+
+                const closePriceFishList = () => {
+                    priceFishList.classList.add('hidden');
+                };
+
+                const openPriceFishList = () => {
+                    priceFishList.classList.remove('hidden');
+                };
+
+                const filterPriceFishOptions = (shouldOpen = true) => {
+                    const query = priceFishSearch.value.trim().toLowerCase();
+                    let visibleCount = 0;
+
+                    priceFishOptions.forEach((option) => {
+                        const matches = query === ''
+                            || (option.dataset.search || '').includes(query)
+                            || option.textContent.toLowerCase().includes(query);
+
+                        option.classList.toggle('hidden', !matches);
+                        visibleCount += matches ? 1 : 0;
+                    });
+
+                    priceFishEmpty?.classList.toggle('hidden', visibleCount > 0);
+
+                    if (shouldOpen) {
+                        openPriceFishList();
+                    }
+                };
+
+                const selectPriceFish = (option) => {
+                    priceFishValue.value = option.dataset.value || '';
+                    priceFishSearch.value = option.dataset.label || option.textContent.trim();
+                    syncPriceFishValidity();
+                    closePriceFishList();
+                };
+
+                priceFishSearch.addEventListener('focus', () => filterPriceFishOptions(true));
+                priceFishSearch.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        closePriceFishList();
+                        priceFishSearch.blur();
+                    }
+                });
+                priceFishSearch.addEventListener('input', () => {
+                    priceFishValue.value = '';
+                    syncPriceFishValidity();
+                    filterPriceFishOptions(true);
+                });
+
+                priceFishList.addEventListener('mousedown', (event) => {
+                    if (event.target === priceFishList) {
+                        closePriceFishList();
+                    }
+                });
+
+                priceFishOptions.forEach((option) => {
+                    option.addEventListener('click', () => selectPriceFish(option));
+                });
+
+                document.addEventListener('mousedown', (event) => {
+                    if (!priceFishCombobox.contains(event.target)) {
+                        closePriceFishList();
+                    }
+                }, true);
+
+                document.addEventListener('focusin', (event) => {
+                    if (!priceFishCombobox.contains(event.target)) {
+                        closePriceFishList();
+                    }
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!priceFishCombobox.contains(event.target)) {
+                        closePriceFishList();
+                    }
+                });
+
+                priceForm?.addEventListener('submit', () => {
+                    syncPriceFishValidity();
+                });
+
+                syncPriceFishValidity();
+                filterPriceFishOptions(false);
+            }
 
             const escapeHtml = (value) => String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -731,6 +889,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 editName.textContent = button.dataset.fishName || 'Unknown Fish';
                 editPrice.value = button.dataset.price || '';
                 editCost.value = button.dataset.cost || '';
+                formatCurrencyInput(editPrice);
+                formatCurrencyInput(editCost);
                 editDate.value = button.dataset.date || new Date().toISOString().slice(0, 10);
                 editModal.classList.remove('hidden');
                 lockPage();
@@ -763,6 +923,13 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     closeEditModal();
                 }
             });
-        });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeFishPriceModals, { once: true });
+            } else {
+                initializeFishPriceModals();
+            }
+        })();
     </script>
 </div>

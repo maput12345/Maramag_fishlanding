@@ -15,6 +15,17 @@ class FishPriceRequest extends FormRequest
     }
 
     /**
+     * Normalize formatted currency input before numeric validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'price' => $this->normalizeCurrencyValue($this->input('price')),
+            'default_cost_price' => $this->normalizeCurrencyValue($this->input('default_cost_price')),
+        ]);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, mixed>
@@ -49,5 +60,14 @@ class FishPriceRequest extends FormRequest
             'price_date.required' => 'Please select the effective date.',
             'price_date.date' => 'Please enter a valid effective date.',
         ];
+    }
+
+    private function normalizeCurrencyValue(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        return str_replace(',', '', (string) $value);
     }
 }

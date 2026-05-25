@@ -76,9 +76,16 @@ class RegisterController extends Controller
             'email.unique' => 'This email address is already registered.',
         ]);
 
-        $validator->after(function ($validator) {
+        $validator->after(function ($validator) use ($data) {
             if (!$this->hasAvailableApplicationOpening()) {
                 $validator->errors()->add('availability', 'No vacant stall is open for applications right now.');
+            }
+
+            $email = (string) ($data['email'] ?? '');
+            $domain = substr(strrchr($email, '@') ?: '', 1);
+
+            if ($domain !== '' && !checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+                $validator->errors()->add('email', 'Please enter a valid email address.');
             }
         });
 

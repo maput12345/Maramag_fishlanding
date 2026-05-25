@@ -84,6 +84,30 @@
                 </div>
             @endif
 
+            @if($stall)
+                <section class="portal-section-card portal-section-card--form mb-6">
+                    <div class="portal-section-card__header">
+                        <div>
+                            <p class="portal-section-card__eyebrow">Selected Stall</p>
+                            <h2 class="portal-section-card__title">{{ $stall->display_name }}</h2>
+                            @if($stall->address)
+                                <p class="portal-field__hint">{{ $stall->address }}</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if(!empty($stallGallery))
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            @foreach($stallGallery as $imageUrl)
+                                <img src="{{ $imageUrl }}"
+                                     alt="{{ $stall->display_name }} photo {{ $loop->iteration }}"
+                                     class="h-40 w-full rounded-xl border border-slate-200 object-cover">
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
+            @endif
+
             <section class="portal-section-card portal-section-card--form"
                      x-show="currentStep === 1"
                      x-cloak>

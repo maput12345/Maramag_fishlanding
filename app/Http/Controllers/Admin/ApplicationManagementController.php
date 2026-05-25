@@ -919,11 +919,10 @@ class ApplicationManagementController extends Controller
             ->filter(fn ($payload) => is_array($payload))
             ->pluck('verification_status');
 
-        if ($statuses->contains(RequirementVerificationStatusConstant::REJECTED)) {
-            return ApplicationStatusConstant::REJECTED;
-        }
-
-        if ($statuses->contains(RequirementVerificationStatusConstant::NEEDS_REVISION)) {
+        if (
+            $statuses->contains(RequirementVerificationStatusConstant::REJECTED)
+            || $statuses->contains(RequirementVerificationStatusConstant::NEEDS_REVISION)
+        ) {
             return ApplicationStatusConstant::NEEDS_REVISION;
         }
 
@@ -1001,6 +1000,10 @@ class ApplicationManagementController extends Controller
                     throw new \RuntimeException('Selected stall is no longer available.');
                 }
 
+                if (Broker::query()->where('stall_id', $selectedStall->id)->exists()) {
+                    throw new \RuntimeException($selectedStall->display_name . ' is still assigned to an existing broker account.');
+                }
+
                 $winnerSelectedAt = now();
 
                 $application->update([
@@ -1076,7 +1079,9 @@ class ApplicationManagementController extends Controller
             ]);
 
             return redirect()->route('admin.applications.show', $application)
-                ->with('error', 'Failed to confirm winner. Please try again.');
+                ->with('error', $exception instanceof \RuntimeException
+                    ? $exception->getMessage()
+                    : 'Failed to confirm winner. Please try again.');
         }
 
         $message = 'Winner selected successfully and broker account has been activated.';
@@ -1115,7 +1120,9 @@ class ApplicationManagementController extends Controller
         return ApplicationOpening::query()
             ->whereIn('opening_status', [OpeningStatusConstant::OPEN, OpeningStatusConstant::CLOSED])
             ->whereHas('stall', function ($query) {
-                $query->whereIn('stall_status', ApplicationOpening::AVAILABLE_STALL_STATUSES);
+                $query
+                    ->whereIn('stall_status', ApplicationOpening::AVAILABLE_STALL_STATUSES)
+                    ->whereDoesntHave('broker');
             })
             ->with('stall:id,stall_number,stall_status')
             ->get()

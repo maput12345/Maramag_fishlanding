@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Broker;
+use App\Models\Buyer;
 use App\Models\FishBox;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
@@ -57,9 +58,10 @@ class SalesRequest extends FormRequest
             'buyer_last_name' => 'required|string|max:255',
             'buyer_name' => 'nullable|string|max:255',
             'buyer_contact' => ['required', 'string', 'regex:/^09\\d{9}$/'],
-            'initial_paid_amount' => 'nullable|required_with:initial_payment_date,initial_payment_method|numeric|min:0.01',
-            'initial_payment_date' => 'nullable|required_with:initial_paid_amount,initial_payment_method|date',
-            'initial_payment_method' => 'nullable|required_with:initial_paid_amount,initial_payment_date|string|max:255',
+            'buyer_id' => 'nullable|integer|exists:Buyer,id',
+            'initial_paid_amount' => 'nullable|numeric|min:0.01',
+            'initial_payment_date' => 'nullable|required_with:initial_paid_amount|date',
+            'initial_payment_method' => 'nullable|required_with:initial_paid_amount|string|max:255',
             'sales_details' => 'required|array|min:1',
             'sales_details.*.box_id' => 'nullable|array',
             'sales_details.*.box_id.*' => 'nullable|exists:FishBox,id',
@@ -122,6 +124,20 @@ class SalesRequest extends FormRequest
                 return;
             }
 
+            $brokerId = $this->resolveCurrentBrokerId();
+
+            if (!$brokerId) {
+                $validator->errors()->add('sales_details', 'Only broker accounts with an active broker profile can record sales.');
+                return;
+            }
+
+            $buyerId = $this->input('buyer_id');
+
+            if ($buyerId && !Buyer::query()->whereKey($buyerId)->where('broker_id', $brokerId)->exists()) {
+                $validator->errors()->add('buyer_id', 'The selected regular customer does not belong to your broker account.');
+                return;
+            }
+
             if ($flattenedBoxIds->isEmpty()) {
                 return;
             }
@@ -134,13 +150,6 @@ class SalesRequest extends FormRequest
             $boxIds = $flattenedBoxIds
                 ->unique()
                 ->values();
-
-            $brokerId = $this->resolveCurrentBrokerId();
-
-            if (!$brokerId) {
-                $validator->errors()->add('sales_details', 'Only broker accounts with an active broker profile can record sales.');
-                return;
-            }
 
             $existingBoxCount = FishBox::query()
                 ->whereIn('id', $boxIds->all())
@@ -192,7 +201,7 @@ class SalesRequest extends FormRequest
             'buyer_name.max' => 'Buyer name cannot exceed 255 characters.',
             'buyer_contact.required' => 'Please enter the buyer contact.',
             'buyer_contact.regex' => 'Buyer contact must be an 11-digit mobile number starting with 09.',
-            'initial_paid_amount.required_with' => 'Please enter the initial paid amount.',
+            'buyer_id.exists' => 'The selected regular customer could not be found.',
             'initial_paid_amount.numeric' => 'Initial paid amount must be a valid number.',
             'initial_paid_amount.min' => 'Initial paid amount must be greater than 0.',
             'initial_payment_date.required_with' => 'Please select the initial payment date.',
@@ -231,6 +240,7 @@ class SalesRequest extends FormRequest
             'buyer_last_name' => 'buyer last name',
             'buyer_name' => 'buyer name',
             'buyer_contact' => 'contact number',
+            'buyer_id' => 'regular customer',
             'initial_paid_amount' => 'initial paid amount',
             'initial_payment_date' => 'initial payment date',
             'initial_payment_method' => 'initial payment method',

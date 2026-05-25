@@ -53,6 +53,8 @@ class ApplicationStatusConstant
     public static function terminalStatuses(): array
     {
         return [
+            self::WINNER,
+            self::APPROVED,
             self::REJECTED,
             self::NOT_SELECTED,
             self::CANCELLED,

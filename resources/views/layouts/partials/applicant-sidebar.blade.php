@@ -1,7 +1,7 @@
 @php
     $hasActiveApplication = auth()->check()
         && auth()->user()->brokerApplications()
-            ->whereNotIn('application_status', ['Rejected', 'Not Selected', 'Cancelled'])
+            ->whereNotIn('application_status', ['Winner', 'Approved', 'Rejected', 'Not Selected', 'Cancelled'])
             ->exists();
     $isApplyMode = request()->routeIs('applications.create') || request('focus') === 'apply';
     $isApplicantHome = request()->routeIs('applications.index') && !$isApplyMode;

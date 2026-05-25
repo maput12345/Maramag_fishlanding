@@ -87,7 +87,7 @@ $breadcrumbs = [
                                         <x-status-badge :status="$sale->status" label="Partially Paid" />
                                         <span class="ml-2">Balance: ₱{{ number_format($sale->total_amount - $sale->paid_amount, 2) }}</span>
                                     @else
-                                        <x-status-badge status="Pending Payment" />
+                                        <x-status-badge :status="$sale->status" label="Unpaid" />
                                         <span class="ml-2">Balance: ₱{{ number_format($sale->total_amount, 2) }}</span>
                                     @endif
                                 </div>

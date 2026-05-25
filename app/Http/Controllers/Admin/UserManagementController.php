@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
 use App\Models\Broker;
 use App\Models\BrokerApplication;
+use App\Models\ApplicantProfile;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -138,6 +140,7 @@ class UserManagementController extends Controller
                 'business_name',
                 'address',
                 'contact_number',
+                'stall_id',
                 'stall_name',
                 'created_at',
             ])
@@ -639,6 +642,69 @@ class UserManagementController extends Controller
 
             return redirect()->back()
                 ->with('error', 'Failed to deactivate user. Please try again.');
+        }
+    }
+
+    /**
+     * Release a broker's stall and return the account to applicant access.
+     */
+    public function releaseBrokerStall(Broker $broker): RedirectResponse
+    {
+        try {
+            DB::transaction(function () use ($broker) {
+                $broker->loadMissing('user.roles', 'stall');
+
+                $user = $broker->user;
+
+                if (!$user) {
+                    throw new \RuntimeException('Broker user account could not be found.');
+                }
+
+                $applicantRole = Role::query()
+                    ->firstOrCreate(
+                        ['role_name' => RoleStatusConstant::APPLICANT],
+                        ['description' => 'Applicant']
+                    );
+
+                $brokerRole = Role::query()
+                    ->where('role_name', RoleStatusConstant::BROKER)
+                    ->first();
+
+                $user->update(['status' => UserStatusConstant::ACTIVE]);
+                $user->roles()->syncWithoutDetaching([$applicantRole->id]);
+
+                if ($brokerRole) {
+                    $user->roles()->detach($brokerRole->id);
+                }
+
+                ApplicantProfile::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'first_name' => $broker->first_name,
+                        'middle_name' => $broker->middle_name,
+                        'last_name' => $broker->last_name,
+                        'suffix' => $broker->suffix,
+                        'contact_number' => $broker->contact_number,
+                        'address' => $broker->address,
+                    ]
+                );
+
+                $broker->releaseStallForReapplication();
+            });
+
+            return redirect()
+                ->route('admin.users.index', ['tab' => 'brokers'])
+                ->with('success', 'Stall released. The account can now log in as an applicant and apply again.');
+        } catch (\Throwable $exception) {
+            Log::error('Failed to release broker stall.', [
+                'admin_user_id' => Auth::id(),
+                'broker_id' => $broker->id,
+                'error' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to release stall. Please try again.');
         }
     }
 

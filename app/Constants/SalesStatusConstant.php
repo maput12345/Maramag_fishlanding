@@ -40,7 +40,7 @@ class SalesStatusConstant
     public static function getDisplayName(string $status): string
     {
         return match ($status) {
-            self::ACTIVE => 'Pending Payment',
+            self::ACTIVE => 'Unpaid',
             self::PARTIALLY_PAID => 'Partially Paid',
             self::PAID => 'Paid',
             self::DELETED => 'Deleted',

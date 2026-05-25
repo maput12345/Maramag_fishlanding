@@ -36,6 +36,7 @@ function initializeSalesForm(config, scope = document) {
     const totalAmountDisplay = root.querySelector('#total-amount-display');
     const totalAmountInput = root.querySelector('#total_amount');
     const initialPaidAmountInput = root.querySelector('#initial_paid_amount');
+    const initialPaymentMethodSelect = root.querySelector('#initial_payment_method');
     const initialPaymentMaxAmount = root.querySelector('#initial-payment-max-amount');
     const initialPaymentError = root.querySelector('#initial-payment-error');
     const salesForm = root.querySelector('form[data-sales-async-form]');
@@ -109,6 +110,131 @@ function initializeSalesForm(config, scope = document) {
         salesForm.dataset.salesMoneyNormalizerBound = 'true';
         salesForm.addEventListener('submit', normalizeSalesMoneyFields, { capture: true });
     }
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    root.querySelectorAll('[data-regular-buyer-picker]').forEach((picker) => {
+        if (!salesForm || picker.dataset.regularBuyerBound === 'true') {
+            return;
+        }
+
+        const dataElement = picker.querySelector('[data-regular-buyers-json]');
+        const buyerIdInput = picker.querySelector('[data-regular-buyer-id]');
+        const searchInput = picker.querySelector('[data-regular-buyer-search]');
+        const results = picker.querySelector('[data-regular-buyer-results]');
+        let regularBuyers = [];
+
+        try {
+            regularBuyers = JSON.parse(dataElement?.textContent || '[]');
+        } catch (error) {
+            regularBuyers = [];
+        }
+
+        regularBuyers = regularBuyers.map((buyer) => ({
+            ...buyer,
+            search: [
+                buyer.name,
+                buyer.first_name,
+                buyer.middle_name,
+                buyer.last_name,
+                buyer.contact,
+            ].filter(Boolean).join(' ').toLowerCase(),
+        }));
+
+        const hideResults = () => {
+            results?.classList.add('hidden');
+        };
+
+        const fillBuyerFields = (buyer) => {
+            const fields = {
+                buyer_first_name: buyer.first_name || '',
+                buyer_middle_name: buyer.middle_name || '',
+                buyer_last_name: buyer.last_name || '',
+                buyer_contact: buyer.contact || '',
+            };
+
+            Object.entries(fields).forEach(([id, value]) => {
+                const field = salesForm.querySelector(`#${id}`);
+
+                if (field) {
+                    field.value = value;
+                }
+            });
+
+            if (searchInput) {
+                searchInput.value = `${buyer.name || ''}${buyer.contact ? ` - ${buyer.contact}` : ''}`.trim();
+                searchInput.dataset.selectedLabel = searchInput.value;
+            }
+
+            if (buyerIdInput) {
+                buyerIdInput.value = buyer.id || '';
+            }
+
+            hideResults();
+        };
+
+        const renderResults = () => {
+            if (!searchInput || !results) {
+                return;
+            }
+
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (query === '') {
+                hideResults();
+                return;
+            }
+
+            const matches = regularBuyers
+                .filter((buyer) => buyer.search.includes(query))
+                .slice(0, 10);
+
+            if (matches.length === 0) {
+                results.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">No regular customer found. Continue typing below for a new or walk-in customer.</div>';
+                results.classList.remove('hidden');
+                return;
+            }
+
+            results.innerHTML = matches.map((buyer, index) => `
+                <button type="button"
+                        class="block w-full px-4 py-3 text-left text-sm transition-colors hover:bg-blue-50"
+                        data-regular-buyer-option="${index}">
+                    <span class="block font-semibold text-slate-900">${escapeHtml(buyer.name || 'Unnamed customer')}</span>
+                    <span class="block text-xs text-slate-500">${escapeHtml(buyer.contact || 'No contact number')}</span>
+                </button>
+            `).join('');
+            results.classList.remove('hidden');
+
+            results.querySelectorAll('[data-regular-buyer-option]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    fillBuyerFields(matches[Number(button.dataset.regularBuyerOption)]);
+                });
+            });
+        };
+
+        searchInput?.addEventListener('input', () => {
+            if (buyerIdInput && searchInput.value !== (searchInput.dataset.selectedLabel || '')) {
+                buyerIdInput.value = '';
+                searchInput.dataset.selectedLabel = '';
+            }
+
+            renderResults();
+        });
+        searchInput?.addEventListener('focus', renderResults);
+
+        document.addEventListener('click', (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+
+        picker.dataset.regularBuyerBound = 'true';
+    });
 
     root.querySelectorAll('.sales-detail-row').forEach((row) => {
         const fishTypeSelect = row.querySelector('.fish-type-select');
@@ -746,6 +872,14 @@ function initializeSalesForm(config, scope = document) {
         const hasCurrentAmount = initialPaidAmountInput.value !== '';
 
         initialPaidAmountInput.max = maxPaymentAmount.toFixed(2);
+        if (initialPaymentMethodSelect) {
+            initialPaymentMethodSelect.required = hasCurrentAmount;
+            initialPaymentMethodSelect.setCustomValidity(
+                hasCurrentAmount && !initialPaymentMethodSelect.value
+                    ? 'Please select the payment method.'
+                    : ''
+            );
+        }
 
         if (initialPaymentMaxAmount) {
             initialPaymentMaxAmount.textContent = formatMoney(maxPaymentAmount);
@@ -768,6 +902,8 @@ function initializeSalesForm(config, scope = document) {
 
         setInitialPaymentError('');
     }
+
+    initialPaymentMethodSelect?.addEventListener('change', validateInitialPayment);
 
     // Initialize total amount
     root.querySelectorAll('.sales-detail-row').forEach((row) => {

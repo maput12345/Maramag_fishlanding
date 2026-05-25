@@ -1,17 +1,1 @@
-{
-    "/js/app.js": "/js/app.js?id=338b4e9fc4bba58b0a2dbdc97d44a952",
-    "/js/user.js": "/js/user.js?id=57dc71485b4524398a4c610ff9aafdbf",
-    "/js/inventory.js": "/js/inventory.js?id=2ae7dd592f55b48a4a7b3b7f047c2e70",
-    "/js/qr-code.js": "/js/qr-code.js?id=b0bf8e1431fdfb55205b113c9bd5b8c4",
-    "/js/qr-scanner.js": "/js/qr-scanner.js?id=eb082a31eebd70adacc1ce1179e76830",
-    "/js/qr-backend-handler.js": "/js/qr-backend-handler.js?id=a596f44b43c9493242af4cbd84934646",
-    "/js/print-receipt.js": "/js/print-receipt.js?id=9e352e49952ad3128ee21fcdec1c4bfa",
-    "/js/sales-qr-scanner.js": "/js/sales-qr-scanner.js?id=80f8e4da1fe2624708e66cf6a06f9426",
-    "/js/sales-form.js": "/js/sales-form.js?id=b8ade74a0e7da5c015fe41911fe91e7a",
-    "/js/sales-page.js": "/js/sales-page.js?id=8d3c40a48fd4cc64cee1eb705a792709",
-    "/js/remote-sales-scanner.js": "/js/remote-sales-scanner.js?id=6013b08fc229cc06158952a5e9d6d44d",
-    "/js/remote-sales-phone-scanner.js": "/js/remote-sales-phone-scanner.js?id=4adf8579c6819383b30af55884cded87",
-    "/css/filter-layout.css": "/css/filter-layout.css?id=196d1ffb077902dadc0bde71bd4dca01",
-    "/css/admin.css": "/css/admin.css?id=a8f20cd98864b2df06900ea214d07932",
-    "/css/app.css": "/css/app.css?id=c02f4b49efcef6e0ebb47a2be0eb0a28"
-}
+{}

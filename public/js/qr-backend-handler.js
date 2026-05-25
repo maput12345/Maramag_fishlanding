@@ -1,2 +1,441 @@
-/*! For license information please see qr-backend-handler.js.LICENSE.txt */
-(()=>{function e(t){return e="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},e(t)}function t(){var e,r,o="function"==typeof Symbol?Symbol:{},i=o.iterator||"@@iterator",s=o.toStringTag||"@@toStringTag";function a(t,o,i,s){var a=o&&o.prototype instanceof u?o:u,f=Object.create(a.prototype);return n(f,"_invoke",function(t,n,o){var i,s,a,u=0,f=o||[],l=!1,d={p:0,n:0,v:e,a:h,f:h.bind(e,4),d:function(t,n){return i=t,s=0,a=e,d.n=n,c}};function h(t,n){for(s=t,a=n,r=0;!l&&u&&!o&&r<f.length;r++){var o,i=f[r],h=d.p,p=i[2];t>3?(o=p===n)&&(a=i[(s=i[4])?5:(s=3,3)],i[4]=i[5]=e):i[0]<=h&&((o=t<2&&h<i[1])?(s=0,d.v=n,d.n=i[1]):h<p&&(o=t<3||i[0]>n||n>p)&&(i[4]=t,i[5]=n,d.n=p,s=0))}if(o||t>1)return c;throw l=!0,n}return function(o,f,p){if(u>1)throw TypeError("Generator is already running");for(l&&1===f&&h(f,p),s=f,a=p;(r=s<2?e:a)||!l;){i||(s?s<3?(s>1&&(d.n=-1),h(s,a)):d.n=a:d.v=a);try{if(u=2,i){if(s||(o="next"),r=i[o]){if(!(r=r.call(i,a)))throw TypeError("iterator result is not an object");if(!r.done)return r;a=r.value,s<2&&(s=0)}else 1===s&&(r=i.return)&&r.call(i),s<2&&(a=TypeError("The iterator does not provide a '"+o+"' method"),s=1);i=e}else if((r=(l=d.n<0)?a:t.call(n,d))!==c)break}catch(t){i=e,s=1,a=t}finally{u=1}}return{value:r,done:l}}}(t,i,s),!0),f}var c={};function u(){}function f(){}function l(){}r=Object.getPrototypeOf;var d=[][i]?r(r([][i]())):(n(r={},i,function(){return this}),r),h=l.prototype=u.prototype=Object.create(d);function p(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,l):(e.__proto__=l,n(e,s,"GeneratorFunction")),e.prototype=Object.create(h),e}return f.prototype=l,n(h,"constructor",l),n(l,"constructor",f),f.displayName="GeneratorFunction",n(l,s,"GeneratorFunction"),n(h),n(h,s,"Generator"),n(h,i,function(){return this}),n(h,"toString",function(){return"[object Generator]"}),(t=function(){return{w:a,m:p}})()}function n(e,t,r,o){var i=Object.defineProperty;try{i({},"",{})}catch(e){i=0}n=function(e,t,r,o){function s(t,r){n(e,t,function(e){return this._invoke(t,r,e)})}t?i?i(e,t,{value:r,enumerable:!o,configurable:!o,writable:!o}):e[t]=r:(s("next",0),s("throw",1),s("return",2))},n(e,t,r,o)}function r(e,t,n,r,o,i,s){try{var a=e[i](s),c=a.value}catch(e){return void n(e)}a.done?t(c):Promise.resolve(c).then(r,o)}function o(e){return function(){var t=this,n=arguments;return new Promise(function(o,i){var s=e.apply(t,n);function a(e){r(s,o,i,a,c,"next",e)}function c(e){r(s,o,i,a,c,"throw",e)}a(void 0)})}}function i(e,t){for(var n=0;n<t.length;n++){var r=t[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,s(r.key),r)}}function s(t){var n=function(t,n){if("object"!=e(t)||!t)return t;var r=t[Symbol.toPrimitive];if(void 0!==r){var o=r.call(t,n||"default");if("object"!=e(o))return o;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===n?String:Number)(t)}(t,"string");return"symbol"==e(n)?n:n+""}var a=function(){return e=function e(){!function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,e),this.baseUrl=null,this.csrfToken=null,this.isProcessing=!1},n=[{key:"initialize",value:function(){return this.baseUrl=this.getBaseUrl(),this.csrfToken=this.getCSRFToken(),!!this.csrfToken}},{key:"getBaseUrl",value:function(){var e=document.querySelector('meta[name="fish-box-update-url"]');return e?e.getAttribute("content"):null}},{key:"getCSRFToken",value:function(){var e=document.querySelector('meta[name="csrf-token"]');return e?e.getAttribute("content"):null}},{key:"updateFishBoxStatus",value:(c=o(t().m(function e(n){var r,o,i;return t().w(function(e){for(;;)switch(e.p=e.n){case 0:if(!this.isProcessing){e.n=1;break}return e.a(2,{success:!1,message:"Request already in progress"});case 1:if(this.baseUrl&&this.csrfToken){e.n=2;break}return e.a(2,{success:!1,message:"Configuration error. Please refresh the page."});case 2:return this.isProcessing=!0,e.p=3,(r=new FormData).append("qr_code",n),r.append("_token",this.csrfToken),e.n=4,fetch(this.baseUrl,{method:"POST",body:r,headers:{"X-Requested-With":"XMLHttpRequest",Accept:"application/json"}});case 4:return o=e.v,e.n=5,o.json();case 5:if(i=e.v,!o.ok){e.n=6;break}return e.a(2,{success:!0,message:i.message||"Fish box status updated successfully!",data:i.data||null});case 6:return e.a(2,{success:!1,message:i.message||"Failed to update fish box status",errors:i.errors||null});case 7:e.n=9;break;case 8:return e.p=8,e.v,e.a(2,{success:!1,message:"Network error. Please check your connection and try again."});case 9:return e.p=9,this.isProcessing=!1,e.f(9);case 10:return e.a(2)}},e,this,[[3,8,9,10]])})),function(e){return c.apply(this,arguments)})},{key:"getFishBoxByQRCode",value:(a=o(t().m(function e(n){var r;return t().w(function(e){for(;;)switch(e.p=e.n){case 0:return e.p=0,e.n=1,fetch("/api/fish-boxes/qr/".concat(encodeURIComponent(n)),{method:"GET",headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest"}});case 1:if(!(r=e.v).ok){e.n=3;break}return e.n=2,r.json();case 2:return e.a(2,e.v);case 3:return e.a(2,null);case 4:e.n=6;break;case 5:return e.p=5,e.v,e.a(2,null);case 6:return e.a(2)}},e,null,[[0,5]])})),function(e){return a.apply(this,arguments)})},{key:"validateQRCode",value:function(e){return!(!e||"string"!=typeof e)&&(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(e)||/^[a-zA-Z0-9\-_]+$/.test(e))}},{key:"showSuccess",value:function(e){"undefined"!=typeof Swal?Swal.fire({toast:!0,position:"top-end",icon:"success",title:e,showConfirmButton:!1,timer:1800,timerProgressBar:!0}):void 0!==window.Swal?window.Swal.fire({toast:!0,position:"top-end",icon:"success",title:e,showConfirmButton:!1,timer:1800,timerProgressBar:!0}):"undefined"!=typeof toastr?toastr.success(e):this.showFallbackNotification(e,"success")}},{key:"showError",value:function(e){"undefined"!=typeof Swal?Swal.fire({icon:"error",title:"Error",text:e,confirmButtonText:"OK",confirmButtonColor:"#dc2626"}):void 0!==window.Swal?window.Swal.fire({icon:"error",title:"Error",text:e,confirmButtonText:"OK",confirmButtonColor:"#dc2626"}):"undefined"!=typeof toastr?toastr.error(e):this.showFallbackNotification(e,"error")}},{key:"showWarning",value:function(e){"undefined"!=typeof toastr?toastr.warning(e):this.showFallbackNotification(e,"warning")}},{key:"showInfo",value:function(e){"undefined"!=typeof toastr?toastr.info(e):this.showFallbackNotification(e,"info")}},{key:"showFallbackNotification",value:function(e){var t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:"info",n={success:"#065f46",error:"#991b1b",warning:"#92400e",info:"#0f172a"},r=document.createElement("div");r.textContent=e,r.setAttribute("role","status"),r.style.cssText=["position:fixed","right:1rem","top:1rem","z-index:9999","max-width:22rem","padding:0.85rem 1rem","border-radius:0.75rem","background:".concat(n[t]||n.info),"color:#fff","box-shadow:0 16px 36px rgba(15,23,42,0.22)","font:600 0.875rem system-ui,sans-serif"].join(";"),document.body.appendChild(r),window.setTimeout(function(){return r.remove()},2800)}},{key:"handleQRScanResult",value:(s=o(t().m(function e(n){var r,o,i,s,a,c=arguments;return t().w(function(e){for(;;)switch(e.p=e.n){case 0:if(r=c.length>1&&void 0!==c[1]?c[1]:null,o=c.length>2&&void 0!==c[2]?c[2]:null,this.validateQRCode(n)){e.n=1;break}return i="Invalid QR code format. Please scan a valid QR code.",this.showError(i),o&&o(i),e.a(2);case 1:return this.showProcessingDialog(),e.p=2,e.n=3,this.updateFishBoxStatus(n);case 3:s=e.v,this.closeProcessingDialog(),s.success?(this.showSuccess(s.message),r&&r(s)):(this.showError(s.message),o&&o(s.message)),e.n=5;break;case 4:e.p=4,e.v,this.closeProcessingDialog(),a="Network error. Please check your connection and try again.",this.showError(a),o&&o(a);case 5:return e.a(2)}},e,this,[[2,4]])})),function(e){return s.apply(this,arguments)})},{key:"showProcessingDialog",value:function(){"undefined"!=typeof Swal?Swal.fire({title:"Processing QR Code",text:"Please wait while we process your QR code...",icon:"info",allowOutsideClick:!1,allowEscapeKey:!1,showConfirmButton:!1,didOpen:function(){Swal.showLoading()}}):this.showInfo("Processing QR code...")}},{key:"closeProcessingDialog",value:function(){"undefined"!=typeof Swal&&Swal.close()}}],n&&i(e.prototype,n),r&&i(e,r),Object.defineProperty(e,"prototype",{writable:!1}),e;var e,n,r,s,a,c}();window.QRBackendHandler=a})();
+/******/ (() => { // webpackBootstrap
+/*!********************************************!*\
+  !*** ./resources/js/qr-backend-handler.js ***!
+  \********************************************/
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/**
+ * QR Backend Handler
+ * Handles backend communication specifically for QR scanner functionality
+ * Focuses on QR code processing and fish box status updates via scanning
+ */
+var QRBackendHandler = /*#__PURE__*/function () {
+  function QRBackendHandler() {
+    _classCallCheck(this, QRBackendHandler);
+    this.baseUrl = null;
+    this.csrfToken = null;
+    this.isProcessing = false;
+  }
+
+  /**
+   * Initialize the backend handler with required tokens and URLs
+   */
+  return _createClass(QRBackendHandler, [{
+    key: "initialize",
+    value: function initialize() {
+      this.baseUrl = this.getBaseUrl();
+      this.csrfToken = this.getCSRFToken();
+      if (!this.csrfToken) {
+        return false;
+      }
+      return true;
+    }
+
+    /**
+     * Get base URL from meta tag
+     */
+  }, {
+    key: "getBaseUrl",
+    value: function getBaseUrl() {
+      var meta = document.querySelector('meta[name="fish-box-update-url"]');
+      return meta ? meta.getAttribute('content') : null;
+    }
+
+    /**
+     * Get CSRF token from meta tag
+     */
+  }, {
+    key: "getCSRFToken",
+    value: function getCSRFToken() {
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.getAttribute('content') : null;
+    }
+
+    /**
+     * Update fish box status via AJAX
+     * @param {string} qrCode - QR code value
+     * @returns {Promise<Object>} - Response object with success/error status
+     */
+  }, {
+    key: "updateFishBoxStatus",
+    value: (function () {
+      var _updateFishBoxStatus = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(qrCode) {
+        var formData, response, result, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!this.isProcessing) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2, {
+                success: false,
+                message: 'Request already in progress'
+              });
+            case 1:
+              if (!(!this.baseUrl || !this.csrfToken)) {
+                _context.n = 2;
+                break;
+              }
+              return _context.a(2, {
+                success: false,
+                message: 'Configuration error. Please refresh the page.'
+              });
+            case 2:
+              this.isProcessing = true;
+              _context.p = 3;
+              formData = new FormData();
+              formData.append('qr_code', qrCode);
+              formData.append('_token', this.csrfToken);
+              _context.n = 4;
+              return fetch(this.baseUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json'
+                }
+              });
+            case 4:
+              response = _context.v;
+              _context.n = 5;
+              return response.json();
+            case 5:
+              result = _context.v;
+              if (!response.ok) {
+                _context.n = 6;
+                break;
+              }
+              return _context.a(2, {
+                success: true,
+                message: result.message || 'Fish box status updated successfully!',
+                data: result.data || null
+              });
+            case 6:
+              return _context.a(2, {
+                success: false,
+                message: result.message || 'Failed to update fish box status',
+                errors: result.errors || null
+              });
+            case 7:
+              _context.n = 9;
+              break;
+            case 8:
+              _context.p = 8;
+              _t = _context.v;
+              return _context.a(2, {
+                success: false,
+                message: 'Network error. Please check your connection and try again.'
+              });
+            case 9:
+              _context.p = 9;
+              this.isProcessing = false;
+              return _context.f(9);
+            case 10:
+              return _context.a(2);
+          }
+        }, _callee, this, [[3, 8, 9, 10]]);
+      }));
+      function updateFishBoxStatus(_x) {
+        return _updateFishBoxStatus.apply(this, arguments);
+      }
+      return updateFishBoxStatus;
+    }()
+    /**
+     * Get fish box details by QR code
+     * @param {string} qrCode - QR code value
+     * @returns {Promise<Object>} - Fish box details
+     */
+    )
+  }, {
+    key: "getFishBoxByQRCode",
+    value: (function () {
+      var _getFishBoxByQRCode = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(qrCode) {
+        var response, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              _context2.p = 0;
+              _context2.n = 1;
+              return fetch("/api/fish-boxes/qr/".concat(encodeURIComponent(qrCode)), {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+                }
+              });
+            case 1:
+              response = _context2.v;
+              if (!response.ok) {
+                _context2.n = 3;
+                break;
+              }
+              _context2.n = 2;
+              return response.json();
+            case 2:
+              return _context2.a(2, _context2.v);
+            case 3:
+              return _context2.a(2, null);
+            case 4:
+              _context2.n = 6;
+              break;
+            case 5:
+              _context2.p = 5;
+              _t2 = _context2.v;
+              return _context2.a(2, null);
+            case 6:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[0, 5]]);
+      }));
+      function getFishBoxByQRCode(_x2) {
+        return _getFishBoxByQRCode.apply(this, arguments);
+      }
+      return getFishBoxByQRCode;
+    }()
+    /**
+     * Validate QR code format
+     * @param {string} qrCode - QR code to validate
+     * @returns {boolean} - Whether QR code format is valid
+     */
+    )
+  }, {
+    key: "validateQRCode",
+    value: function validateQRCode(qrCode) {
+      if (!qrCode || typeof qrCode !== 'string') {
+        return false;
+      }
+
+      // Check if it looks like a UUID (common QR code format)
+      var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      // Also allow other formats (alphanumeric, etc.)
+      var alphanumericRegex = /^[a-zA-Z0-9\-_]+$/;
+      return uuidRegex.test(qrCode) || alphanumericRegex.test(qrCode);
+    }
+
+    /**
+     * Show success notification
+     * @param {string} message - Success message
+     */
+  }, {
+    key: "showSuccess",
+    value: function showSuccess(message) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: message,
+          showConfirmButton: false,
+          timer: 1800,
+          timerProgressBar: true
+        });
+      } else if (typeof window.Swal !== 'undefined') {
+        window.Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: message,
+          showConfirmButton: false,
+          timer: 1800,
+          timerProgressBar: true
+        });
+      } else if (typeof toastr !== 'undefined') {
+        toastr.success(message);
+      } else {
+        this.showFallbackNotification(message, 'success');
+      }
+    }
+
+    /**
+     * Show error notification
+     * @param {string} message - Error message
+     */
+  }, {
+    key: "showError",
+    value: function showError(message) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#dc2626'
+        });
+      } else if (typeof window.Swal !== 'undefined') {
+        window.Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: message,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#dc2626'
+        });
+      } else if (typeof toastr !== 'undefined') {
+        toastr.error(message);
+      } else {
+        this.showFallbackNotification(message, 'error');
+      }
+    }
+
+    /**
+     * Show warning notification
+     * @param {string} message - Warning message
+     */
+  }, {
+    key: "showWarning",
+    value: function showWarning(message) {
+      if (typeof toastr !== 'undefined') {
+        toastr.warning(message);
+      } else {
+        this.showFallbackNotification(message, 'warning');
+      }
+    }
+
+    /**
+     * Show info notification
+     * @param {string} message - Info message
+     */
+  }, {
+    key: "showInfo",
+    value: function showInfo(message) {
+      if (typeof toastr !== 'undefined') {
+        toastr.info(message);
+      } else {
+        this.showFallbackNotification(message, 'info');
+      }
+    }
+  }, {
+    key: "showFallbackNotification",
+    value: function showFallbackNotification(message) {
+      var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'info';
+      var colorMap = {
+        success: '#065f46',
+        error: '#991b1b',
+        warning: '#92400e',
+        info: '#0f172a'
+      };
+      var notification = document.createElement('div');
+      notification.textContent = message;
+      notification.setAttribute('role', 'status');
+      notification.style.cssText = ['position:fixed', 'right:1rem', 'top:1rem', 'z-index:9999', 'max-width:22rem', 'padding:0.85rem 1rem', 'border-radius:0.75rem', "background:".concat(colorMap[type] || colorMap.info), 'color:#fff', 'box-shadow:0 16px 36px rgba(15,23,42,0.22)', 'font:600 0.875rem system-ui,sans-serif'].join(';');
+      document.body.appendChild(notification);
+      window.setTimeout(function () {
+        return notification.remove();
+      }, 2800);
+    }
+
+    /**
+     * Handle successful QR scan result
+     * @param {string} qrCode - Scanned QR code
+     * @param {Function} onSuccess - Success callback
+     * @param {Function} onError - Error callback
+     */
+  }, {
+    key: "handleQRScanResult",
+    value: (function () {
+      var _handleQRScanResult = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(qrCode) {
+        var onSuccess,
+          onError,
+          errorMsg,
+          result,
+          _errorMsg,
+          _args3 = arguments,
+          _t3;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.p = _context3.n) {
+            case 0:
+              onSuccess = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : null;
+              onError = _args3.length > 2 && _args3[2] !== undefined ? _args3[2] : null;
+              if (this.validateQRCode(qrCode)) {
+                _context3.n = 1;
+                break;
+              }
+              errorMsg = 'Invalid QR code format. Please scan a valid QR code.';
+              this.showError(errorMsg);
+              if (onError) onError(errorMsg);
+              return _context3.a(2);
+            case 1:
+              // Show processing notification with SweetAlert
+              this.showProcessingDialog();
+              _context3.p = 2;
+              _context3.n = 3;
+              return this.updateFishBoxStatus(qrCode);
+            case 3:
+              result = _context3.v;
+              // Close processing dialog
+              this.closeProcessingDialog();
+              if (result.success) {
+                this.showSuccess(result.message);
+                if (onSuccess) onSuccess(result);
+              } else {
+                this.showError(result.message);
+                if (onError) onError(result.message);
+              }
+              _context3.n = 5;
+              break;
+            case 4:
+              _context3.p = 4;
+              _t3 = _context3.v;
+              // Close processing dialog
+              this.closeProcessingDialog();
+              _errorMsg = 'Network error. Please check your connection and try again.';
+              this.showError(_errorMsg);
+              if (onError) onError(_errorMsg);
+            case 5:
+              return _context3.a(2);
+          }
+        }, _callee3, this, [[2, 4]]);
+      }));
+      function handleQRScanResult(_x3) {
+        return _handleQRScanResult.apply(this, arguments);
+      }
+      return handleQRScanResult;
+    }()
+    /**
+     * Show processing dialog with SweetAlert
+     */
+    )
+  }, {
+    key: "showProcessingDialog",
+    value: function showProcessingDialog() {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Processing QR Code',
+          text: 'Please wait while we process your QR code...',
+          icon: 'info',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: function didOpen() {
+            Swal.showLoading();
+          }
+        });
+      } else {
+        this.showInfo('Processing QR code...');
+      }
+    }
+
+    /**
+     * Close processing dialog
+     */
+  }, {
+    key: "closeProcessingDialog",
+    value: function closeProcessingDialog() {
+      if (typeof Swal !== 'undefined') {
+        Swal.close();
+      }
+    }
+  }]);
+}(); // Make the class available globally
+window.QRBackendHandler = QRBackendHandler;
+/******/ })()
+;

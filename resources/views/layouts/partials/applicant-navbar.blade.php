@@ -2,7 +2,7 @@
     $currentPage = match (true) {
         request()->routeIs('applications.create'), request('focus') === 'apply' => 'Apply for Stall',
         request()->routeIs('applications.my-applications'), request()->routeIs('applications.show'), request()->routeIs('applications.edit') => 'My Applications',
-        default => 'Applicant Home',
+        default => 'Dashboard',
     };
 @endphp
 

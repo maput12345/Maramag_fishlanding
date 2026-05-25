@@ -181,24 +181,46 @@ class PrintReceipt {
         printWindow.document.write(printHTML);
         printWindow.document.close();
 
-        // Wait for content to load, then print
-        printWindow.onload = function() {
-            const triggerPrint = () => {
-                printWindow.focus();
-                printWindow.print();
+        PrintReceipt.printWhenReady(printWindow);
+    }
+
+    static async printWhenReady(printWindow) {
+        const printDocument = printWindow.document;
+        const watermarkImage = printDocument.querySelector('.receipt-watermark img');
+
+        await Promise.race([
+            new Promise((resolve) => {
+                if (!watermarkImage || watermarkImage.complete) {
+                    resolve();
+                    return;
+                }
+
+                watermarkImage.addEventListener('load', resolve, { once: true });
+                watermarkImage.addEventListener('error', resolve, { once: true });
+            }),
+            new Promise((resolve) => window.setTimeout(resolve, 1200)),
+        ]);
+
+        await new Promise((resolve) => window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(resolve);
+        }));
+
+        const closePrintWindow = () => {
+            if (!printWindow.closed) {
                 printWindow.close();
-            };
-
-            const watermarkImage = printWindow.document.querySelector('.receipt-watermark img');
-            if (watermarkImage && !watermarkImage.complete) {
-                const completeAndPrint = () => setTimeout(triggerPrint, 150);
-                watermarkImage.addEventListener('load', completeAndPrint, { once: true });
-                watermarkImage.addEventListener('error', completeAndPrint, { once: true });
-                return;
             }
-
-            setTimeout(triggerPrint, 150);
         };
+
+        printWindow.addEventListener('afterprint', () => {
+            window.setTimeout(closePrintWindow, 400);
+        }, { once: true });
+
+        window.setTimeout(closePrintWindow, 60000);
+
+        printWindow.focus();
+        window.setTimeout(() => {
+            printWindow.print();
+        }, 250);
     }
 
     static notify(message, type = 'info') {

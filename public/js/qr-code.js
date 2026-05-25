@@ -1,2 +1,2677 @@
-/*! For license information please see qr-code.js.LICENSE.txt */
-(()=>{var t={251:(t,e)=>{e.read=function(t,e,n,r,i){var o,a,s=8*i-r-1,u=(1<<s)-1,h=u>>1,c=-7,d=n?i-1:0,l=n?-1:1,f=t[e+d];for(d+=l,o=f&(1<<-c)-1,f>>=-c,c+=s;c>0;o=256*o+t[e+d],d+=l,c-=8);for(a=o&(1<<-c)-1,o>>=-c,c+=r;c>0;a=256*a+t[e+d],d+=l,c-=8);if(0===o)o=1-h;else{if(o===u)return a?NaN:1/0*(f?-1:1);a+=Math.pow(2,r),o-=h}return(f?-1:1)*a*Math.pow(2,o-r)},e.write=function(t,e,n,r,i,o){var a,s,u,h=8*o-i-1,c=(1<<h)-1,d=c>>1,l=23===i?Math.pow(2,-24)-Math.pow(2,-77):0,f=r?0:o-1,g=r?1:-1,p=e<0||0===e&&1/e<0?1:0;for(e=Math.abs(e),isNaN(e)||e===1/0?(s=isNaN(e)?1:0,a=c):(a=Math.floor(Math.log(e)/Math.LN2),e*(u=Math.pow(2,-a))<1&&(a--,u*=2),(e+=a+d>=1?l/u:l*Math.pow(2,1-d))*u>=2&&(a++,u/=2),a+d>=c?(s=0,a=c):a+d>=1?(s=(e*u-1)*Math.pow(2,i),a+=d):(s=e*Math.pow(2,d-1)*Math.pow(2,i),a=0));i>=8;t[n+f]=255&s,f+=g,s/=256,i-=8);for(a=a<<i|s,h+=i;h>0;t[n+f]=255&a,f+=g,a/=256,h-=8);t[n+f-g]|=128*p}},668:(t,e,n)=>{"use strict";var r=n(7526),i=n(251),o=n(4634);function a(){return u.TYPED_ARRAY_SUPPORT?2147483647:1073741823}function s(t,e){if(a()<e)throw new RangeError("Invalid typed array length");return u.TYPED_ARRAY_SUPPORT?(t=new Uint8Array(e)).__proto__=u.prototype:(null===t&&(t=new u(e)),t.length=e),t}function u(t,e,n){if(!(u.TYPED_ARRAY_SUPPORT||this instanceof u))return new u(t,e,n);if("number"==typeof t){if("string"==typeof e)throw new Error("If encoding is specified then the first argument must be a string");return d(this,t)}return h(this,t,e,n)}function h(t,e,n,r){if("number"==typeof e)throw new TypeError('"value" argument must not be a number');return"undefined"!=typeof ArrayBuffer&&e instanceof ArrayBuffer?function(t,e,n,r){if(e.byteLength,n<0||e.byteLength<n)throw new RangeError("'offset' is out of bounds");if(e.byteLength<n+(r||0))throw new RangeError("'length' is out of bounds");e=void 0===n&&void 0===r?new Uint8Array(e):void 0===r?new Uint8Array(e,n):new Uint8Array(e,n,r);u.TYPED_ARRAY_SUPPORT?(t=e).__proto__=u.prototype:t=l(t,e);return t}(t,e,n,r):"string"==typeof e?function(t,e,n){"string"==typeof n&&""!==n||(n="utf8");if(!u.isEncoding(n))throw new TypeError('"encoding" must be a valid string encoding');var r=0|g(e,n);t=s(t,r);var i=t.write(e,n);i!==r&&(t=t.slice(0,i));return t}(t,e,n):function(t,e){if(u.isBuffer(e)){var n=0|f(e.length);return 0===(t=s(t,n)).length||e.copy(t,0,0,n),t}if(e){if("undefined"!=typeof ArrayBuffer&&e.buffer instanceof ArrayBuffer||"length"in e)return"number"!=typeof e.length||(r=e.length)!=r?s(t,0):l(t,e);if("Buffer"===e.type&&o(e.data))return l(t,e.data)}var r;throw new TypeError("First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.")}(t,e)}function c(t){if("number"!=typeof t)throw new TypeError('"size" argument must be a number');if(t<0)throw new RangeError('"size" argument must not be negative')}function d(t,e){if(c(e),t=s(t,e<0?0:0|f(e)),!u.TYPED_ARRAY_SUPPORT)for(var n=0;n<e;++n)t[n]=0;return t}function l(t,e){var n=e.length<0?0:0|f(e.length);t=s(t,n);for(var r=0;r<n;r+=1)t[r]=255&e[r];return t}function f(t){if(t>=a())throw new RangeError("Attempt to allocate Buffer larger than maximum size: 0x"+a().toString(16)+" bytes");return 0|t}function g(t,e){if(u.isBuffer(t))return t.length;if("undefined"!=typeof ArrayBuffer&&"function"==typeof ArrayBuffer.isView&&(ArrayBuffer.isView(t)||t instanceof ArrayBuffer))return t.byteLength;"string"!=typeof t&&(t=""+t);var n=t.length;if(0===n)return 0;for(var r=!1;;)switch(e){case"ascii":case"latin1":case"binary":return n;case"utf8":case"utf-8":case void 0:return U(t).length;case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return 2*n;case"hex":return n>>>1;case"base64":return N(t).length;default:if(r)return U(t).length;e=(""+e).toLowerCase(),r=!0}}function p(t,e,n){var r=!1;if((void 0===e||e<0)&&(e=0),e>this.length)return"";if((void 0===n||n>this.length)&&(n=this.length),n<=0)return"";if((n>>>=0)<=(e>>>=0))return"";for(t||(t="utf8");;)switch(t){case"hex":return B(this,e,n);case"utf8":case"utf-8":return P(this,e,n);case"ascii":return E(this,e,n);case"latin1":case"binary":return M(this,e,n);case"base64":return C(this,e,n);case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return k(this,e,n);default:if(r)throw new TypeError("Unknown encoding: "+t);t=(t+"").toLowerCase(),r=!0}}function w(t,e,n){var r=t[e];t[e]=t[n],t[n]=r}function v(t,e,n,r,i){if(0===t.length)return-1;if("string"==typeof n?(r=n,n=0):n>2147483647?n=2147483647:n<-2147483648&&(n=-2147483648),n=+n,isNaN(n)&&(n=i?0:t.length-1),n<0&&(n=t.length+n),n>=t.length){if(i)return-1;n=t.length-1}else if(n<0){if(!i)return-1;n=0}if("string"==typeof e&&(e=u.from(e,r)),u.isBuffer(e))return 0===e.length?-1:m(t,e,n,r,i);if("number"==typeof e)return e&=255,u.TYPED_ARRAY_SUPPORT&&"function"==typeof Uint8Array.prototype.indexOf?i?Uint8Array.prototype.indexOf.call(t,e,n):Uint8Array.prototype.lastIndexOf.call(t,e,n):m(t,[e],n,r,i);throw new TypeError("val must be string, number or Buffer")}function m(t,e,n,r,i){var o,a=1,s=t.length,u=e.length;if(void 0!==r&&("ucs2"===(r=String(r).toLowerCase())||"ucs-2"===r||"utf16le"===r||"utf-16le"===r)){if(t.length<2||e.length<2)return-1;a=2,s/=2,u/=2,n/=2}function h(t,e){return 1===a?t[e]:t.readUInt16BE(e*a)}if(i){var c=-1;for(o=n;o<s;o++)if(h(t,o)===h(e,-1===c?0:o-c)){if(-1===c&&(c=o),o-c+1===u)return c*a}else-1!==c&&(o-=o-c),c=-1}else for(n+u>s&&(n=s-u),o=n;o>=0;o--){for(var d=!0,l=0;l<u;l++)if(h(t,o+l)!==h(e,l)){d=!1;break}if(d)return o}return-1}function y(t,e,n,r){n=Number(n)||0;var i=t.length-n;r?(r=Number(r))>i&&(r=i):r=i;var o=e.length;if(o%2!=0)throw new TypeError("Invalid hex string");r>o/2&&(r=o/2);for(var a=0;a<r;++a){var s=parseInt(e.substr(2*a,2),16);if(isNaN(s))return a;t[n+a]=s}return a}function b(t,e,n,r){return Y(U(e,t.length-n),t,n,r)}function _(t,e,n,r){return Y(function(t){for(var e=[],n=0;n<t.length;++n)e.push(255&t.charCodeAt(n));return e}(e),t,n,r)}function x(t,e,n,r){return _(t,e,n,r)}function S(t,e,n,r){return Y(N(e),t,n,r)}function A(t,e,n,r){return Y(function(t,e){for(var n,r,i,o=[],a=0;a<t.length&&!((e-=2)<0);++a)r=(n=t.charCodeAt(a))>>8,i=n%256,o.push(i),o.push(r);return o}(e,t.length-n),t,n,r)}function C(t,e,n){return 0===e&&n===t.length?r.fromByteArray(t):r.fromByteArray(t.slice(e,n))}function P(t,e,n){n=Math.min(t.length,n);for(var r=[],i=e;i<n;){var o,a,s,u,h=t[i],c=null,d=h>239?4:h>223?3:h>191?2:1;if(i+d<=n)switch(d){case 1:h<128&&(c=h);break;case 2:128==(192&(o=t[i+1]))&&(u=(31&h)<<6|63&o)>127&&(c=u);break;case 3:o=t[i+1],a=t[i+2],128==(192&o)&&128==(192&a)&&(u=(15&h)<<12|(63&o)<<6|63&a)>2047&&(u<55296||u>57343)&&(c=u);break;case 4:o=t[i+1],a=t[i+2],s=t[i+3],128==(192&o)&&128==(192&a)&&128==(192&s)&&(u=(15&h)<<18|(63&o)<<12|(63&a)<<6|63&s)>65535&&u<1114112&&(c=u)}null===c?(c=65533,d=1):c>65535&&(c-=65536,r.push(c>>>10&1023|55296),c=56320|1023&c),r.push(c),i+=d}return function(t){var e=t.length;if(e<=O)return String.fromCharCode.apply(String,t);var n="",r=0;for(;r<e;)n+=String.fromCharCode.apply(String,t.slice(r,r+=O));return n}(r)}e.hp=u,e.IS=50,u.TYPED_ARRAY_SUPPORT=void 0!==n.g.TYPED_ARRAY_SUPPORT?n.g.TYPED_ARRAY_SUPPORT:function(){try{var t=new Uint8Array(1);return t.__proto__={__proto__:Uint8Array.prototype,foo:function(){return 42}},42===t.foo()&&"function"==typeof t.subarray&&0===t.subarray(1,1).byteLength}catch(t){return!1}}(),a(),u.poolSize=8192,u._augment=function(t){return t.__proto__=u.prototype,t},u.from=function(t,e,n){return h(null,t,e,n)},u.TYPED_ARRAY_SUPPORT&&(u.prototype.__proto__=Uint8Array.prototype,u.__proto__=Uint8Array,"undefined"!=typeof Symbol&&Symbol.species&&u[Symbol.species]===u&&Object.defineProperty(u,Symbol.species,{value:null,configurable:!0})),u.alloc=function(t,e,n){return function(t,e,n,r){return c(e),e<=0?s(t,e):void 0!==n?"string"==typeof r?s(t,e).fill(n,r):s(t,e).fill(n):s(t,e)}(null,t,e,n)},u.allocUnsafe=function(t){return d(null,t)},u.allocUnsafeSlow=function(t){return d(null,t)},u.isBuffer=function(t){return!(null==t||!t._isBuffer)},u.compare=function(t,e){if(!u.isBuffer(t)||!u.isBuffer(e))throw new TypeError("Arguments must be Buffers");if(t===e)return 0;for(var n=t.length,r=e.length,i=0,o=Math.min(n,r);i<o;++i)if(t[i]!==e[i]){n=t[i],r=e[i];break}return n<r?-1:r<n?1:0},u.isEncoding=function(t){switch(String(t).toLowerCase()){case"hex":case"utf8":case"utf-8":case"ascii":case"latin1":case"binary":case"base64":case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return!0;default:return!1}},u.concat=function(t,e){if(!o(t))throw new TypeError('"list" argument must be an Array of Buffers');if(0===t.length)return u.alloc(0);var n;if(void 0===e)for(e=0,n=0;n<t.length;++n)e+=t[n].length;var r=u.allocUnsafe(e),i=0;for(n=0;n<t.length;++n){var a=t[n];if(!u.isBuffer(a))throw new TypeError('"list" argument must be an Array of Buffers');a.copy(r,i),i+=a.length}return r},u.byteLength=g,u.prototype._isBuffer=!0,u.prototype.swap16=function(){var t=this.length;if(t%2!=0)throw new RangeError("Buffer size must be a multiple of 16-bits");for(var e=0;e<t;e+=2)w(this,e,e+1);return this},u.prototype.swap32=function(){var t=this.length;if(t%4!=0)throw new RangeError("Buffer size must be a multiple of 32-bits");for(var e=0;e<t;e+=4)w(this,e,e+3),w(this,e+1,e+2);return this},u.prototype.swap64=function(){var t=this.length;if(t%8!=0)throw new RangeError("Buffer size must be a multiple of 64-bits");for(var e=0;e<t;e+=8)w(this,e,e+7),w(this,e+1,e+6),w(this,e+2,e+5),w(this,e+3,e+4);return this},u.prototype.toString=function(){var t=0|this.length;return 0===t?"":0===arguments.length?P(this,0,t):p.apply(this,arguments)},u.prototype.equals=function(t){if(!u.isBuffer(t))throw new TypeError("Argument must be a Buffer");return this===t||0===u.compare(this,t)},u.prototype.inspect=function(){var t="",n=e.IS;return this.length>0&&(t=this.toString("hex",0,n).match(/.{2}/g).join(" "),this.length>n&&(t+=" ... ")),"<Buffer "+t+">"},u.prototype.compare=function(t,e,n,r,i){if(!u.isBuffer(t))throw new TypeError("Argument must be a Buffer");if(void 0===e&&(e=0),void 0===n&&(n=t?t.length:0),void 0===r&&(r=0),void 0===i&&(i=this.length),e<0||n>t.length||r<0||i>this.length)throw new RangeError("out of range index");if(r>=i&&e>=n)return 0;if(r>=i)return-1;if(e>=n)return 1;if(this===t)return 0;for(var o=(i>>>=0)-(r>>>=0),a=(n>>>=0)-(e>>>=0),s=Math.min(o,a),h=this.slice(r,i),c=t.slice(e,n),d=0;d<s;++d)if(h[d]!==c[d]){o=h[d],a=c[d];break}return o<a?-1:a<o?1:0},u.prototype.includes=function(t,e,n){return-1!==this.indexOf(t,e,n)},u.prototype.indexOf=function(t,e,n){return v(this,t,e,n,!0)},u.prototype.lastIndexOf=function(t,e,n){return v(this,t,e,n,!1)},u.prototype.write=function(t,e,n,r){if(void 0===e)r="utf8",n=this.length,e=0;else if(void 0===n&&"string"==typeof e)r=e,n=this.length,e=0;else{if(!isFinite(e))throw new Error("Buffer.write(string, encoding, offset[, length]) is no longer supported");e|=0,isFinite(n)?(n|=0,void 0===r&&(r="utf8")):(r=n,n=void 0)}var i=this.length-e;if((void 0===n||n>i)&&(n=i),t.length>0&&(n<0||e<0)||e>this.length)throw new RangeError("Attempt to write outside buffer bounds");r||(r="utf8");for(var o=!1;;)switch(r){case"hex":return y(this,t,e,n);case"utf8":case"utf-8":return b(this,t,e,n);case"ascii":return _(this,t,e,n);case"latin1":case"binary":return x(this,t,e,n);case"base64":return S(this,t,e,n);case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return A(this,t,e,n);default:if(o)throw new TypeError("Unknown encoding: "+r);r=(""+r).toLowerCase(),o=!0}},u.prototype.toJSON=function(){return{type:"Buffer",data:Array.prototype.slice.call(this._arr||this,0)}};var O=4096;function E(t,e,n){var r="";n=Math.min(t.length,n);for(var i=e;i<n;++i)r+=String.fromCharCode(127&t[i]);return r}function M(t,e,n){var r="";n=Math.min(t.length,n);for(var i=e;i<n;++i)r+=String.fromCharCode(t[i]);return r}function B(t,e,n){var r=t.length;(!e||e<0)&&(e=0),(!n||n<0||n>r)&&(n=r);for(var i="",o=e;o<n;++o)i+=L(t[o]);return i}function k(t,e,n){for(var r=t.slice(e,n),i="",o=0;o<r.length;o+=2)i+=String.fromCharCode(r[o]+256*r[o+1]);return i}function R(t,e,n){if(t%1!=0||t<0)throw new RangeError("offset is not uint");if(t+e>n)throw new RangeError("Trying to access beyond buffer length")}function D(t,e,n,r,i,o){if(!u.isBuffer(t))throw new TypeError('"buffer" argument must be a Buffer instance');if(e>i||e<o)throw new RangeError('"value" argument is out of bounds');if(n+r>t.length)throw new RangeError("Index out of range")}function I(t,e,n,r){e<0&&(e=65535+e+1);for(var i=0,o=Math.min(t.length-n,2);i<o;++i)t[n+i]=(e&255<<8*(r?i:1-i))>>>8*(r?i:1-i)}function $(t,e,n,r){e<0&&(e=4294967295+e+1);for(var i=0,o=Math.min(t.length-n,4);i<o;++i)t[n+i]=e>>>8*(r?i:3-i)&255}function q(t,e,n,r,i,o){if(n+r>t.length)throw new RangeError("Index out of range");if(n<0)throw new RangeError("Index out of range")}function z(t,e,n,r,o){return o||q(t,0,n,4),i.write(t,e,n,r,23,4),n+4}function T(t,e,n,r,o){return o||q(t,0,n,8),i.write(t,e,n,r,52,8),n+8}u.prototype.slice=function(t,e){var n,r=this.length;if((t=~~t)<0?(t+=r)<0&&(t=0):t>r&&(t=r),(e=void 0===e?r:~~e)<0?(e+=r)<0&&(e=0):e>r&&(e=r),e<t&&(e=t),u.TYPED_ARRAY_SUPPORT)(n=this.subarray(t,e)).__proto__=u.prototype;else{var i=e-t;n=new u(i,void 0);for(var o=0;o<i;++o)n[o]=this[o+t]}return n},u.prototype.readUIntLE=function(t,e,n){t|=0,e|=0,n||R(t,e,this.length);for(var r=this[t],i=1,o=0;++o<e&&(i*=256);)r+=this[t+o]*i;return r},u.prototype.readUIntBE=function(t,e,n){t|=0,e|=0,n||R(t,e,this.length);for(var r=this[t+--e],i=1;e>0&&(i*=256);)r+=this[t+--e]*i;return r},u.prototype.readUInt8=function(t,e){return e||R(t,1,this.length),this[t]},u.prototype.readUInt16LE=function(t,e){return e||R(t,2,this.length),this[t]|this[t+1]<<8},u.prototype.readUInt16BE=function(t,e){return e||R(t,2,this.length),this[t]<<8|this[t+1]},u.prototype.readUInt32LE=function(t,e){return e||R(t,4,this.length),(this[t]|this[t+1]<<8|this[t+2]<<16)+16777216*this[t+3]},u.prototype.readUInt32BE=function(t,e){return e||R(t,4,this.length),16777216*this[t]+(this[t+1]<<16|this[t+2]<<8|this[t+3])},u.prototype.readIntLE=function(t,e,n){t|=0,e|=0,n||R(t,e,this.length);for(var r=this[t],i=1,o=0;++o<e&&(i*=256);)r+=this[t+o]*i;return r>=(i*=128)&&(r-=Math.pow(2,8*e)),r},u.prototype.readIntBE=function(t,e,n){t|=0,e|=0,n||R(t,e,this.length);for(var r=e,i=1,o=this[t+--r];r>0&&(i*=256);)o+=this[t+--r]*i;return o>=(i*=128)&&(o-=Math.pow(2,8*e)),o},u.prototype.readInt8=function(t,e){return e||R(t,1,this.length),128&this[t]?-1*(255-this[t]+1):this[t]},u.prototype.readInt16LE=function(t,e){e||R(t,2,this.length);var n=this[t]|this[t+1]<<8;return 32768&n?4294901760|n:n},u.prototype.readInt16BE=function(t,e){e||R(t,2,this.length);var n=this[t+1]|this[t]<<8;return 32768&n?4294901760|n:n},u.prototype.readInt32LE=function(t,e){return e||R(t,4,this.length),this[t]|this[t+1]<<8|this[t+2]<<16|this[t+3]<<24},u.prototype.readInt32BE=function(t,e){return e||R(t,4,this.length),this[t]<<24|this[t+1]<<16|this[t+2]<<8|this[t+3]},u.prototype.readFloatLE=function(t,e){return e||R(t,4,this.length),i.read(this,t,!0,23,4)},u.prototype.readFloatBE=function(t,e){return e||R(t,4,this.length),i.read(this,t,!1,23,4)},u.prototype.readDoubleLE=function(t,e){return e||R(t,8,this.length),i.read(this,t,!0,52,8)},u.prototype.readDoubleBE=function(t,e){return e||R(t,8,this.length),i.read(this,t,!1,52,8)},u.prototype.writeUIntLE=function(t,e,n,r){(t=+t,e|=0,n|=0,r)||D(this,t,e,n,Math.pow(2,8*n)-1,0);var i=1,o=0;for(this[e]=255&t;++o<n&&(i*=256);)this[e+o]=t/i&255;return e+n},u.prototype.writeUIntBE=function(t,e,n,r){(t=+t,e|=0,n|=0,r)||D(this,t,e,n,Math.pow(2,8*n)-1,0);var i=n-1,o=1;for(this[e+i]=255&t;--i>=0&&(o*=256);)this[e+i]=t/o&255;return e+n},u.prototype.writeUInt8=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,1,255,0),u.TYPED_ARRAY_SUPPORT||(t=Math.floor(t)),this[e]=255&t,e+1},u.prototype.writeUInt16LE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,2,65535,0),u.TYPED_ARRAY_SUPPORT?(this[e]=255&t,this[e+1]=t>>>8):I(this,t,e,!0),e+2},u.prototype.writeUInt16BE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,2,65535,0),u.TYPED_ARRAY_SUPPORT?(this[e]=t>>>8,this[e+1]=255&t):I(this,t,e,!1),e+2},u.prototype.writeUInt32LE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,4,4294967295,0),u.TYPED_ARRAY_SUPPORT?(this[e+3]=t>>>24,this[e+2]=t>>>16,this[e+1]=t>>>8,this[e]=255&t):$(this,t,e,!0),e+4},u.prototype.writeUInt32BE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,4,4294967295,0),u.TYPED_ARRAY_SUPPORT?(this[e]=t>>>24,this[e+1]=t>>>16,this[e+2]=t>>>8,this[e+3]=255&t):$(this,t,e,!1),e+4},u.prototype.writeIntLE=function(t,e,n,r){if(t=+t,e|=0,!r){var i=Math.pow(2,8*n-1);D(this,t,e,n,i-1,-i)}var o=0,a=1,s=0;for(this[e]=255&t;++o<n&&(a*=256);)t<0&&0===s&&0!==this[e+o-1]&&(s=1),this[e+o]=(t/a|0)-s&255;return e+n},u.prototype.writeIntBE=function(t,e,n,r){if(t=+t,e|=0,!r){var i=Math.pow(2,8*n-1);D(this,t,e,n,i-1,-i)}var o=n-1,a=1,s=0;for(this[e+o]=255&t;--o>=0&&(a*=256);)t<0&&0===s&&0!==this[e+o+1]&&(s=1),this[e+o]=(t/a|0)-s&255;return e+n},u.prototype.writeInt8=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,1,127,-128),u.TYPED_ARRAY_SUPPORT||(t=Math.floor(t)),t<0&&(t=255+t+1),this[e]=255&t,e+1},u.prototype.writeInt16LE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,2,32767,-32768),u.TYPED_ARRAY_SUPPORT?(this[e]=255&t,this[e+1]=t>>>8):I(this,t,e,!0),e+2},u.prototype.writeInt16BE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,2,32767,-32768),u.TYPED_ARRAY_SUPPORT?(this[e]=t>>>8,this[e+1]=255&t):I(this,t,e,!1),e+2},u.prototype.writeInt32LE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,4,2147483647,-2147483648),u.TYPED_ARRAY_SUPPORT?(this[e]=255&t,this[e+1]=t>>>8,this[e+2]=t>>>16,this[e+3]=t>>>24):$(this,t,e,!0),e+4},u.prototype.writeInt32BE=function(t,e,n){return t=+t,e|=0,n||D(this,t,e,4,2147483647,-2147483648),t<0&&(t=4294967295+t+1),u.TYPED_ARRAY_SUPPORT?(this[e]=t>>>24,this[e+1]=t>>>16,this[e+2]=t>>>8,this[e+3]=255&t):$(this,t,e,!1),e+4},u.prototype.writeFloatLE=function(t,e,n){return z(this,t,e,!0,n)},u.prototype.writeFloatBE=function(t,e,n){return z(this,t,e,!1,n)},u.prototype.writeDoubleLE=function(t,e,n){return T(this,t,e,!0,n)},u.prototype.writeDoubleBE=function(t,e,n){return T(this,t,e,!1,n)},u.prototype.copy=function(t,e,n,r){if(n||(n=0),r||0===r||(r=this.length),e>=t.length&&(e=t.length),e||(e=0),r>0&&r<n&&(r=n),r===n)return 0;if(0===t.length||0===this.length)return 0;if(e<0)throw new RangeError("targetStart out of bounds");if(n<0||n>=this.length)throw new RangeError("sourceStart out of bounds");if(r<0)throw new RangeError("sourceEnd out of bounds");r>this.length&&(r=this.length),t.length-e<r-n&&(r=t.length-e+n);var i,o=r-n;if(this===t&&n<e&&e<r)for(i=o-1;i>=0;--i)t[i+e]=this[i+n];else if(o<1e3||!u.TYPED_ARRAY_SUPPORT)for(i=0;i<o;++i)t[i+e]=this[i+n];else Uint8Array.prototype.set.call(t,this.subarray(n,n+o),e);return o},u.prototype.fill=function(t,e,n,r){if("string"==typeof t){if("string"==typeof e?(r=e,e=0,n=this.length):"string"==typeof n&&(r=n,n=this.length),1===t.length){var i=t.charCodeAt(0);i<256&&(t=i)}if(void 0!==r&&"string"!=typeof r)throw new TypeError("encoding must be a string");if("string"==typeof r&&!u.isEncoding(r))throw new TypeError("Unknown encoding: "+r)}else"number"==typeof t&&(t&=255);if(e<0||this.length<e||this.length<n)throw new RangeError("Out of range index");if(n<=e)return this;var o;if(e>>>=0,n=void 0===n?this.length:n>>>0,t||(t=0),"number"==typeof t)for(o=e;o<n;++o)this[o]=t;else{var a=u.isBuffer(t)?t:U(new u(t,r).toString()),s=a.length;for(o=0;o<n-e;++o)this[o+e]=a[o%s]}return this};var j=/[^+\/0-9A-Za-z-_]/g;function L(t){return t<16?"0"+t.toString(16):t.toString(16)}function U(t,e){var n;e=e||1/0;for(var r=t.length,i=null,o=[],a=0;a<r;++a){if((n=t.charCodeAt(a))>55295&&n<57344){if(!i){if(n>56319){(e-=3)>-1&&o.push(239,191,189);continue}if(a+1===r){(e-=3)>-1&&o.push(239,191,189);continue}i=n;continue}if(n<56320){(e-=3)>-1&&o.push(239,191,189),i=n;continue}n=65536+(i-55296<<10|n-56320)}else i&&(e-=3)>-1&&o.push(239,191,189);if(i=null,n<128){if((e-=1)<0)break;o.push(n)}else if(n<2048){if((e-=2)<0)break;o.push(n>>6|192,63&n|128)}else if(n<65536){if((e-=3)<0)break;o.push(n>>12|224,n>>6&63|128,63&n|128)}else{if(!(n<1114112))throw new Error("Invalid code point");if((e-=4)<0)break;o.push(n>>18|240,n>>12&63|128,n>>6&63|128,63&n|128)}}return o}function N(t){return r.toByteArray(function(t){if((t=function(t){return t.trim?t.trim():t.replace(/^\s+|\s+$/g,"")}(t).replace(j,"")).length<2)return"";for(;t.length%4!=0;)t+="=";return t}(t))}function Y(t,e,n,r){for(var i=0;i<r&&!(i+n>=e.length||i>=t.length);++i)e[i+n]=t[i];return i}},4634:t=>{var e={}.toString;t.exports=Array.isArray||function(t){return"[object Array]"==e.call(t)}},7283:function(t,e,n){var r,i=n(668).hp;r=()=>(()=>{var t={873:(t,e)=>{var n,r,i=function(){var t=function(t,e){var n=t,r=a[e],i=null,o=0,u=null,w=[],v={},y=function(t,e){i=function(t){for(var e=new Array(t),n=0;n<t;n+=1){e[n]=new Array(t);for(var r=0;r<t;r+=1)e[n][r]=null}return e}(o=4*n+17),b(0,0),b(o-7,0),b(0,o-7),x(),_(),A(t,e),n>=7&&S(t),null==u&&(u=P(n,r,w)),C(u,e)},b=function(t,e){for(var n=-1;n<=7;n+=1)if(!(t+n<=-1||o<=t+n))for(var r=-1;r<=7;r+=1)e+r<=-1||o<=e+r||(i[t+n][e+r]=0<=n&&n<=6&&(0==r||6==r)||0<=r&&r<=6&&(0==n||6==n)||2<=n&&n<=4&&2<=r&&r<=4)},_=function(){for(var t=8;t<o-8;t+=1)null==i[t][6]&&(i[t][6]=t%2==0);for(var e=8;e<o-8;e+=1)null==i[6][e]&&(i[6][e]=e%2==0)},x=function(){for(var t=s.getPatternPosition(n),e=0;e<t.length;e+=1)for(var r=0;r<t.length;r+=1){var o=t[e],a=t[r];if(null==i[o][a])for(var u=-2;u<=2;u+=1)for(var h=-2;h<=2;h+=1)i[o+u][a+h]=-2==u||2==u||-2==h||2==h||0==u&&0==h}},S=function(t){for(var e=s.getBCHTypeNumber(n),r=0;r<18;r+=1){var a=!t&&1==(e>>r&1);i[Math.floor(r/3)][r%3+o-8-3]=a}for(r=0;r<18;r+=1)a=!t&&1==(e>>r&1),i[r%3+o-8-3][Math.floor(r/3)]=a},A=function(t,e){for(var n=r<<3|e,a=s.getBCHTypeInfo(n),u=0;u<15;u+=1){var h=!t&&1==(a>>u&1);u<6?i[u][8]=h:u<8?i[u+1][8]=h:i[o-15+u][8]=h}for(u=0;u<15;u+=1)h=!t&&1==(a>>u&1),u<8?i[8][o-u-1]=h:u<9?i[8][15-u-1+1]=h:i[8][15-u-1]=h;i[o-8][8]=!t},C=function(t,e){for(var n=-1,r=o-1,a=7,u=0,h=s.getMaskFunction(e),c=o-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var d=0;d<2;d+=1)if(null==i[r][c-d]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),h(r,c-d)&&(l=!l),i[r][c-d]=l,-1==(a-=1)&&(u+=1,a=7)}if((r+=n)<0||o<=r){r-=n,n=-n;break}}},P=function(t,e,n){for(var r=c.getRSBlocks(t,e),i=d(),o=0;o<n.length;o+=1){var a=n[o];i.put(a.getMode(),4),i.put(a.getLength(),s.getLengthInBits(a.getMode(),t)),a.write(i)}var u=0;for(o=0;o<r.length;o+=1)u+=r[o].dataCount;if(i.getLengthInBits()>8*u)throw"code length overflow. ("+i.getLengthInBits()+">"+8*u+")";for(i.getLengthInBits()+4<=8*u&&i.put(0,4);i.getLengthInBits()%8!=0;)i.putBit(!1);for(;!(i.getLengthInBits()>=8*u||(i.put(236,8),i.getLengthInBits()>=8*u));)i.put(17,8);return function(t,e){for(var n=0,r=0,i=0,o=new Array(e.length),a=new Array(e.length),u=0;u<e.length;u+=1){var c=e[u].dataCount,d=e[u].totalCount-c;r=Math.max(r,c),i=Math.max(i,d),o[u]=new Array(c);for(var l=0;l<o[u].length;l+=1)o[u][l]=255&t.getBuffer()[l+n];n+=c;var f=s.getErrorCorrectPolynomial(d),g=h(o[u],f.getLength()-1).mod(f);for(a[u]=new Array(f.getLength()-1),l=0;l<a[u].length;l+=1){var p=l+g.getLength()-a[u].length;a[u][l]=p>=0?g.getAt(p):0}}var w=0;for(l=0;l<e.length;l+=1)w+=e[l].totalCount;var v=new Array(w),m=0;for(l=0;l<r;l+=1)for(u=0;u<e.length;u+=1)l<o[u].length&&(v[m]=o[u][l],m+=1);for(l=0;l<i;l+=1)for(u=0;u<e.length;u+=1)l<a[u].length&&(v[m]=a[u][l],m+=1);return v}(i,r)};v.addData=function(t,e){var n=null;switch(e=e||"Byte"){case"Numeric":n=l(t);break;case"Alphanumeric":n=f(t);break;case"Byte":n=g(t);break;case"Kanji":n=p(t);break;default:throw"mode:"+e}w.push(n),u=null},v.isDark=function(t,e){if(t<0||o<=t||e<0||o<=e)throw t+","+e;return i[t][e]},v.getModuleCount=function(){return o},v.make=function(){if(n<1){for(var t=1;t<40;t++){for(var e=c.getRSBlocks(t,r),i=d(),o=0;o<w.length;o++){var a=w[o];i.put(a.getMode(),4),i.put(a.getLength(),s.getLengthInBits(a.getMode(),t)),a.write(i)}var u=0;for(o=0;o<e.length;o++)u+=e[o].dataCount;if(i.getLengthInBits()<=8*u)break}n=t}y(!1,function(){for(var t=0,e=0,n=0;n<8;n+=1){y(!0,n);var r=s.getLostPoint(v);(0==n||t>r)&&(t=r,e=n)}return e}())},v.createTableTag=function(t,e){t=t||2;var n="";n+='<table style="',n+=" border-width: 0px; border-style: none;",n+=" border-collapse: collapse;",n+=" padding: 0px; margin: "+(e=void 0===e?4*t:e)+"px;",n+='">',n+="<tbody>";for(var r=0;r<v.getModuleCount();r+=1){n+="<tr>";for(var i=0;i<v.getModuleCount();i+=1)n+='<td style="',n+=" border-width: 0px; border-style: none;",n+=" border-collapse: collapse;",n+=" padding: 0px; margin: 0px;",n+=" width: "+t+"px;",n+=" height: "+t+"px;",n+=" background-color: ",n+=v.isDark(r,i)?"#000000":"#ffffff",n+=";",n+='"/>';n+="</tr>"}return(n+="</tbody>")+"</table>"},v.createSvgTag=function(t,e,n,r){var i={};"object"==typeof arguments[0]&&(t=(i=arguments[0]).cellSize,e=i.margin,n=i.alt,r=i.title),t=t||2,e=void 0===e?4*t:e,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-description":null,(r="string"==typeof r?{text:r}:r||{}).text=r.text||null,r.id=r.text?r.id||"qrcode-title":null;var o,a,s,u,h=v.getModuleCount()*t+2*e,c="";for(u="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",c+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',c+=i.scalable?"":' width="'+h+'px" height="'+h+'px"',c+=' viewBox="0 0 '+h+" "+h+'" ',c+=' preserveAspectRatio="xMinYMin meet"',c+=r.text||n.text?' role="img" aria-labelledby="'+O([r.id,n.id].join(" ").trim())+'"':"",c+=">",c+=r.text?'<title id="'+O(r.id)+'">'+O(r.text)+"</title>":"",c+=n.text?'<description id="'+O(n.id)+'">'+O(n.text)+"</description>":"",c+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',c+='<path d="',a=0;a<v.getModuleCount();a+=1)for(s=a*t+e,o=0;o<v.getModuleCount();o+=1)v.isDark(a,o)&&(c+="M"+(o*t+e)+","+s+u);return(c+='" stroke="transparent" fill="black"/>')+"</svg>"},v.createDataURL=function(t,e){t=t||2,e=void 0===e?4*t:e;var n=v.getModuleCount()*t+2*e,r=e,i=n-e;return m(n,n,function(e,n){if(r<=e&&e<i&&r<=n&&n<i){var o=Math.floor((e-r)/t),a=Math.floor((n-r)/t);return v.isDark(a,o)?0:1}return 1})},v.createImgTag=function(t,e,n){t=t||2,e=void 0===e?4*t:e;var r=v.getModuleCount()*t+2*e,i="";return i+="<img",i+=' src="',i+=v.createDataURL(t,e),i+='"',i+=' width="',i+=r,i+='"',i+=' height="',i+=r,i+='"',n&&(i+=' alt="',i+=O(n),i+='"'),i+"/>"};var O=function(t){for(var e="",n=0;n<t.length;n+=1){var r=t.charAt(n);switch(r){case"<":e+="&lt;";break;case">":e+="&gt;";break;case"&":e+="&amp;";break;case'"':e+="&quot;";break;default:e+=r}}return e};return v.createASCII=function(t,e){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var e,n,r,i,o,a=1*v.getModuleCount()+2*t,s=t,u=a-t,h={"██":"█","█ ":"▀"," █":"▄","  ":" "},c={"██":"▀","█ ":"▀"," █":" ","  ":" "},d="";for(e=0;e<a;e+=2){for(r=Math.floor((e-s)/1),i=Math.floor((e+1-s)/1),n=0;n<a;n+=1)o="█",s<=n&&n<u&&s<=e&&e<u&&v.isDark(r,Math.floor((n-s)/1))&&(o=" "),s<=n&&n<u&&s<=e+1&&e+1<u&&v.isDark(i,Math.floor((n-s)/1))?o+=" ":o+="█",d+=t<1&&e+1>=u?c[o]:h[o];d+="\n"}return a%2&&t>0?d.substring(0,d.length-a-1)+Array(a+1).join("▀"):d.substring(0,d.length-1)}(e);t-=1,e=void 0===e?2*t:e;var n,r,i,o,a=v.getModuleCount()*t+2*e,s=e,u=a-e,h=Array(t+1).join("██"),c=Array(t+1).join("  "),d="",l="";for(n=0;n<a;n+=1){for(i=Math.floor((n-s)/t),l="",r=0;r<a;r+=1)o=1,s<=r&&r<u&&s<=n&&n<u&&v.isDark(i,Math.floor((r-s)/t))&&(o=0),l+=o?h:c;for(i=0;i<t;i+=1)d+=l+"\n"}return d.substring(0,d.length-1)},v.renderTo2dContext=function(t,e){e=e||2;for(var n=v.getModuleCount(),r=0;r<n;r++)for(var i=0;i<n;i++)t.fillStyle=v.isDark(r,i)?"black":"white",t.fillRect(r*e,i*e,e,e)},v};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var e=[],n=0;n<t.length;n+=1){var r=t.charCodeAt(n);e.push(255&r)}return e}}).default,t.createStringToBytes=function(t,e){var n=function(){for(var n=v(t),r=function(){var t=n.read();if(-1==t)throw"eof";return t},i=0,o={};;){var a=n.read();if(-1==a)break;var s=r(),u=r()<<8|r();o[String.fromCharCode(a<<8|s)]=u,i+=1}if(i!=e)throw i+" != "+e;return o}(),r="?".charCodeAt(0);return function(t){for(var e=[],i=0;i<t.length;i+=1){var o=t.charCodeAt(i);if(o<128)e.push(o);else{var a=n[t.charAt(i)];"number"==typeof a?(255&a)==a?e.push(a):(e.push(a>>>8),e.push(255&a)):e.push(r)}}return e}};var e,n,r,i,o,a={L:1,M:0,Q:3,H:2},s=(e=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],n=1335,r=7973,o=function(t){for(var e=0;0!=t;)e+=1,t>>>=1;return e},(i={}).getBCHTypeInfo=function(t){for(var e=t<<10;o(e)-o(n)>=0;)e^=n<<o(e)-o(n);return 21522^(t<<10|e)},i.getBCHTypeNumber=function(t){for(var e=t<<12;o(e)-o(r)>=0;)e^=r<<o(e)-o(r);return t<<12|e},i.getPatternPosition=function(t){return e[t-1]},i.getMaskFunction=function(t){switch(t){case 0:return function(t,e){return(t+e)%2==0};case 1:return function(t,e){return t%2==0};case 2:return function(t,e){return e%3==0};case 3:return function(t,e){return(t+e)%3==0};case 4:return function(t,e){return(Math.floor(t/2)+Math.floor(e/3))%2==0};case 5:return function(t,e){return t*e%2+t*e%3==0};case 6:return function(t,e){return(t*e%2+t*e%3)%2==0};case 7:return function(t,e){return(t*e%3+(t+e)%2)%2==0};default:throw"bad maskPattern:"+t}},i.getErrorCorrectPolynomial=function(t){for(var e=h([1],0),n=0;n<t;n+=1)e=e.multiply(h([1,u.gexp(n)],0));return e},i.getLengthInBits=function(t,e){if(1<=e&&e<10)switch(t){case 1:return 10;case 2:return 9;case 4:case 8:return 8;default:throw"mode:"+t}else if(e<27)switch(t){case 1:return 12;case 2:return 11;case 4:return 16;case 8:return 10;default:throw"mode:"+t}else{if(!(e<41))throw"type:"+e;switch(t){case 1:return 14;case 2:return 13;case 4:return 16;case 8:return 12;default:throw"mode:"+t}}},i.getLostPoint=function(t){for(var e=t.getModuleCount(),n=0,r=0;r<e;r+=1)for(var i=0;i<e;i+=1){for(var o=0,a=t.isDark(r,i),s=-1;s<=1;s+=1)if(!(r+s<0||e<=r+s))for(var u=-1;u<=1;u+=1)i+u<0||e<=i+u||0==s&&0==u||a==t.isDark(r+s,i+u)&&(o+=1);o>5&&(n+=3+o-5)}for(r=0;r<e-1;r+=1)for(i=0;i<e-1;i+=1){var h=0;t.isDark(r,i)&&(h+=1),t.isDark(r+1,i)&&(h+=1),t.isDark(r,i+1)&&(h+=1),t.isDark(r+1,i+1)&&(h+=1),0!=h&&4!=h||(n+=3)}for(r=0;r<e;r+=1)for(i=0;i<e-6;i+=1)t.isDark(r,i)&&!t.isDark(r,i+1)&&t.isDark(r,i+2)&&t.isDark(r,i+3)&&t.isDark(r,i+4)&&!t.isDark(r,i+5)&&t.isDark(r,i+6)&&(n+=40);for(i=0;i<e;i+=1)for(r=0;r<e-6;r+=1)t.isDark(r,i)&&!t.isDark(r+1,i)&&t.isDark(r+2,i)&&t.isDark(r+3,i)&&t.isDark(r+4,i)&&!t.isDark(r+5,i)&&t.isDark(r+6,i)&&(n+=40);var c=0;for(i=0;i<e;i+=1)for(r=0;r<e;r+=1)t.isDark(r,i)&&(c+=1);return n+Math.abs(100*c/e/e-50)/5*10},i),u=function(){for(var t=new Array(256),e=new Array(256),n=0;n<8;n+=1)t[n]=1<<n;for(n=8;n<256;n+=1)t[n]=t[n-4]^t[n-5]^t[n-6]^t[n-8];for(n=0;n<255;n+=1)e[t[n]]=n;return{glog:function(t){if(t<1)throw"glog("+t+")";return e[t]},gexp:function(e){for(;e<0;)e+=255;for(;e>=256;)e-=255;return t[e]}}}();function h(t,e){if(void 0===t.length)throw t.length+"/"+e;var n=function(){for(var n=0;n<t.length&&0==t[n];)n+=1;for(var r=new Array(t.length-n+e),i=0;i<t.length-n;i+=1)r[i]=t[i+n];return r}(),r={getAt:function(t){return n[t]},getLength:function(){return n.length},multiply:function(t){for(var e=new Array(r.getLength()+t.getLength()-1),n=0;n<r.getLength();n+=1)for(var i=0;i<t.getLength();i+=1)e[n+i]^=u.gexp(u.glog(r.getAt(n))+u.glog(t.getAt(i)));return h(e,0)},mod:function(t){if(r.getLength()-t.getLength()<0)return r;for(var e=u.glog(r.getAt(0))-u.glog(t.getAt(0)),n=new Array(r.getLength()),i=0;i<r.getLength();i+=1)n[i]=r.getAt(i);for(i=0;i<t.getLength();i+=1)n[i]^=u.gexp(u.glog(t.getAt(i))+e);return h(n,0).mod(t)}};return r}var c=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],e=function(t,e){var n={};return n.totalCount=t,n.dataCount=e,n},n={getRSBlocks:function(n,r){var i=function(e,n){switch(n){case a.L:return t[4*(e-1)+0];case a.M:return t[4*(e-1)+1];case a.Q:return t[4*(e-1)+2];case a.H:return t[4*(e-1)+3];default:return}}(n,r);if(void 0===i)throw"bad rs block @ typeNumber:"+n+"/errorCorrectionLevel:"+r;for(var o=i.length/3,s=[],u=0;u<o;u+=1)for(var h=i[3*u+0],c=i[3*u+1],d=i[3*u+2],l=0;l<h;l+=1)s.push(e(c,d));return s}};return n}(),d=function(){var t=[],e=0,n={getBuffer:function(){return t},getAt:function(e){var n=Math.floor(e/8);return 1==(t[n]>>>7-e%8&1)},put:function(t,e){for(var r=0;r<e;r+=1)n.putBit(1==(t>>>e-r-1&1))},getLengthInBits:function(){return e},putBit:function(n){var r=Math.floor(e/8);t.length<=r&&t.push(0),n&&(t[r]|=128>>>e%8),e+=1}};return n},l=function(t){var e=t,n={getMode:function(){return 1},getLength:function(t){return e.length},write:function(t){for(var n=e,i=0;i+2<n.length;)t.put(r(n.substring(i,i+3)),10),i+=3;i<n.length&&(n.length-i==1?t.put(r(n.substring(i,i+1)),4):n.length-i==2&&t.put(r(n.substring(i,i+2)),7))}},r=function(t){for(var e=0,n=0;n<t.length;n+=1)e=10*e+i(t.charAt(n));return e},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},f=function(t){var e=t,n={getMode:function(){return 2},getLength:function(t){return e.length},write:function(t){for(var n=e,i=0;i+1<n.length;)t.put(45*r(n.charAt(i))+r(n.charAt(i+1)),11),i+=2;i<n.length&&t.put(r(n.charAt(i)),6)}},r=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},g=function(e){var n=t.stringToBytes(e);return{getMode:function(){return 4},getLength:function(t){return n.length},write:function(t){for(var e=0;e<n.length;e+=1)t.put(n[e],8)}}},p=function(e){var n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var r=n(e),i={getMode:function(){return 8},getLength:function(t){return~~(r.length/2)},write:function(t){for(var e=r,n=0;n+1<e.length;){var i=(255&e[n])<<8|255&e[n+1];if(33088<=i&&i<=40956)i-=33088;else{if(!(57408<=i&&i<=60351))throw"illegal char at "+(n+1)+"/"+i;i-=49472}i=192*(i>>>8&255)+(255&i),t.put(i,13),n+=2}if(n<e.length)throw"illegal char at "+(n+1)}};return i},w=function(){var t=[],e={writeByte:function(e){t.push(255&e)},writeShort:function(t){e.writeByte(t),e.writeByte(t>>>8)},writeBytes:function(t,n,r){n=n||0,r=r||t.length;for(var i=0;i<r;i+=1)e.writeByte(t[i+n])},writeString:function(t){for(var n=0;n<t.length;n+=1)e.writeByte(t.charCodeAt(n))},toByteArray:function(){return t},toString:function(){var e="";e+="[";for(var n=0;n<t.length;n+=1)n>0&&(e+=","),e+=t[n];return e+"]"}};return e},v=function(t){var e=t,n=0,r=0,i=0,o={read:function(){for(;i<8;){if(n>=e.length){if(0==i)return-1;throw"unexpected end of file./"+i}var t=e.charAt(n);if(n+=1,"="==t)return i=0,-1;t.match(/^\s$/)||(r=r<<6|a(t.charCodeAt(0)),i+=6)}var o=r>>>i-8&255;return i-=8,o}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return o},m=function(t,e,n){for(var r=function(t,e){var n=t,r=e,i=new Array(t*e),o={setPixel:function(t,e,r){i[e*n+t]=r},write:function(t){t.writeString("GIF87a"),t.writeShort(n),t.writeShort(r),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(n),t.writeShort(r),t.writeByte(0);var e=a(2);t.writeByte(2);for(var i=0;e.length-i>255;)t.writeByte(255),t.writeBytes(e,i,255),i+=255;t.writeByte(e.length-i),t.writeBytes(e,i,e.length-i),t.writeByte(0),t.writeString(";")}},a=function(t){for(var e=1<<t,n=1+(1<<t),r=t+1,o=s(),a=0;a<e;a+=1)o.add(String.fromCharCode(a));o.add(String.fromCharCode(e)),o.add(String.fromCharCode(n));var u,h,c,d=w(),l=(u=d,h=0,c=0,{write:function(t,e){if(t>>>e!=0)throw"length over";for(;h+e>=8;)u.writeByte(255&(t<<h|c)),e-=8-h,t>>>=8-h,c=0,h=0;c|=t<<h,h+=e},flush:function(){h>0&&u.writeByte(c)}});l.write(e,r);var f=0,g=String.fromCharCode(i[f]);for(f+=1;f<i.length;){var p=String.fromCharCode(i[f]);f+=1,o.contains(g+p)?g+=p:(l.write(o.indexOf(g),r),o.size()<4095&&(o.size()==1<<r&&(r+=1),o.add(g+p)),g=p)}return l.write(o.indexOf(g),r),l.write(n,r),l.flush(),d.toByteArray()},s=function(){var t={},e=0,n={add:function(r){if(n.contains(r))throw"dup key:"+r;t[r]=e,e+=1},size:function(){return e},indexOf:function(e){return t[e]},contains:function(e){return void 0!==t[e]}};return n};return o}(t,e),i=0;i<e;i+=1)for(var o=0;o<t;o+=1)r.setPixel(o,i,n(o,i));var a=w();r.write(a);for(var s=function(){var t=0,e=0,n=0,r="",i={},o=function(t){r+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return i.writeByte=function(r){for(t=t<<8|255&r,e+=8,n+=1;e>=6;)o(t>>>e-6),e-=6},i.flush=function(){if(e>0&&(o(t<<6-e),t=0,e=0),n%3!=0)for(var i=3-n%3,a=0;a<i;a+=1)r+="="},i.toString=function(){return r},i}(),u=a.toByteArray(),h=0;h<u.length;h+=1)s.writeByte(u[h]);return s.flush(),"data:image/gif;base64,"+s};return t}();i.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var e=[],n=0;n<t.length;n++){var r=t.charCodeAt(n);r<128?e.push(r):r<2048?e.push(192|r>>6,128|63&r):r<55296||r>=57344?e.push(224|r>>12,128|r>>6&63,128|63&r):(n++,r=65536+((1023&r)<<10|1023&t.charCodeAt(n)),e.push(240|r>>18,128|r>>12&63,128|r>>6&63,128|63&r))}return e}(t)},void 0===(r="function"==typeof(n=function(){return i})?n.apply(e,[]):n)||(t.exports=r)}},e={};function n(r){var i=e[r];if(void 0!==i)return i.exports;var o=e[r]={exports:{}};return t[r](o,o.exports,n),o.exports}n.n=t=>{var e=t&&t.__esModule?()=>t.default:()=>t;return n.d(e,{a:e}),e},n.d=(t,e)=>{for(var r in e)n.o(e,r)&&!n.o(t,r)&&Object.defineProperty(t,r,{enumerable:!0,get:e[r]})},n.o=(t,e)=>Object.prototype.hasOwnProperty.call(t,e);var r={};return(()=>{"use strict";n.d(r,{default:()=>E});const t=t=>!!t&&"object"==typeof t&&!Array.isArray(t);function e(n,...r){if(!r.length)return n;const i=r.shift();return void 0!==i&&t(n)&&t(i)?(n=Object.assign({},n),Object.keys(i).forEach(r=>{const o=n[r],a=i[r];Array.isArray(o)&&Array.isArray(a)?n[r]=a:t(o)&&t(a)?n[r]=e(Object.assign({},o),a):n[r]=a}),e(n,...r)):n}function o(t,e){const n=document.createElement("a");n.download=e,n.href=t,document.body.appendChild(n),n.click(),document.body.removeChild(n)}const a={L:.07,M:.15,Q:.25,H:.3};class s{constructor({svg:t,type:e,window:n}){this._svg=t,this._type=e,this._window=n}draw(t,e,n,r){let i;switch(this._type){case"dots":i=this._drawDot;break;case"classy":i=this._drawClassy;break;case"classy-rounded":i=this._drawClassyRounded;break;case"rounded":i=this._drawRounded;break;case"extra-rounded":i=this._drawExtraRounded;break;default:i=this._drawSquare}i.call(this,{x:t,y:e,size:n,getNeighbor:r})}_rotateFigure({x:t,y:e,size:n,rotation:r=0,draw:i}){var o;const a=t+n/2,s=e+n/2;i(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${a},${s})`)}_basicDot(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","circle"),this._element.setAttribute("cx",String(n+e/2)),this._element.setAttribute("cy",String(r+e/2)),this._element.setAttribute("r",String(e/2))}}))}_basicSquare(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect"),this._element.setAttribute("x",String(n)),this._element.setAttribute("y",String(r)),this._element.setAttribute("width",String(e)),this._element.setAttribute("height",String(e))}}))}_basicSideRounded(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${n} ${r}v ${e}h `+e/2+`a ${e/2} ${e/2}, 0, 0, 0, 0 ${-e}`)}}))}_basicCornerRounded(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${n} ${r}v ${e}h ${e}v `+-e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${-e/2} ${-e/2}`)}}))}_basicCornerExtraRounded(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${n} ${r}v ${e}h ${e}a ${e} ${e}, 0, 0, 0, ${-e} ${-e}`)}}))}_basicCornersRounded(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${n} ${r}v `+e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${e/2} ${e/2}h `+e/2+"v "+-e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${-e/2} ${-e/2}`)}}))}_drawDot({x:t,y:e,size:n}){this._basicDot({x:t,y:e,size:n,rotation:0})}_drawSquare({x:t,y:e,size:n}){this._basicSquare({x:t,y:e,size:n,rotation:0})}_drawRounded({x:t,y:e,size:n,getNeighbor:r}){const i=r?+r(-1,0):0,o=r?+r(1,0):0,a=r?+r(0,-1):0,s=r?+r(0,1):0,u=i+o+a+s;if(0!==u)if(u>2||i&&o||a&&s)this._basicSquare({x:t,y:e,size:n,rotation:0});else{if(2===u){let r=0;return i&&a?r=Math.PI/2:a&&o?r=Math.PI:o&&s&&(r=-Math.PI/2),void this._basicCornerRounded({x:t,y:e,size:n,rotation:r})}if(1===u){let r=0;return a?r=Math.PI/2:o?r=Math.PI:s&&(r=-Math.PI/2),void this._basicSideRounded({x:t,y:e,size:n,rotation:r})}}else this._basicDot({x:t,y:e,size:n,rotation:0})}_drawExtraRounded({x:t,y:e,size:n,getNeighbor:r}){const i=r?+r(-1,0):0,o=r?+r(1,0):0,a=r?+r(0,-1):0,s=r?+r(0,1):0,u=i+o+a+s;if(0!==u)if(u>2||i&&o||a&&s)this._basicSquare({x:t,y:e,size:n,rotation:0});else{if(2===u){let r=0;return i&&a?r=Math.PI/2:a&&o?r=Math.PI:o&&s&&(r=-Math.PI/2),void this._basicCornerExtraRounded({x:t,y:e,size:n,rotation:r})}if(1===u){let r=0;return a?r=Math.PI/2:o?r=Math.PI:s&&(r=-Math.PI/2),void this._basicSideRounded({x:t,y:e,size:n,rotation:r})}}else this._basicDot({x:t,y:e,size:n,rotation:0})}_drawClassy({x:t,y:e,size:n,getNeighbor:r}){const i=r?+r(-1,0):0,o=r?+r(1,0):0,a=r?+r(0,-1):0,s=r?+r(0,1):0;0!==i+o+a+s?i||a?o||s?this._basicSquare({x:t,y:e,size:n,rotation:0}):this._basicCornerRounded({x:t,y:e,size:n,rotation:Math.PI/2}):this._basicCornerRounded({x:t,y:e,size:n,rotation:-Math.PI/2}):this._basicCornersRounded({x:t,y:e,size:n,rotation:Math.PI/2})}_drawClassyRounded({x:t,y:e,size:n,getNeighbor:r}){const i=r?+r(-1,0):0,o=r?+r(1,0):0,a=r?+r(0,-1):0,s=r?+r(0,1):0;0!==i+o+a+s?i||a?o||s?this._basicSquare({x:t,y:e,size:n,rotation:0}):this._basicCornerExtraRounded({x:t,y:e,size:n,rotation:Math.PI/2}):this._basicCornerExtraRounded({x:t,y:e,size:n,rotation:-Math.PI/2}):this._basicCornersRounded({x:t,y:e,size:n,rotation:Math.PI/2})}}const u={dot:"dot",square:"square",extraRounded:"extra-rounded"},h=Object.values(u);class c{constructor({svg:t,type:e,window:n}){this._svg=t,this._type=e,this._window=n}draw(t,e,n,r){let i;switch(this._type){case u.square:i=this._drawSquare;break;case u.extraRounded:i=this._drawExtraRounded;break;default:i=this._drawDot}i.call(this,{x:t,y:e,size:n,rotation:r})}_rotateFigure({x:t,y:e,size:n,rotation:r=0,draw:i}){var o;const a=t+n/2,s=e+n/2;i(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${a},${s})`)}_basicDot(t){const{size:e,x:n,y:r}=t,i=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${n+e/2} ${r}a ${e/2} ${e/2} 0 1 0 0.1 0zm 0 ${i}a ${e/2-i} ${e/2-i} 0 1 1 -0.1 0Z`)}}))}_basicSquare(t){const{size:e,x:n,y:r}=t,i=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${n} ${r}v ${e}h ${e}v `+-e+"z"+`M ${n+i} ${r+i}h `+(e-2*i)+"v "+(e-2*i)+"h "+(2*i-e)+"z")}}))}_basicExtraRounded(t){const{size:e,x:n,y:r}=t,i=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${n} ${r+2.5*i}v `+2*i+`a ${2.5*i} ${2.5*i}, 0, 0, 0, ${2.5*i} ${2.5*i}h `+2*i+`a ${2.5*i} ${2.5*i}, 0, 0, 0, ${2.5*i} ${2.5*-i}v `+-2*i+`a ${2.5*i} ${2.5*i}, 0, 0, 0, ${2.5*-i} ${2.5*-i}h `+-2*i+`a ${2.5*i} ${2.5*i}, 0, 0, 0, ${2.5*-i} ${2.5*i}`+`M ${n+2.5*i} ${r+i}h `+2*i+`a ${1.5*i} ${1.5*i}, 0, 0, 1, ${1.5*i} ${1.5*i}v `+2*i+`a ${1.5*i} ${1.5*i}, 0, 0, 1, ${1.5*-i} ${1.5*i}h `+-2*i+`a ${1.5*i} ${1.5*i}, 0, 0, 1, ${1.5*-i} ${1.5*-i}v `+-2*i+`a ${1.5*i} ${1.5*i}, 0, 0, 1, ${1.5*i} ${1.5*-i}`)}}))}_drawDot({x:t,y:e,size:n,rotation:r}){this._basicDot({x:t,y:e,size:n,rotation:r})}_drawSquare({x:t,y:e,size:n,rotation:r}){this._basicSquare({x:t,y:e,size:n,rotation:r})}_drawExtraRounded({x:t,y:e,size:n,rotation:r}){this._basicExtraRounded({x:t,y:e,size:n,rotation:r})}}const d={dot:"dot",square:"square"},l=Object.values(d);class f{constructor({svg:t,type:e,window:n}){this._svg=t,this._type=e,this._window=n}draw(t,e,n,r){let i;i=this._type===d.square?this._drawSquare:this._drawDot,i.call(this,{x:t,y:e,size:n,rotation:r})}_rotateFigure({x:t,y:e,size:n,rotation:r=0,draw:i}){var o;const a=t+n/2,s=e+n/2;i(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${a},${s})`)}_basicDot(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","circle"),this._element.setAttribute("cx",String(n+e/2)),this._element.setAttribute("cy",String(r+e/2)),this._element.setAttribute("r",String(e/2))}}))}_basicSquare(t){const{size:e,x:n,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect"),this._element.setAttribute("x",String(n)),this._element.setAttribute("y",String(r)),this._element.setAttribute("width",String(e)),this._element.setAttribute("height",String(e))}}))}_drawDot({x:t,y:e,size:n,rotation:r}){this._basicDot({x:t,y:e,size:n,rotation:r})}_drawSquare({x:t,y:e,size:n,rotation:r}){this._basicSquare({x:t,y:e,size:n,rotation:r})}}const g="circle",p=[[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,1,1,1,1,1,1]],w=[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,1,1,1,0,0],[0,0,1,1,1,0,0],[0,0,1,1,1,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];class v{constructor(t,e){this._roundSize=t=>this._options.dotsOptions.roundSize?Math.floor(t):t,this._window=e,this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","svg"),this._element.setAttribute("width",String(t.width)),this._element.setAttribute("height",String(t.height)),this._element.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink"),t.dotsOptions.roundSize||this._element.setAttribute("shape-rendering","crispEdges"),this._element.setAttribute("viewBox",`0 0 ${t.width} ${t.height}`),this._defs=this._window.document.createElementNS("http://www.w3.org/2000/svg","defs"),this._element.appendChild(this._defs),this._imageUri=t.image,this._instanceId=v.instanceCount++,this._options=t}get width(){return this._options.width}get height(){return this._options.height}getElement(){return this._element}async drawQR(t){const e=t.getModuleCount(),n=Math.min(this._options.width,this._options.height)-2*this._options.margin,r=this._options.shape===g?n/Math.sqrt(2):n,i=this._roundSize(r/e);let o={hideXDots:0,hideYDots:0,width:0,height:0};if(this._qr=t,this._options.image){if(await this.loadImage(),!this._image)return;const{imageOptions:t,qrOptions:n}=this._options,r=t.imageSize*a[n.errorCorrectionLevel],s=Math.floor(r*e*e);o=function({originalHeight:t,originalWidth:e,maxHiddenDots:n,maxHiddenAxisDots:r,dotSize:i}){const o={x:0,y:0},a={x:0,y:0};if(t<=0||e<=0||n<=0||i<=0)return{height:0,width:0,hideYDots:0,hideXDots:0};const s=t/e;return o.x=Math.floor(Math.sqrt(n/s)),o.x<=0&&(o.x=1),r&&r<o.x&&(o.x=r),o.x%2==0&&o.x--,a.x=o.x*i,o.y=1+2*Math.ceil((o.x*s-1)/2),a.y=Math.round(a.x*s),(o.y*o.x>n||r&&r<o.y)&&(r&&r<o.y?(o.y=r,o.y%2==0&&o.x--):o.y-=2,a.y=o.y*i,o.x=1+2*Math.ceil((o.y/s-1)/2),a.x=Math.round(a.y/s)),{height:a.y,width:a.x,hideYDots:o.y,hideXDots:o.x}}({originalWidth:this._image.width,originalHeight:this._image.height,maxHiddenDots:s,maxHiddenAxisDots:e-14,dotSize:i})}this.drawBackground(),this.drawDots((t,n)=>{var r,i,a,s,u,h;return!(this._options.imageOptions.hideBackgroundDots&&t>=(e-o.hideYDots)/2&&t<(e+o.hideYDots)/2&&n>=(e-o.hideXDots)/2&&n<(e+o.hideXDots)/2||(null===(r=p[t])||void 0===r?void 0:r[n])||(null===(i=p[t-e+7])||void 0===i?void 0:i[n])||(null===(a=p[t])||void 0===a?void 0:a[n-e+7])||(null===(s=w[t])||void 0===s?void 0:s[n])||(null===(u=w[t-e+7])||void 0===u?void 0:u[n])||(null===(h=w[t])||void 0===h?void 0:h[n-e+7]))}),this.drawCorners(),this._options.image&&await this.drawImage({width:o.width,height:o.height,count:e,dotSize:i})}drawBackground(){var t,e,n;const r=this._element,i=this._options;if(r){const r=null===(t=i.backgroundOptions)||void 0===t?void 0:t.gradient,o=null===(e=i.backgroundOptions)||void 0===e?void 0:e.color;let a=i.height,s=i.width;if(r||o){const t=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect");this._backgroundClipPath=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),this._backgroundClipPath.setAttribute("id",`clip-path-background-color-${this._instanceId}`),this._defs.appendChild(this._backgroundClipPath),(null===(n=i.backgroundOptions)||void 0===n?void 0:n.round)&&(a=s=Math.min(i.width,i.height),t.setAttribute("rx",String(a/2*i.backgroundOptions.round))),t.setAttribute("x",String(this._roundSize((i.width-s)/2))),t.setAttribute("y",String(this._roundSize((i.height-a)/2))),t.setAttribute("width",String(s)),t.setAttribute("height",String(a)),this._backgroundClipPath.appendChild(t),this._createColor({options:r,color:o,additionalRotation:0,x:0,y:0,height:i.height,width:i.width,name:`background-color-${this._instanceId}`})}}}drawDots(t){var e,n;if(!this._qr)throw"QR code is not defined";const r=this._options,i=this._qr.getModuleCount();if(i>r.width||i>r.height)throw"The canvas is too small.";const o=Math.min(r.width,r.height)-2*r.margin,a=r.shape===g?o/Math.sqrt(2):o,u=this._roundSize(a/i),h=this._roundSize((r.width-i*u)/2),c=this._roundSize((r.height-i*u)/2),d=new s({svg:this._element,type:r.dotsOptions.type,window:this._window});this._dotsClipPath=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),this._dotsClipPath.setAttribute("id",`clip-path-dot-color-${this._instanceId}`),this._defs.appendChild(this._dotsClipPath),this._createColor({options:null===(e=r.dotsOptions)||void 0===e?void 0:e.gradient,color:r.dotsOptions.color,additionalRotation:0,x:0,y:0,height:r.height,width:r.width,name:`dot-color-${this._instanceId}`});for(let e=0;e<i;e++)for(let r=0;r<i;r++)t&&!t(e,r)||(null===(n=this._qr)||void 0===n?void 0:n.isDark(e,r))&&(d.draw(h+r*u,c+e*u,u,(n,o)=>!(r+n<0||e+o<0||r+n>=i||e+o>=i)&&!(t&&!t(e+o,r+n))&&!!this._qr&&this._qr.isDark(e+o,r+n)),d._element&&this._dotsClipPath&&this._dotsClipPath.appendChild(d._element));if(r.shape===g){const t=this._roundSize((o/u-i)/2),e=i+2*t,n=h-t*u,r=c-t*u,a=[],s=this._roundSize(e/2);for(let n=0;n<e;n++){a[n]=[];for(let r=0;r<e;r++)n>=t-1&&n<=e-t&&r>=t-1&&r<=e-t||Math.sqrt((n-s)*(n-s)+(r-s)*(r-s))>s?a[n][r]=0:a[n][r]=this._qr.isDark(r-2*t<0?r:r>=i?r-2*t:r-t,n-2*t<0?n:n>=i?n-2*t:n-t)?1:0}for(let t=0;t<e;t++)for(let i=0;i<e;i++)a[t][i]&&(d.draw(n+i*u,r+t*u,u,(e,n)=>{var r;return!!(null===(r=a[t+n])||void 0===r?void 0:r[i+e])}),d._element&&this._dotsClipPath&&this._dotsClipPath.appendChild(d._element))}}drawCorners(){if(!this._qr)throw"QR code is not defined";const t=this._element,e=this._options;if(!t)throw"Element code is not defined";const n=this._qr.getModuleCount(),r=Math.min(e.width,e.height)-2*e.margin,i=e.shape===g?r/Math.sqrt(2):r,o=this._roundSize(i/n),a=7*o,u=3*o,d=this._roundSize((e.width-n*o)/2),v=this._roundSize((e.height-n*o)/2);[[0,0,0],[1,0,Math.PI/2],[0,1,-Math.PI/2]].forEach(([t,r,i])=>{var g,m,y,b,_,x,S,A,C,P,O,E,M,B;const k=d+t*o*(n-7),R=v+r*o*(n-7);let D=this._dotsClipPath,I=this._dotsClipPath;if(((null===(g=e.cornersSquareOptions)||void 0===g?void 0:g.gradient)||(null===(m=e.cornersSquareOptions)||void 0===m?void 0:m.color))&&(D=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),D.setAttribute("id",`clip-path-corners-square-color-${t}-${r}-${this._instanceId}`),this._defs.appendChild(D),this._cornersSquareClipPath=this._cornersDotClipPath=I=D,this._createColor({options:null===(y=e.cornersSquareOptions)||void 0===y?void 0:y.gradient,color:null===(b=e.cornersSquareOptions)||void 0===b?void 0:b.color,additionalRotation:i,x:k,y:R,height:a,width:a,name:`corners-square-color-${t}-${r}-${this._instanceId}`})),(null===(_=e.cornersSquareOptions)||void 0===_?void 0:_.type)&&h.includes(e.cornersSquareOptions.type)){const t=new c({svg:this._element,type:e.cornersSquareOptions.type,window:this._window});t.draw(k,R,a,i),t._element&&D&&D.appendChild(t._element)}else{const t=new s({svg:this._element,type:(null===(x=e.cornersSquareOptions)||void 0===x?void 0:x.type)||e.dotsOptions.type,window:this._window});for(let e=0;e<p.length;e++)for(let n=0;n<p[e].length;n++)(null===(S=p[e])||void 0===S?void 0:S[n])&&(t.draw(k+n*o,R+e*o,o,(t,r)=>{var i;return!!(null===(i=p[e+r])||void 0===i?void 0:i[n+t])}),t._element&&D&&D.appendChild(t._element))}if(((null===(A=e.cornersDotOptions)||void 0===A?void 0:A.gradient)||(null===(C=e.cornersDotOptions)||void 0===C?void 0:C.color))&&(I=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),I.setAttribute("id",`clip-path-corners-dot-color-${t}-${r}-${this._instanceId}`),this._defs.appendChild(I),this._cornersDotClipPath=I,this._createColor({options:null===(P=e.cornersDotOptions)||void 0===P?void 0:P.gradient,color:null===(O=e.cornersDotOptions)||void 0===O?void 0:O.color,additionalRotation:i,x:k+2*o,y:R+2*o,height:u,width:u,name:`corners-dot-color-${t}-${r}-${this._instanceId}`})),(null===(E=e.cornersDotOptions)||void 0===E?void 0:E.type)&&l.includes(e.cornersDotOptions.type)){const t=new f({svg:this._element,type:e.cornersDotOptions.type,window:this._window});t.draw(k+2*o,R+2*o,u,i),t._element&&I&&I.appendChild(t._element)}else{const t=new s({svg:this._element,type:(null===(M=e.cornersDotOptions)||void 0===M?void 0:M.type)||e.dotsOptions.type,window:this._window});for(let e=0;e<w.length;e++)for(let n=0;n<w[e].length;n++)(null===(B=w[e])||void 0===B?void 0:B[n])&&(t.draw(k+n*o,R+e*o,o,(t,r)=>{var i;return!!(null===(i=w[e+r])||void 0===i?void 0:i[n+t])}),t._element&&I&&I.appendChild(t._element))}})}loadImage(){return new Promise((t,e)=>{var n;const r=this._options;if(!r.image)return e("Image is not defined");if(null===(n=r.nodeCanvas)||void 0===n?void 0:n.loadImage)r.nodeCanvas.loadImage(r.image).then(e=>{var n,i;if(this._image=e,this._options.imageOptions.saveAsBlob){const t=null===(n=r.nodeCanvas)||void 0===n?void 0:n.createCanvas(this._image.width,this._image.height);null===(i=null==t?void 0:t.getContext("2d"))||void 0===i||i.drawImage(e,0,0),this._imageUri=null==t?void 0:t.toDataURL()}t()}).catch(e);else{const e=new this._window.Image;"string"==typeof r.imageOptions.crossOrigin&&(e.crossOrigin=r.imageOptions.crossOrigin),this._image=e,e.onload=async()=>{this._options.imageOptions.saveAsBlob&&(this._imageUri=await async function(t,e){return new Promise(n=>{const r=new e.XMLHttpRequest;r.onload=function(){const t=new e.FileReader;t.onloadend=function(){n(t.result)},t.readAsDataURL(r.response)},r.open("GET",t),r.responseType="blob",r.send()})}(r.image||"",this._window)),t()},e.src=r.image}})}async drawImage({width:t,height:e,count:n,dotSize:r}){const i=this._options,o=this._roundSize((i.width-n*r)/2),a=this._roundSize((i.height-n*r)/2),s=o+this._roundSize(i.imageOptions.margin+(n*r-t)/2),u=a+this._roundSize(i.imageOptions.margin+(n*r-e)/2),h=t-2*i.imageOptions.margin,c=e-2*i.imageOptions.margin,d=this._window.document.createElementNS("http://www.w3.org/2000/svg","image");d.setAttribute("href",this._imageUri||""),d.setAttribute("xlink:href",this._imageUri||""),d.setAttribute("x",String(s)),d.setAttribute("y",String(u)),d.setAttribute("width",`${h}px`),d.setAttribute("height",`${c}px`),this._element.appendChild(d)}_createColor({options:t,color:e,additionalRotation:n,x:r,y:i,height:o,width:a,name:s}){const u=a>o?a:o,h=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect");if(h.setAttribute("x",String(r)),h.setAttribute("y",String(i)),h.setAttribute("height",String(o)),h.setAttribute("width",String(a)),h.setAttribute("clip-path",`url('#clip-path-${s}')`),t){let e;if("radial"===t.type)e=this._window.document.createElementNS("http://www.w3.org/2000/svg","radialGradient"),e.setAttribute("id",s),e.setAttribute("gradientUnits","userSpaceOnUse"),e.setAttribute("fx",String(r+a/2)),e.setAttribute("fy",String(i+o/2)),e.setAttribute("cx",String(r+a/2)),e.setAttribute("cy",String(i+o/2)),e.setAttribute("r",String(u/2));else{const u=((t.rotation||0)+n)%(2*Math.PI),h=(u+2*Math.PI)%(2*Math.PI);let c=r+a/2,d=i+o/2,l=r+a/2,f=i+o/2;h>=0&&h<=.25*Math.PI||h>1.75*Math.PI&&h<=2*Math.PI?(c-=a/2,d-=o/2*Math.tan(u),l+=a/2,f+=o/2*Math.tan(u)):h>.25*Math.PI&&h<=.75*Math.PI?(d-=o/2,c-=a/2/Math.tan(u),f+=o/2,l+=a/2/Math.tan(u)):h>.75*Math.PI&&h<=1.25*Math.PI?(c+=a/2,d+=o/2*Math.tan(u),l-=a/2,f-=o/2*Math.tan(u)):h>1.25*Math.PI&&h<=1.75*Math.PI&&(d+=o/2,c+=a/2/Math.tan(u),f-=o/2,l-=a/2/Math.tan(u)),e=this._window.document.createElementNS("http://www.w3.org/2000/svg","linearGradient"),e.setAttribute("id",s),e.setAttribute("gradientUnits","userSpaceOnUse"),e.setAttribute("x1",String(Math.round(c))),e.setAttribute("y1",String(Math.round(d))),e.setAttribute("x2",String(Math.round(l))),e.setAttribute("y2",String(Math.round(f)))}t.colorStops.forEach(({offset:t,color:n})=>{const r=this._window.document.createElementNS("http://www.w3.org/2000/svg","stop");r.setAttribute("offset",100*t+"%"),r.setAttribute("stop-color",n),e.appendChild(r)}),h.setAttribute("fill",`url('#${s}')`),this._defs.appendChild(e)}else e&&h.setAttribute("fill",e);this._element.appendChild(h)}}v.instanceCount=0;const m=v,y="canvas",b={};for(let t=0;t<=40;t++)b[t]=t;const _={type:y,shape:"square",width:300,height:300,data:"",margin:0,qrOptions:{typeNumber:b[0],mode:void 0,errorCorrectionLevel:"Q"},imageOptions:{saveAsBlob:!0,hideBackgroundDots:!0,imageSize:.4,crossOrigin:void 0,margin:0},dotsOptions:{type:"square",color:"#000",roundSize:!0},backgroundOptions:{round:0,color:"#fff"}};function x(t){const e=Object.assign({},t);if(!e.colorStops||!e.colorStops.length)throw"Field 'colorStops' is required in gradient";return e.rotation?e.rotation=Number(e.rotation):e.rotation=0,e.colorStops=e.colorStops.map(t=>Object.assign(Object.assign({},t),{offset:Number(t.offset)})),e}function S(t){const e=Object.assign({},t);return e.width=Number(e.width),e.height=Number(e.height),e.margin=Number(e.margin),e.imageOptions=Object.assign(Object.assign({},e.imageOptions),{hideBackgroundDots:Boolean(e.imageOptions.hideBackgroundDots),imageSize:Number(e.imageOptions.imageSize),margin:Number(e.imageOptions.margin)}),e.margin>Math.min(e.width,e.height)&&(e.margin=Math.min(e.width,e.height)),e.dotsOptions=Object.assign({},e.dotsOptions),e.dotsOptions.gradient&&(e.dotsOptions.gradient=x(e.dotsOptions.gradient)),e.cornersSquareOptions&&(e.cornersSquareOptions=Object.assign({},e.cornersSquareOptions),e.cornersSquareOptions.gradient&&(e.cornersSquareOptions.gradient=x(e.cornersSquareOptions.gradient))),e.cornersDotOptions&&(e.cornersDotOptions=Object.assign({},e.cornersDotOptions),e.cornersDotOptions.gradient&&(e.cornersDotOptions.gradient=x(e.cornersDotOptions.gradient))),e.backgroundOptions&&(e.backgroundOptions=Object.assign({},e.backgroundOptions),e.backgroundOptions.gradient&&(e.backgroundOptions.gradient=x(e.backgroundOptions.gradient))),e}var A=n(873),C=n.n(A);function P(t){if(!t)throw new Error("Extension must be defined");"."===t[0]&&(t=t.substring(1));const e={bmp:"image/bmp",gif:"image/gif",ico:"image/vnd.microsoft.icon",jpeg:"image/jpeg",jpg:"image/jpeg",png:"image/png",svg:"image/svg+xml",tif:"image/tiff",tiff:"image/tiff",webp:"image/webp",pdf:"application/pdf"}[t.toLowerCase()];if(!e)throw new Error(`Extension "${t}" is not supported`);return e}class O{constructor(t){(null==t?void 0:t.jsdom)?this._window=new t.jsdom("",{resources:"usable"}).window:this._window=window,this._options=t?S(e(_,t)):_,this.update()}static _clearContainer(t){t&&(t.innerHTML="")}_setupSvg(){if(!this._qr)return;const t=new m(this._options,this._window);this._svg=t.getElement(),this._svgDrawingPromise=t.drawQR(this._qr).then(()=>{var e;this._svg&&(null===(e=this._extension)||void 0===e||e.call(this,t.getElement(),this._options))})}_setupCanvas(){var t,e;this._qr&&((null===(t=this._options.nodeCanvas)||void 0===t?void 0:t.createCanvas)?(this._nodeCanvas=this._options.nodeCanvas.createCanvas(this._options.width,this._options.height),this._nodeCanvas.width=this._options.width,this._nodeCanvas.height=this._options.height):(this._domCanvas=document.createElement("canvas"),this._domCanvas.width=this._options.width,this._domCanvas.height=this._options.height),this._setupSvg(),this._canvasDrawingPromise=null===(e=this._svgDrawingPromise)||void 0===e?void 0:e.then(()=>{var t;if(!this._svg)return;const e=this._svg,n=(new this._window.XMLSerializer).serializeToString(e),r=btoa(n),i=`data:${P("svg")};base64,${r}`;if(null===(t=this._options.nodeCanvas)||void 0===t?void 0:t.loadImage)return this._options.nodeCanvas.loadImage(i).then(t=>{var e,n;t.width=this._options.width,t.height=this._options.height,null===(n=null===(e=this._nodeCanvas)||void 0===e?void 0:e.getContext("2d"))||void 0===n||n.drawImage(t,0,0)});{const t=new this._window.Image;return new Promise(e=>{t.onload=()=>{var n,r;null===(r=null===(n=this._domCanvas)||void 0===n?void 0:n.getContext("2d"))||void 0===r||r.drawImage(t,0,0),e()},t.src=i})}}))}async _getElement(t="png"){if(!this._qr)throw"QR code is empty";return"svg"===t.toLowerCase()?(this._svg&&this._svgDrawingPromise||this._setupSvg(),await this._svgDrawingPromise,this._svg):((this._domCanvas||this._nodeCanvas)&&this._canvasDrawingPromise||this._setupCanvas(),await this._canvasDrawingPromise,this._domCanvas||this._nodeCanvas)}update(t){O._clearContainer(this._container),this._options=t?S(e(this._options,t)):this._options,this._options.data&&(this._qr=C()(this._options.qrOptions.typeNumber,this._options.qrOptions.errorCorrectionLevel),this._qr.addData(this._options.data,this._options.qrOptions.mode||function(t){switch(!0){case/^[0-9]*$/.test(t):return"Numeric";case/^[0-9A-Z $%*+\-./:]*$/.test(t):return"Alphanumeric";default:return"Byte"}}(this._options.data)),this._qr.make(),this._options.type===y?this._setupCanvas():this._setupSvg(),this.append(this._container))}append(t){if(t){if("function"!=typeof t.appendChild)throw"Container should be a single DOM node";this._options.type===y?this._domCanvas&&t.appendChild(this._domCanvas):this._svg&&t.appendChild(this._svg),this._container=t}}applyExtension(t){if(!t)throw"Extension function should be defined.";this._extension=t,this.update()}deleteExtension(){this._extension=void 0,this.update()}async getRawData(t="png"){if(!this._qr)throw"QR code is empty";const e=await this._getElement(t),n=P(t);if(!e)return null;if("svg"===t.toLowerCase()){const t=`<?xml version="1.0" standalone="no"?>\r\n${(new this._window.XMLSerializer).serializeToString(e)}`;return"undefined"==typeof Blob||this._options.jsdom?i.from(t):new Blob([t],{type:n})}return new Promise(t=>{const r=e;if("toBuffer"in r)if("image/png"===n)t(r.toBuffer(n));else if("image/jpeg"===n)t(r.toBuffer(n));else{if("application/pdf"!==n)throw Error("Unsupported extension");t(r.toBuffer(n))}else"toBlob"in r&&r.toBlob(t,n,1)})}async download(t){if(!this._qr)throw"QR code is empty";if("undefined"==typeof Blob)throw"Cannot download in Node.js, call getRawData instead.";let e="png",n="qr";"string"==typeof t?(e=t,console.warn("Extension is deprecated as argument for 'download' method, please pass object { name: '...', extension: '...' } as argument")):"object"==typeof t&&null!==t&&(t.name&&(n=t.name),t.extension&&(e=t.extension));const r=await this._getElement(e);if(r)if("svg"===e.toLowerCase()){let t=(new XMLSerializer).serializeToString(r);t='<?xml version="1.0" standalone="no"?>\r\n'+t,o(`data:${P(e)};charset=utf-8,${encodeURIComponent(t)}`,`${n}.svg`)}else o(r.toDataURL(P(e)),`${n}.${e}`)}}const E=O})(),r.default})(),t.exports=r()},7526:(t,e)=>{"use strict";e.byteLength=function(t){var e=s(t),n=e[0],r=e[1];return 3*(n+r)/4-r},e.toByteArray=function(t){var e,n,o=s(t),a=o[0],u=o[1],h=new i(function(t,e,n){return 3*(e+n)/4-n}(0,a,u)),c=0,d=u>0?a-4:a;for(n=0;n<d;n+=4)e=r[t.charCodeAt(n)]<<18|r[t.charCodeAt(n+1)]<<12|r[t.charCodeAt(n+2)]<<6|r[t.charCodeAt(n+3)],h[c++]=e>>16&255,h[c++]=e>>8&255,h[c++]=255&e;2===u&&(e=r[t.charCodeAt(n)]<<2|r[t.charCodeAt(n+1)]>>4,h[c++]=255&e);1===u&&(e=r[t.charCodeAt(n)]<<10|r[t.charCodeAt(n+1)]<<4|r[t.charCodeAt(n+2)]>>2,h[c++]=e>>8&255,h[c++]=255&e);return h},e.fromByteArray=function(t){for(var e,r=t.length,i=r%3,o=[],a=16383,s=0,u=r-i;s<u;s+=a)o.push(h(t,s,s+a>u?u:s+a));1===i?(e=t[r-1],o.push(n[e>>2]+n[e<<4&63]+"==")):2===i&&(e=(t[r-2]<<8)+t[r-1],o.push(n[e>>10]+n[e>>4&63]+n[e<<2&63]+"="));return o.join("")};for(var n=[],r=[],i="undefined"!=typeof Uint8Array?Uint8Array:Array,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",a=0;a<64;++a)n[a]=o[a],r[o.charCodeAt(a)]=a;function s(t){var e=t.length;if(e%4>0)throw new Error("Invalid string. Length must be a multiple of 4");var n=t.indexOf("=");return-1===n&&(n=e),[n,n===e?0:4-n%4]}function u(t){return n[t>>18&63]+n[t>>12&63]+n[t>>6&63]+n[63&t]}function h(t,e,n){for(var r,i=[],o=e;o<n;o+=3)r=(t[o]<<16&16711680)+(t[o+1]<<8&65280)+(255&t[o+2]),i.push(u(r));return i.join("")}r["-".charCodeAt(0)]=62,r["_".charCodeAt(0)]=63}},e={};function n(r){var i=e[r];if(void 0!==i)return i.exports;var o=e[r]={exports:{}};return t[r].call(o.exports,o,o.exports,n),o.exports}n.n=t=>{var e=t&&t.__esModule?()=>t.default:()=>t;return n.d(e,{a:e}),e},n.d=(t,e)=>{for(var r in e)n.o(e,r)&&!n.o(t,r)&&Object.defineProperty(t,r,{enumerable:!0,get:e[r]})},n.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(t){if("object"==typeof window)return window}}(),n.o=(t,e)=>Object.prototype.hasOwnProperty.call(t,e),(()=>{"use strict";var t=n(7283),e=n.n(t);function r(t){return r="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":typeof t},r(t)}function i(t,e){var n=Object.keys(t);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(t);e&&(r=r.filter(function(e){return Object.getOwnPropertyDescriptor(t,e).enumerable})),n.push.apply(n,r)}return n}function o(t){for(var e=1;e<arguments.length;e++){var n=null!=arguments[e]?arguments[e]:{};e%2?i(Object(n),!0).forEach(function(e){a(t,e,n[e])}):Object.getOwnPropertyDescriptors?Object.defineProperties(t,Object.getOwnPropertyDescriptors(n)):i(Object(n)).forEach(function(e){Object.defineProperty(t,e,Object.getOwnPropertyDescriptor(n,e))})}return t}function a(t,e,n){return(e=function(t){var e=function(t,e){if("object"!=r(t)||!t)return t;var n=t[Symbol.toPrimitive];if(void 0!==n){var i=n.call(t,e||"default");if("object"!=r(i))return i;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===e?String:Number)(t)}(t,"string");return"symbol"==r(e)?e:e+""}(e))in t?Object.defineProperty(t,e,{value:n,enumerable:!0,configurable:!0,writable:!0}):t[e]=n,t}function s(){var t,e,n="function"==typeof Symbol?Symbol:{},r=n.iterator||"@@iterator",i=n.toStringTag||"@@toStringTag";function o(n,r,i,o){var s=r&&r.prototype instanceof h?r:h,c=Object.create(s.prototype);return u(c,"_invoke",function(n,r,i){var o,s,u,h=0,c=i||[],d=!1,l={p:0,n:0,v:t,a:f,f:f.bind(t,4),d:function(e,n){return o=e,s=0,u=t,l.n=n,a}};function f(n,r){for(s=n,u=r,e=0;!d&&h&&!i&&e<c.length;e++){var i,o=c[e],f=l.p,g=o[2];n>3?(i=g===r)&&(u=o[(s=o[4])?5:(s=3,3)],o[4]=o[5]=t):o[0]<=f&&((i=n<2&&f<o[1])?(s=0,l.v=r,l.n=o[1]):f<g&&(i=n<3||o[0]>r||r>g)&&(o[4]=n,o[5]=r,l.n=g,s=0))}if(i||n>1)return a;throw d=!0,r}return function(i,c,g){if(h>1)throw TypeError("Generator is already running");for(d&&1===c&&f(c,g),s=c,u=g;(e=s<2?t:u)||!d;){o||(s?s<3?(s>1&&(l.n=-1),f(s,u)):l.n=u:l.v=u);try{if(h=2,o){if(s||(i="next"),e=o[i]){if(!(e=e.call(o,u)))throw TypeError("iterator result is not an object");if(!e.done)return e;u=e.value,s<2&&(s=0)}else 1===s&&(e=o.return)&&e.call(o),s<2&&(u=TypeError("The iterator does not provide a '"+i+"' method"),s=1);o=t}else if((e=(d=l.n<0)?u:n.call(r,l))!==a)break}catch(e){o=t,s=1,u=e}finally{h=1}}return{value:e,done:d}}}(n,i,o),!0),c}var a={};function h(){}function c(){}function d(){}e=Object.getPrototypeOf;var l=[][r]?e(e([][r]())):(u(e={},r,function(){return this}),e),f=d.prototype=h.prototype=Object.create(l);function g(t){return Object.setPrototypeOf?Object.setPrototypeOf(t,d):(t.__proto__=d,u(t,i,"GeneratorFunction")),t.prototype=Object.create(f),t}return c.prototype=d,u(f,"constructor",d),u(d,"constructor",c),c.displayName="GeneratorFunction",u(d,i,"GeneratorFunction"),u(f),u(f,i,"Generator"),u(f,r,function(){return this}),u(f,"toString",function(){return"[object Generator]"}),(s=function(){return{w:o,m:g}})()}function u(t,e,n,r){var i=Object.defineProperty;try{i({},"",{})}catch(t){i=0}u=function(t,e,n,r){function o(e,n){u(t,e,function(t){return this._invoke(e,n,t)})}e?i?i(t,e,{value:n,enumerable:!r,configurable:!r,writable:!r}):t[e]=n:(o("next",0),o("throw",1),o("return",2))},u(t,e,n,r)}function h(t,e,n,r,i,o,a){try{var s=t[o](a),u=s.value}catch(t){return void n(t)}s.done?e(u):Promise.resolve(u).then(r,i)}function c(t){return function(){var e=this,n=arguments;return new Promise(function(r,i){var o=t.apply(e,n);function a(t){h(o,r,i,a,s,"next",t)}function s(t){h(o,r,i,a,s,"throw",t)}a(void 0)})}}window.QRCodeModal={init:function(){this.bindEvents()},bindEvents:function(){var t=this;document.addEventListener("click",function(){var e=c(s().m(function e(n){var r,i,o,a;return s().w(function(e){for(;;)switch(e.n){case 0:if(!(r=n.target.closest(".qr-code-btn"))){e.n=1;break}return n.preventDefault(),i=r.dataset.qrData,o=r.dataset.fishBoxName,t.showQRModal(i,o),e.a(2);case 1:if(!(a=n.target.closest(".bulk-qr-print-btn"))){e.n=3;break}return n.preventDefault(),e.n=2,t.printBulkQRCodes(a);case 2:return e.a(2);case 3:(n.target.classList.contains("qr-modal-overlay")||n.target.closest(".qr-modal-close"))&&t.hideQRModal();case 4:return e.a(2)}},e)}));return function(t){return e.apply(this,arguments)}}()),document.addEventListener("keydown",function(e){"Escape"===e.key&&t.hideQRModal()})},getQRCodeOptions:function(t){var e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:256;return{width:e,height:e,type:arguments.length>2&&void 0!==arguments[2]?arguments[2]:"svg",data:t,dotsOptions:{color:"#2563eb",type:"rounded"},backgroundOptions:{color:"#ffffff"},cornersSquareOptions:{color:"#1d4ed8",type:"extra-rounded"},cornersDotOptions:{color:"#1e40af",type:"dot"},qrOptions:{errorCorrectionLevel:"M"}}},createQRCode:function(t){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:256,r=arguments.length>2&&void 0!==arguments[2]?arguments[2]:"svg";return new(e())(this.getQRCodeOptions(t,n,r))},showQRModal:function(t,e){this.hideQRModal();var n='\n            <div id="qr-modal" class="fixed inset-0 z-50 overflow-y-auto qr-modal-overlay" aria-labelledby="modal-title" role="dialog" aria-modal="true">\n                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">\n                    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>\n                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>\n\n                    <div class="relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">\n                        <div class="bg-white px-6 py-4 border-b border-gray-200">\n                            <div class="flex items-center justify-between">\n                                <h3 class="text-lg font-semibold text-gray-900" id="modal-title">\n                                    QR Code - '.concat(this.escapeHtml(e),'\n                                </h3>\n                                <button class="qr-modal-close text-gray-400 hover:text-gray-600 transition-colors" type="button">\n                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">\n                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n\n                        <div class="bg-white px-6 py-6">\n                            <div class="flex flex-col items-center">\n                                <div id="qr-code-container" class="mb-4"></div>\n                                <p class="text-sm text-gray-600 text-center mb-4">\n                                    Scan this QR code to view fish box details\n                                </p>\n                                <div class="flex space-x-3">\n                                    <button id="download-png" type="button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">\n                                        Download PNG\n                                    </button>\n                                    <button id="download-svg" type="button" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">\n                                        Download SVG\n                                    </button>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ');document.body.insertAdjacentHTML("beforeend",n),this.generateQRCode(t)},generateQRCode:function(t){var e=this.createQRCode(t,256),n=document.getElementById("qr-code-container");e.append(n),document.getElementById("download-png").addEventListener("click",function(){e.download({name:"qr-code-".concat(Date.now()),extension:"png"})}),document.getElementById("download-svg").addEventListener("click",function(){e.download({name:"qr-code-".concat(Date.now()),extension:"svg"})}),this.currentQRCode=e},getBulkPrintBoxes:function(t){var e=t.dataset.bulkQrSource,n=e?document.getElementById(e):null;if(!n)return[];try{var r=JSON.parse(n.textContent||"[]");return Array.isArray(r)?r:[]}catch(t){return this.notify("Bulk QR data could not be read. Please refresh the page and try again.","error"),[]}},getBulkQrPrintSize:function(t){var e=t.dataset.bulkQrSizeSource,n=e?document.getElementById(e):null,r=Number.parseInt((null==n?void 0:n.value)||"",10);return[150,180,220].includes(r)?r:180},getBulkQrSizeLabel:function(t){return{150:"Small",180:"Medium",220:"Large"}[t]||"Medium"},getBulkQrPrintDimension:function(t){return{150:220,180:320,220:560}[t]||320},renderBulkQrMarkup:function(t){var e=arguments,n=this;return c(s().m(function r(){var i,o,a;return s().w(function(r){for(;;)switch(r.n){case 0:return i=e.length>1&&void 0!==e[1]?e[1]:180,o=document.createElement("div"),n.createQRCode(t,i,"canvas").append(o),r.n=1,n.waitForBulkQrCanvas(o);case 1:if(a=r.v){r.n=2;break}return r.a(2,o.innerHTML);case 2:return r.a(2,'<img src="'.concat(a.toDataURL("image/png"),'" width="').concat(i,'" height="').concat(i,'" alt="Fish box QR code">'))}},r)}))()},waitForBulkQrCanvas:function(t){var e=this;return new Promise(function(n){var r=0,i=function(){var o=t.querySelector("canvas");o&&e.isCanvasReadyForPrint(o)?n(o):(r+=1)>=90?n(o||null):window.requestAnimationFrame(i)};i()})},isCanvasReadyForPrint:function(t){if(!t||0===t.width||0===t.height)return!1;try{var e=t.getContext("2d",{willReadFrequently:!0});if(!e)return!0;for(var n=Math.min(t.width,t.height,80),r=Math.max(0,Math.floor((t.width-n)/2)),i=Math.max(0,Math.floor((t.height-n)/2)),o=e.getImageData(r,i,n,n).data,a=0;a<o.length;a+=4){var s=o[a],u=o[a+1],h=o[a+2];if(o[a+3]>0&&(s<245||u<245||h<245))return!0}}catch(t){return!0}return!1},printBulkQRCodes:function(t){var e=this;return c(s().m(function n(){var r,i,a,u,h,d;return s().w(function(n){for(;;)switch(n.p=n.n){case 0:if(!t.disabled){n.n=1;break}return n.a(2);case 1:if(0!==(r=e.getBulkPrintBoxes(t)).length){n.n=2;break}return e.notify("No fish boxes match the current filters for bulk QR printing.","info"),n.a(2);case 2:return i=t.innerHTML,a=e.getBulkQrPrintSize(t),u=e.getBulkQrPrintDimension(a),h=e.openEdgePrintWindow(),t.disabled=!0,t.innerHTML='\n            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">\n                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>\n                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>\n            </svg>\n            <span>Preparing QR...</span>\n        ',n.p=3,n.n=4,Promise.all(r.map(function(){var t=c(s().m(function t(n){var r,i,a,h,c;return s().w(function(t){for(;;)switch(t.n){case 0:return r=o,i=o({},n),a={},t.n=1,e.renderBulkQrMarkup(n.qr_code,u);case 1:return h=t.v,c={qrMarkup:h},t.a(2,r(i,a,c))}},t)}));return function(e){return t.apply(this,arguments)}}()));case 4:return d=n.v,n.n=5,e.printDocument(e.buildBulkPrintDocument(d,t.dataset.filterSummary||"",a,u),h);case 5:n.n=7;break;case 6:n.p=6,n.v,h&&!h.closed&&h.close(),e.notify("Bulk QR print could not be prepared. Please try again.","error");case 7:return n.p=7,t.disabled=!1,t.innerHTML=i,n.f(7);case 8:return n.a(2)}},n,null,[[3,6,7,8]])}))()},isMicrosoftEdge:function(){return/\bEdg\//.test(window.navigator.userAgent)},openEdgePrintWindow:function(){if(!this.isMicrosoftEdge())return null;var t=window.open("","_blank");return t?(t.document.open(),t.document.write('\n            <!DOCTYPE html>\n            <html lang="en">\n                <head>\n                    <meta charset="utf-8">\n                    <title>Preparing QR Print</title>\n                    <style>\n                        body {\n                            margin: 0;\n                            min-height: 100vh;\n                            display: grid;\n                            place-items: center;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n                    </style>\n                </head>\n                <body>\n                    <p>Preparing QR print...</p>\n                </body>\n            </html>\n        '),t.document.close(),t):null},waitForPrintDocument:function(t){var e,n=new Promise(function(e){"complete"!==t.readyState?t.addEventListener("readystatechange",function(){"complete"===t.readyState&&e()},{once:!0}):e()}),r=(null===(e=t.fonts)||void 0===e||null===(e=e.ready)||void 0===e?void 0:e.catch(function(){return null}))||Promise.resolve();return Promise.race([Promise.all([n,r]),new Promise(function(t){return window.setTimeout(t,1200)})])},printDocument:function(t){var e=arguments,n=this;return c(s().m(function r(){var i,o,a,u,h,c;return s().w(function(r){for(;;)switch(r.n){case 0:if(!(i=e.length>1&&void 0!==e[1]?e[1]:null)||i.closed){r.n=2;break}return r.n=1,n.printWindowDocument(i,t);case 1:return r.a(2);case 2:if((o=document.createElement("iframe")).style.position="fixed",o.style.right="0",o.style.bottom="0",o.style.width="1px",o.style.height="1px",o.style.border="0",o.style.opacity="0",o.setAttribute("aria-hidden","true"),document.body.appendChild(o),a=o.contentWindow,u=null==a?void 0:a.document,a&&u){r.n=3;break}throw o.remove(),new Error("Print frame could not be created.");case 3:return h=null,c=function(){h&&window.clearTimeout(h),o.remove()},u.open(),u.write(t),u.close(),r.n=4,n.waitForPrintDocument(u);case 4:a.addEventListener("afterprint",c,{once:!0}),h=window.setTimeout(c,6e4),a.focus(),a.print();case 5:return r.a(2)}},r)}))()},printWindowDocument:function(t,e){var n=this;return c(s().m(function r(){var i;return s().w(function(r){for(;;)switch(r.n){case 0:return(i=t.document).open(),i.write(e),i.close(),r.n=1,n.waitForPrintDocument(i);case 1:t.focus(),window.setTimeout(function(){t.print()},250);case 2:return r.a(2)}},r)}))()},buildBulkPrintDocument:function(t,e){for(var n=this,r=arguments.length>2&&void 0!==arguments[2]?arguments[2]:180,i=arguments.length>3&&void 0!==arguments[3]?arguments[3]:320,o=r<=150?4:r>=220?1:2,a=1===o?1:2,s=1===o?"250mm":"125mm",u=[],h=0;h<t.length;h+=o)u.push(t.slice(h,h+o));var c=function(t){return'\n            <article class="qr-card">\n                <div class="qr-card__code">\n                    '.concat(t.qrMarkup,'\n                </div>\n                <div class="qr-card__meta">\n                    <h2>').concat(n.escapeHtml(t.name),"</h2>\n                    <p>").concat(n.escapeHtml(t.fish_name||"Unassigned"),'</p>\n                    <span class="status">').concat(n.escapeHtml(t.status),'</span>\n                    <div class="qr-value">').concat(n.escapeHtml(t.qr_code),"</div>\n                </div>\n            </article>\n        ")},d=u.map(function(t){return'\n            <main class="sheet">\n                <section class="qr-grid">\n                    '.concat(t.map(c).join(""),"\n                </section>\n            </main>\n        ")}).join("");return'\n            <!DOCTYPE html>\n            <html lang="en">\n                <head>\n                    <meta charset="utf-8">\n                    <title>Broker Fish Box QR Codes</title>\n                    <style>\n                        * {\n                            box-sizing: border-box;\n                        }\n\n                        body {\n                            margin: 0;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n\n                        .sheet {\n                            min-height: 273mm;\n                            padding: 0;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                            break-after: page;\n                            page-break-after: always;\n                        }\n\n                        .sheet:last-child {\n                            break-after: auto;\n                            page-break-after: auto;\n                        }\n\n                        .qr-grid {\n                            width: 100%;\n                            display: grid;\n                            grid-template-columns: repeat('.concat(a,", minmax(0, 1fr));\n                            gap: 18px;\n                        }\n\n                        .qr-card {\n                            border: 1px solid #cbd5e1;\n                            border-radius: 18px;\n                            padding: 22px;\n                            min-height: ").concat(s,";\n                            display: flex;\n                            flex-direction: column;\n                            align-items: center;\n                            justify-content: center;\n                            gap: 18px;\n                            page-break-inside: avoid;\n                            break-inside: avoid;\n                        }\n\n                        .qr-card__code {\n                            width: ").concat(i,"px;\n                            height: ").concat(i,"px;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                        }\n\n                        .qr-card__code svg,\n                        .qr-card__code canvas,\n                        .qr-card__code img {\n                            width: ").concat(i,"px;\n                            height: ").concat(i,'px;\n                            display: block;\n                        }\n\n                        .qr-card__meta {\n                            width: 100%;\n                            text-align: center;\n                        }\n\n                        .qr-card__meta h2 {\n                            margin: 0;\n                            font-size: 18px;\n                            line-height: 1.2;\n                        }\n\n                        .qr-card__meta p {\n                            margin: 6px 0 10px;\n                            color: #475569;\n                            font-size: 13px;\n                        }\n\n                        .status {\n                            display: inline-flex;\n                            align-items: center;\n                            justify-content: center;\n                            border-radius: 999px;\n                            background: #dbeafe;\n                            color: #1d4ed8;\n                            font-size: 11px;\n                            font-weight: 700;\n                            letter-spacing: 0.08em;\n                            padding: 5px 10px;\n                            text-transform: uppercase;\n                        }\n\n                        .qr-value {\n                            margin-top: 12px;\n                            color: #64748b;\n                            font-family: "Courier New", monospace;\n                            font-size: 11px;\n                            word-break: break-all;\n                        }\n\n                        @page {\n                            size: A4 portrait;\n                            margin: 12mm;\n                        }\n\n                        @media print {\n                            .sheet {\n                                padding: 0;\n                            }\n                        }\n                    </style>\n                </head>\n                <body>\n                    ').concat(d,"\n                </body>\n            </html>\n        ")},escapeHtml:function(t){return String(null!=t?t:"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")},notify:function(t){var e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:"info";if(window.toastr&&"function"==typeof window.toastr[e])window.toastr[e](t);else if(window.Swal)window.Swal.fire({toast:!0,position:"top-end",icon:e,title:t,showConfirmButton:!1,timer:2400,timerProgressBar:!0});else{var n=document.createElement("div");n.textContent=t,n.setAttribute("role","status"),n.style.cssText=["position:fixed","right:1rem","top:1rem","z-index:9999","max-width:22rem","padding:0.85rem 1rem","border-radius:0.75rem","background:#0f172a","color:#fff","box-shadow:0 16px 36px rgba(15,23,42,0.22)","font:600 0.875rem system-ui,sans-serif"].join(";"),document.body.appendChild(n),window.setTimeout(function(){return n.remove()},2800)}},hideQRModal:function(){var t=document.getElementById("qr-modal");t&&t.remove(),this.currentQRCode=null}},document.addEventListener("DOMContentLoaded",function(){window.QRCodeModal.init()})})()})();
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./node_modules/base64-js/index.js":
+/*!*****************************************!*\
+  !*** ./node_modules/base64-js/index.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
+
+function getLens (b64) {
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength (b64) {
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function toByteArray (b64) {
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
+
+  var i
+  for (i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
+  }
+
+  return parts.join('')
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/buffer/index.js":
+/*!**************************************!*\
+  !*** ./node_modules/buffer/index.js ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <http://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+
+
+var base64 = __webpack_require__(/*! base64-js */ "./node_modules/base64-js/index.js")
+var ieee754 = __webpack_require__(/*! ieee754 */ "./node_modules/ieee754/index.js")
+var isArray = __webpack_require__(/*! isarray */ "./node_modules/isarray/index.js")
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
+
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = __webpack_require__.g.TYPED_ARRAY_SUPPORT !== undefined
+  ? __webpack_require__.g.TYPED_ARRAY_SUPPORT
+  : typedArraySupport()
+
+/*
+ * Export kMaxLength after typed array support is determined.
+ */
+exports.kMaxLength = kMaxLength()
+
+function typedArraySupport () {
+  try {
+    var arr = new Uint8Array(1)
+    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
+    return arr.foo() === 42 && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+  } catch (e) {
+    return false
+  }
+}
+
+function kMaxLength () {
+  return Buffer.TYPED_ARRAY_SUPPORT
+    ? 0x7fffffff
+    : 0x3fffffff
+}
+
+function createBuffer (that, length) {
+  if (kMaxLength() < length) {
+    throw new RangeError('Invalid typed array length')
+  }
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(length)
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    if (that === null) {
+      that = new Buffer(length)
+    }
+    that.length = length
+  }
+
+  return that
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+    return new Buffer(arg, encodingOrOffset, length)
+  }
+
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new Error(
+        'If encoding is specified then the first argument must be a string'
+      )
+    }
+    return allocUnsafe(this, arg)
+  }
+  return from(this, arg, encodingOrOffset, length)
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+// TODO: Legacy, not needed anymore. Remove in next major version.
+Buffer._augment = function (arr) {
+  arr.__proto__ = Buffer.prototype
+  return arr
+}
+
+function from (that, value, encodingOrOffset, length) {
+  if (typeof value === 'number') {
+    throw new TypeError('"value" argument must not be a number')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return fromArrayBuffer(that, value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'string') {
+    return fromString(that, value, encodingOrOffset)
+  }
+
+  return fromObject(that, value)
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(null, value, encodingOrOffset, length)
+}
+
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+  if (typeof Symbol !== 'undefined' && Symbol.species &&
+      Buffer[Symbol.species] === Buffer) {
+    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+    Object.defineProperty(Buffer, Symbol.species, {
+      value: null,
+      configurable: true
+    })
+  }
+}
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be a number')
+  } else if (size < 0) {
+    throw new RangeError('"size" argument must not be negative')
+  }
+}
+
+function alloc (that, size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(that, size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(that, size).fill(fill, encoding)
+      : createBuffer(that, size).fill(fill)
+  }
+  return createBuffer(that, size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(null, size, fill, encoding)
+}
+
+function allocUnsafe (that, size) {
+  assertSize(size)
+  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < size; ++i) {
+      that[i] = 0
+    }
+  }
+  return that
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(null, size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(null, size)
+}
+
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('"encoding" must be a valid string encoding')
+  }
+
+  var length = byteLength(string, encoding) | 0
+  that = createBuffer(that, length)
+
+  var actual = that.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    that = that.slice(0, actual)
+  }
+
+  return that
+}
+
+function fromArrayLike (that, array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0
+  that = createBuffer(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function fromArrayBuffer (that, array, byteOffset, length) {
+  array.byteLength // this throws if `array` is not a valid ArrayBuffer
+
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('\'offset\' is out of bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('\'length\' is out of bounds')
+  }
+
+  if (byteOffset === undefined && length === undefined) {
+    array = new Uint8Array(array)
+  } else if (length === undefined) {
+    array = new Uint8Array(array, byteOffset)
+  } else {
+    array = new Uint8Array(array, byteOffset, length)
+  }
+
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = array
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that = fromArrayLike(that, array)
+  }
+  return that
+}
+
+function fromObject (that, obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    that = createBuffer(that, len)
+
+    if (that.length === 0) {
+      return that
+    }
+
+    obj.copy(that, 0, 0, len)
+    return that
+  }
+
+  if (obj) {
+    if ((typeof ArrayBuffer !== 'undefined' &&
+        obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
+      if (typeof obj.length !== 'number' || isnan(obj.length)) {
+        return createBuffer(that, 0)
+      }
+      return fromArrayLike(that, obj)
+    }
+
+    if (obj.type === 'Buffer' && isArray(obj.data)) {
+      return fromArrayLike(that, obj.data)
+    }
+  }
+
+  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
+}
+
+function checked (length) {
+  // Note: cannot use `length < kMaxLength()` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength()) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers')
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
+      (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    string = '' + string
+  }
+
+  var len = string.length
+  if (len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+      case undefined:
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+// Buffer instances.
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length | 0
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError('Argument must be a Buffer')
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset  // Coerce to Number.
+  if (isNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (Buffer.TYPED_ARRAY_SUPPORT &&
+        typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length
+  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0
+    if (isFinite(length)) {
+      length = length | 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+      : (firstByte > 0xBF) ? 2
+      : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = this.subarray(start, end)
+    newBuf.__proto__ = Buffer.prototype
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; ++i) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+  var i
+
+  if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; ++i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, start + len),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if (code < 256) {
+        val = code
+      }
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : utf8ToBytes(new Buffer(val, encoding).toString())
+    var len = bytes.length
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+function isnan (val) {
+  return val !== val // eslint-disable-line no-self-compare
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/ieee754/index.js":
+/*!***************************************!*\
+  !*** ./node_modules/ieee754/index.js ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = ((value * c) - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/isarray/index.js":
+/*!***************************************!*\
+  !*** ./node_modules/isarray/index.js ***!
+  \***************************************/
+/***/ ((module) => {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/qr-code-styling/lib/qr-code-styling.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/qr-code-styling/lib/qr-code-styling.js ***!
+  \*************************************************************/
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+/* provided dependency */ var Buffer = __webpack_require__(/*! buffer */ "./node_modules/buffer/index.js")["Buffer"];
+!function(t,e){ true?module.exports=e():0}(this,(()=>(()=>{var t={873:(t,e)=>{var i,r,n=function(){var t=function(t,e){var i=t,r=s[e],n=null,o=0,h=null,p=[],v={},m=function(t,e){n=function(t){for(var e=new Array(t),i=0;i<t;i+=1){e[i]=new Array(t);for(var r=0;r<t;r+=1)e[i][r]=null}return e}(o=4*i+17),b(0,0),b(o-7,0),b(0,o-7),x(),y(),C(t,e),i>=7&&S(t),null==h&&(h=M(i,r,p)),A(h,e)},b=function(t,e){for(var i=-1;i<=7;i+=1)if(!(t+i<=-1||o<=t+i))for(var r=-1;r<=7;r+=1)e+r<=-1||o<=e+r||(n[t+i][e+r]=0<=i&&i<=6&&(0==r||6==r)||0<=r&&r<=6&&(0==i||6==i)||2<=i&&i<=4&&2<=r&&r<=4)},y=function(){for(var t=8;t<o-8;t+=1)null==n[t][6]&&(n[t][6]=t%2==0);for(var e=8;e<o-8;e+=1)null==n[6][e]&&(n[6][e]=e%2==0)},x=function(){for(var t=a.getPatternPosition(i),e=0;e<t.length;e+=1)for(var r=0;r<t.length;r+=1){var o=t[e],s=t[r];if(null==n[o][s])for(var h=-2;h<=2;h+=1)for(var d=-2;d<=2;d+=1)n[o+h][s+d]=-2==h||2==h||-2==d||2==d||0==h&&0==d}},S=function(t){for(var e=a.getBCHTypeNumber(i),r=0;r<18;r+=1){var s=!t&&1==(e>>r&1);n[Math.floor(r/3)][r%3+o-8-3]=s}for(r=0;r<18;r+=1)s=!t&&1==(e>>r&1),n[r%3+o-8-3][Math.floor(r/3)]=s},C=function(t,e){for(var i=r<<3|e,s=a.getBCHTypeInfo(i),h=0;h<15;h+=1){var d=!t&&1==(s>>h&1);h<6?n[h][8]=d:h<8?n[h+1][8]=d:n[o-15+h][8]=d}for(h=0;h<15;h+=1)d=!t&&1==(s>>h&1),h<8?n[8][o-h-1]=d:h<9?n[8][15-h-1+1]=d:n[8][15-h-1]=d;n[o-8][8]=!t},A=function(t,e){for(var i=-1,r=o-1,s=7,h=0,d=a.getMaskFunction(e),u=o-1;u>0;u-=2)for(6==u&&(u-=1);;){for(var c=0;c<2;c+=1)if(null==n[r][u-c]){var l=!1;h<t.length&&(l=1==(t[h]>>>s&1)),d(r,u-c)&&(l=!l),n[r][u-c]=l,-1==(s-=1)&&(h+=1,s=7)}if((r+=i)<0||o<=r){r-=i,i=-i;break}}},M=function(t,e,i){for(var r=u.getRSBlocks(t,e),n=c(),o=0;o<i.length;o+=1){var s=i[o];n.put(s.getMode(),4),n.put(s.getLength(),a.getLengthInBits(s.getMode(),t)),s.write(n)}var h=0;for(o=0;o<r.length;o+=1)h+=r[o].dataCount;if(n.getLengthInBits()>8*h)throw"code length overflow. ("+n.getLengthInBits()+">"+8*h+")";for(n.getLengthInBits()+4<=8*h&&n.put(0,4);n.getLengthInBits()%8!=0;)n.putBit(!1);for(;!(n.getLengthInBits()>=8*h||(n.put(236,8),n.getLengthInBits()>=8*h));)n.put(17,8);return function(t,e){for(var i=0,r=0,n=0,o=new Array(e.length),s=new Array(e.length),h=0;h<e.length;h+=1){var u=e[h].dataCount,c=e[h].totalCount-u;r=Math.max(r,u),n=Math.max(n,c),o[h]=new Array(u);for(var l=0;l<o[h].length;l+=1)o[h][l]=255&t.getBuffer()[l+i];i+=u;var g=a.getErrorCorrectPolynomial(c),f=d(o[h],g.getLength()-1).mod(g);for(s[h]=new Array(g.getLength()-1),l=0;l<s[h].length;l+=1){var w=l+f.getLength()-s[h].length;s[h][l]=w>=0?f.getAt(w):0}}var p=0;for(l=0;l<e.length;l+=1)p+=e[l].totalCount;var v=new Array(p),_=0;for(l=0;l<r;l+=1)for(h=0;h<e.length;h+=1)l<o[h].length&&(v[_]=o[h][l],_+=1);for(l=0;l<n;l+=1)for(h=0;h<e.length;h+=1)l<s[h].length&&(v[_]=s[h][l],_+=1);return v}(n,r)};v.addData=function(t,e){var i=null;switch(e=e||"Byte"){case"Numeric":i=l(t);break;case"Alphanumeric":i=g(t);break;case"Byte":i=f(t);break;case"Kanji":i=w(t);break;default:throw"mode:"+e}p.push(i),h=null},v.isDark=function(t,e){if(t<0||o<=t||e<0||o<=e)throw t+","+e;return n[t][e]},v.getModuleCount=function(){return o},v.make=function(){if(i<1){for(var t=1;t<40;t++){for(var e=u.getRSBlocks(t,r),n=c(),o=0;o<p.length;o++){var s=p[o];n.put(s.getMode(),4),n.put(s.getLength(),a.getLengthInBits(s.getMode(),t)),s.write(n)}var h=0;for(o=0;o<e.length;o++)h+=e[o].dataCount;if(n.getLengthInBits()<=8*h)break}i=t}m(!1,function(){for(var t=0,e=0,i=0;i<8;i+=1){m(!0,i);var r=a.getLostPoint(v);(0==i||t>r)&&(t=r,e=i)}return e}())},v.createTableTag=function(t,e){t=t||2;var i="";i+='<table style="',i+=" border-width: 0px; border-style: none;",i+=" border-collapse: collapse;",i+=" padding: 0px; margin: "+(e=void 0===e?4*t:e)+"px;",i+='">',i+="<tbody>";for(var r=0;r<v.getModuleCount();r+=1){i+="<tr>";for(var n=0;n<v.getModuleCount();n+=1)i+='<td style="',i+=" border-width: 0px; border-style: none;",i+=" border-collapse: collapse;",i+=" padding: 0px; margin: 0px;",i+=" width: "+t+"px;",i+=" height: "+t+"px;",i+=" background-color: ",i+=v.isDark(r,n)?"#000000":"#ffffff",i+=";",i+='"/>';i+="</tr>"}return(i+="</tbody>")+"</table>"},v.createSvgTag=function(t,e,i,r){var n={};"object"==typeof arguments[0]&&(t=(n=arguments[0]).cellSize,e=n.margin,i=n.alt,r=n.title),t=t||2,e=void 0===e?4*t:e,(i="string"==typeof i?{text:i}:i||{}).text=i.text||null,i.id=i.text?i.id||"qrcode-description":null,(r="string"==typeof r?{text:r}:r||{}).text=r.text||null,r.id=r.text?r.id||"qrcode-title":null;var o,s,a,h,d=v.getModuleCount()*t+2*e,u="";for(h="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",u+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',u+=n.scalable?"":' width="'+d+'px" height="'+d+'px"',u+=' viewBox="0 0 '+d+" "+d+'" ',u+=' preserveAspectRatio="xMinYMin meet"',u+=r.text||i.text?' role="img" aria-labelledby="'+$([r.id,i.id].join(" ").trim())+'"':"",u+=">",u+=r.text?'<title id="'+$(r.id)+'">'+$(r.text)+"</title>":"",u+=i.text?'<description id="'+$(i.id)+'">'+$(i.text)+"</description>":"",u+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',u+='<path d="',s=0;s<v.getModuleCount();s+=1)for(a=s*t+e,o=0;o<v.getModuleCount();o+=1)v.isDark(s,o)&&(u+="M"+(o*t+e)+","+a+h);return(u+='" stroke="transparent" fill="black"/>')+"</svg>"},v.createDataURL=function(t,e){t=t||2,e=void 0===e?4*t:e;var i=v.getModuleCount()*t+2*e,r=e,n=i-e;return _(i,i,(function(e,i){if(r<=e&&e<n&&r<=i&&i<n){var o=Math.floor((e-r)/t),s=Math.floor((i-r)/t);return v.isDark(s,o)?0:1}return 1}))},v.createImgTag=function(t,e,i){t=t||2,e=void 0===e?4*t:e;var r=v.getModuleCount()*t+2*e,n="";return n+="<img",n+=' src="',n+=v.createDataURL(t,e),n+='"',n+=' width="',n+=r,n+='"',n+=' height="',n+=r,n+='"',i&&(n+=' alt="',n+=$(i),n+='"'),n+"/>"};var $=function(t){for(var e="",i=0;i<t.length;i+=1){var r=t.charAt(i);switch(r){case"<":e+="&lt;";break;case">":e+="&gt;";break;case"&":e+="&amp;";break;case'"':e+="&quot;";break;default:e+=r}}return e};return v.createASCII=function(t,e){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var e,i,r,n,o,s=1*v.getModuleCount()+2*t,a=t,h=s-t,d={"██":"█","█ ":"▀"," █":"▄","  ":" "},u={"██":"▀","█ ":"▀"," █":" ","  ":" "},c="";for(e=0;e<s;e+=2){for(r=Math.floor((e-a)/1),n=Math.floor((e+1-a)/1),i=0;i<s;i+=1)o="█",a<=i&&i<h&&a<=e&&e<h&&v.isDark(r,Math.floor((i-a)/1))&&(o=" "),a<=i&&i<h&&a<=e+1&&e+1<h&&v.isDark(n,Math.floor((i-a)/1))?o+=" ":o+="█",c+=t<1&&e+1>=h?u[o]:d[o];c+="\n"}return s%2&&t>0?c.substring(0,c.length-s-1)+Array(s+1).join("▀"):c.substring(0,c.length-1)}(e);t-=1,e=void 0===e?2*t:e;var i,r,n,o,s=v.getModuleCount()*t+2*e,a=e,h=s-e,d=Array(t+1).join("██"),u=Array(t+1).join("  "),c="",l="";for(i=0;i<s;i+=1){for(n=Math.floor((i-a)/t),l="",r=0;r<s;r+=1)o=1,a<=r&&r<h&&a<=i&&i<h&&v.isDark(n,Math.floor((r-a)/t))&&(o=0),l+=o?d:u;for(n=0;n<t;n+=1)c+=l+"\n"}return c.substring(0,c.length-1)},v.renderTo2dContext=function(t,e){e=e||2;for(var i=v.getModuleCount(),r=0;r<i;r++)for(var n=0;n<i;n++)t.fillStyle=v.isDark(r,n)?"black":"white",t.fillRect(r*e,n*e,e,e)},v};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var e=[],i=0;i<t.length;i+=1){var r=t.charCodeAt(i);e.push(255&r)}return e}}).default,t.createStringToBytes=function(t,e){var i=function(){for(var i=v(t),r=function(){var t=i.read();if(-1==t)throw"eof";return t},n=0,o={};;){var s=i.read();if(-1==s)break;var a=r(),h=r()<<8|r();o[String.fromCharCode(s<<8|a)]=h,n+=1}if(n!=e)throw n+" != "+e;return o}(),r="?".charCodeAt(0);return function(t){for(var e=[],n=0;n<t.length;n+=1){var o=t.charCodeAt(n);if(o<128)e.push(o);else{var s=i[t.charAt(n)];"number"==typeof s?(255&s)==s?e.push(s):(e.push(s>>>8),e.push(255&s)):e.push(r)}}return e}};var e,i,r,n,o,s={L:1,M:0,Q:3,H:2},a=(e=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],i=1335,r=7973,o=function(t){for(var e=0;0!=t;)e+=1,t>>>=1;return e},(n={}).getBCHTypeInfo=function(t){for(var e=t<<10;o(e)-o(i)>=0;)e^=i<<o(e)-o(i);return 21522^(t<<10|e)},n.getBCHTypeNumber=function(t){for(var e=t<<12;o(e)-o(r)>=0;)e^=r<<o(e)-o(r);return t<<12|e},n.getPatternPosition=function(t){return e[t-1]},n.getMaskFunction=function(t){switch(t){case 0:return function(t,e){return(t+e)%2==0};case 1:return function(t,e){return t%2==0};case 2:return function(t,e){return e%3==0};case 3:return function(t,e){return(t+e)%3==0};case 4:return function(t,e){return(Math.floor(t/2)+Math.floor(e/3))%2==0};case 5:return function(t,e){return t*e%2+t*e%3==0};case 6:return function(t,e){return(t*e%2+t*e%3)%2==0};case 7:return function(t,e){return(t*e%3+(t+e)%2)%2==0};default:throw"bad maskPattern:"+t}},n.getErrorCorrectPolynomial=function(t){for(var e=d([1],0),i=0;i<t;i+=1)e=e.multiply(d([1,h.gexp(i)],0));return e},n.getLengthInBits=function(t,e){if(1<=e&&e<10)switch(t){case 1:return 10;case 2:return 9;case 4:case 8:return 8;default:throw"mode:"+t}else if(e<27)switch(t){case 1:return 12;case 2:return 11;case 4:return 16;case 8:return 10;default:throw"mode:"+t}else{if(!(e<41))throw"type:"+e;switch(t){case 1:return 14;case 2:return 13;case 4:return 16;case 8:return 12;default:throw"mode:"+t}}},n.getLostPoint=function(t){for(var e=t.getModuleCount(),i=0,r=0;r<e;r+=1)for(var n=0;n<e;n+=1){for(var o=0,s=t.isDark(r,n),a=-1;a<=1;a+=1)if(!(r+a<0||e<=r+a))for(var h=-1;h<=1;h+=1)n+h<0||e<=n+h||0==a&&0==h||s==t.isDark(r+a,n+h)&&(o+=1);o>5&&(i+=3+o-5)}for(r=0;r<e-1;r+=1)for(n=0;n<e-1;n+=1){var d=0;t.isDark(r,n)&&(d+=1),t.isDark(r+1,n)&&(d+=1),t.isDark(r,n+1)&&(d+=1),t.isDark(r+1,n+1)&&(d+=1),0!=d&&4!=d||(i+=3)}for(r=0;r<e;r+=1)for(n=0;n<e-6;n+=1)t.isDark(r,n)&&!t.isDark(r,n+1)&&t.isDark(r,n+2)&&t.isDark(r,n+3)&&t.isDark(r,n+4)&&!t.isDark(r,n+5)&&t.isDark(r,n+6)&&(i+=40);for(n=0;n<e;n+=1)for(r=0;r<e-6;r+=1)t.isDark(r,n)&&!t.isDark(r+1,n)&&t.isDark(r+2,n)&&t.isDark(r+3,n)&&t.isDark(r+4,n)&&!t.isDark(r+5,n)&&t.isDark(r+6,n)&&(i+=40);var u=0;for(n=0;n<e;n+=1)for(r=0;r<e;r+=1)t.isDark(r,n)&&(u+=1);return i+Math.abs(100*u/e/e-50)/5*10},n),h=function(){for(var t=new Array(256),e=new Array(256),i=0;i<8;i+=1)t[i]=1<<i;for(i=8;i<256;i+=1)t[i]=t[i-4]^t[i-5]^t[i-6]^t[i-8];for(i=0;i<255;i+=1)e[t[i]]=i;return{glog:function(t){if(t<1)throw"glog("+t+")";return e[t]},gexp:function(e){for(;e<0;)e+=255;for(;e>=256;)e-=255;return t[e]}}}();function d(t,e){if(void 0===t.length)throw t.length+"/"+e;var i=function(){for(var i=0;i<t.length&&0==t[i];)i+=1;for(var r=new Array(t.length-i+e),n=0;n<t.length-i;n+=1)r[n]=t[n+i];return r}(),r={getAt:function(t){return i[t]},getLength:function(){return i.length},multiply:function(t){for(var e=new Array(r.getLength()+t.getLength()-1),i=0;i<r.getLength();i+=1)for(var n=0;n<t.getLength();n+=1)e[i+n]^=h.gexp(h.glog(r.getAt(i))+h.glog(t.getAt(n)));return d(e,0)},mod:function(t){if(r.getLength()-t.getLength()<0)return r;for(var e=h.glog(r.getAt(0))-h.glog(t.getAt(0)),i=new Array(r.getLength()),n=0;n<r.getLength();n+=1)i[n]=r.getAt(n);for(n=0;n<t.getLength();n+=1)i[n]^=h.gexp(h.glog(t.getAt(n))+e);return d(i,0).mod(t)}};return r}var u=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],e=function(t,e){var i={};return i.totalCount=t,i.dataCount=e,i},i={getRSBlocks:function(i,r){var n=function(e,i){switch(i){case s.L:return t[4*(e-1)+0];case s.M:return t[4*(e-1)+1];case s.Q:return t[4*(e-1)+2];case s.H:return t[4*(e-1)+3];default:return}}(i,r);if(void 0===n)throw"bad rs block @ typeNumber:"+i+"/errorCorrectionLevel:"+r;for(var o=n.length/3,a=[],h=0;h<o;h+=1)for(var d=n[3*h+0],u=n[3*h+1],c=n[3*h+2],l=0;l<d;l+=1)a.push(e(u,c));return a}};return i}(),c=function(){var t=[],e=0,i={getBuffer:function(){return t},getAt:function(e){var i=Math.floor(e/8);return 1==(t[i]>>>7-e%8&1)},put:function(t,e){for(var r=0;r<e;r+=1)i.putBit(1==(t>>>e-r-1&1))},getLengthInBits:function(){return e},putBit:function(i){var r=Math.floor(e/8);t.length<=r&&t.push(0),i&&(t[r]|=128>>>e%8),e+=1}};return i},l=function(t){var e=t,i={getMode:function(){return 1},getLength:function(t){return e.length},write:function(t){for(var i=e,n=0;n+2<i.length;)t.put(r(i.substring(n,n+3)),10),n+=3;n<i.length&&(i.length-n==1?t.put(r(i.substring(n,n+1)),4):i.length-n==2&&t.put(r(i.substring(n,n+2)),7))}},r=function(t){for(var e=0,i=0;i<t.length;i+=1)e=10*e+n(t.charAt(i));return e},n=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return i},g=function(t){var e=t,i={getMode:function(){return 2},getLength:function(t){return e.length},write:function(t){for(var i=e,n=0;n+1<i.length;)t.put(45*r(i.charAt(n))+r(i.charAt(n+1)),11),n+=2;n<i.length&&t.put(r(i.charAt(n)),6)}},r=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return i},f=function(e){var i=t.stringToBytes(e);return{getMode:function(){return 4},getLength:function(t){return i.length},write:function(t){for(var e=0;e<i.length;e+=1)t.put(i[e],8)}}},w=function(e){var i=t.stringToBytesFuncs.SJIS;if(!i)throw"sjis not supported.";!function(){var t=i("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var r=i(e),n={getMode:function(){return 8},getLength:function(t){return~~(r.length/2)},write:function(t){for(var e=r,i=0;i+1<e.length;){var n=(255&e[i])<<8|255&e[i+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(i+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),i+=2}if(i<e.length)throw"illegal char at "+(i+1)}};return n},p=function(){var t=[],e={writeByte:function(e){t.push(255&e)},writeShort:function(t){e.writeByte(t),e.writeByte(t>>>8)},writeBytes:function(t,i,r){i=i||0,r=r||t.length;for(var n=0;n<r;n+=1)e.writeByte(t[n+i])},writeString:function(t){for(var i=0;i<t.length;i+=1)e.writeByte(t.charCodeAt(i))},toByteArray:function(){return t},toString:function(){var e="";e+="[";for(var i=0;i<t.length;i+=1)i>0&&(e+=","),e+=t[i];return e+"]"}};return e},v=function(t){var e=t,i=0,r=0,n=0,o={read:function(){for(;n<8;){if(i>=e.length){if(0==n)return-1;throw"unexpected end of file./"+n}var t=e.charAt(i);if(i+=1,"="==t)return n=0,-1;t.match(/^\s$/)||(r=r<<6|s(t.charCodeAt(0)),n+=6)}var o=r>>>n-8&255;return n-=8,o}},s=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return o},_=function(t,e,i){for(var r=function(t,e){var i=t,r=e,n=new Array(t*e),o={setPixel:function(t,e,r){n[e*i+t]=r},write:function(t){t.writeString("GIF87a"),t.writeShort(i),t.writeShort(r),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(i),t.writeShort(r),t.writeByte(0);var e=s(2);t.writeByte(2);for(var n=0;e.length-n>255;)t.writeByte(255),t.writeBytes(e,n,255),n+=255;t.writeByte(e.length-n),t.writeBytes(e,n,e.length-n),t.writeByte(0),t.writeString(";")}},s=function(t){for(var e=1<<t,i=1+(1<<t),r=t+1,o=a(),s=0;s<e;s+=1)o.add(String.fromCharCode(s));o.add(String.fromCharCode(e)),o.add(String.fromCharCode(i));var h,d,u,c=p(),l=(h=c,d=0,u=0,{write:function(t,e){if(t>>>e!=0)throw"length over";for(;d+e>=8;)h.writeByte(255&(t<<d|u)),e-=8-d,t>>>=8-d,u=0,d=0;u|=t<<d,d+=e},flush:function(){d>0&&h.writeByte(u)}});l.write(e,r);var g=0,f=String.fromCharCode(n[g]);for(g+=1;g<n.length;){var w=String.fromCharCode(n[g]);g+=1,o.contains(f+w)?f+=w:(l.write(o.indexOf(f),r),o.size()<4095&&(o.size()==1<<r&&(r+=1),o.add(f+w)),f=w)}return l.write(o.indexOf(f),r),l.write(i,r),l.flush(),c.toByteArray()},a=function(){var t={},e=0,i={add:function(r){if(i.contains(r))throw"dup key:"+r;t[r]=e,e+=1},size:function(){return e},indexOf:function(e){return t[e]},contains:function(e){return void 0!==t[e]}};return i};return o}(t,e),n=0;n<e;n+=1)for(var o=0;o<t;o+=1)r.setPixel(o,n,i(o,n));var s=p();r.write(s);for(var a=function(){var t=0,e=0,i=0,r="",n={},o=function(t){r+=String.fromCharCode(s(63&t))},s=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return n.writeByte=function(r){for(t=t<<8|255&r,e+=8,i+=1;e>=6;)o(t>>>e-6),e-=6},n.flush=function(){if(e>0&&(o(t<<6-e),t=0,e=0),i%3!=0)for(var n=3-i%3,s=0;s<n;s+=1)r+="="},n.toString=function(){return r},n}(),h=s.toByteArray(),d=0;d<h.length;d+=1)a.writeByte(h[d]);return a.flush(),"data:image/gif;base64,"+a};return t}();n.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var e=[],i=0;i<t.length;i++){var r=t.charCodeAt(i);r<128?e.push(r):r<2048?e.push(192|r>>6,128|63&r):r<55296||r>=57344?e.push(224|r>>12,128|r>>6&63,128|63&r):(i++,r=65536+((1023&r)<<10|1023&t.charCodeAt(i)),e.push(240|r>>18,128|r>>12&63,128|r>>6&63,128|63&r))}return e}(t)},void 0===(r="function"==typeof(i=function(){return n})?i.apply(e,[]):i)||(t.exports=r)}},e={};function i(r){var n=e[r];if(void 0!==n)return n.exports;var o=e[r]={exports:{}};return t[r](o,o.exports,i),o.exports}i.n=t=>{var e=t&&t.__esModule?()=>t.default:()=>t;return i.d(e,{a:e}),e},i.d=(t,e)=>{for(var r in e)i.o(e,r)&&!i.o(t,r)&&Object.defineProperty(t,r,{enumerable:!0,get:e[r]})},i.o=(t,e)=>Object.prototype.hasOwnProperty.call(t,e);var r={};return(()=>{"use strict";i.d(r,{default:()=>$});const t=t=>!!t&&"object"==typeof t&&!Array.isArray(t);function e(i,...r){if(!r.length)return i;const n=r.shift();return void 0!==n&&t(i)&&t(n)?(i=Object.assign({},i),Object.keys(n).forEach((r=>{const o=i[r],s=n[r];Array.isArray(o)&&Array.isArray(s)?i[r]=s:t(o)&&t(s)?i[r]=e(Object.assign({},o),s):i[r]=s})),e(i,...r)):i}function n(t,e){const i=document.createElement("a");i.download=e,i.href=t,document.body.appendChild(i),i.click(),document.body.removeChild(i)}const o={L:.07,M:.15,Q:.25,H:.3};class s{constructor({svg:t,type:e,window:i}){this._svg=t,this._type=e,this._window=i}draw(t,e,i,r){let n;switch(this._type){case"dots":n=this._drawDot;break;case"classy":n=this._drawClassy;break;case"classy-rounded":n=this._drawClassyRounded;break;case"rounded":n=this._drawRounded;break;case"extra-rounded":n=this._drawExtraRounded;break;default:n=this._drawSquare}n.call(this,{x:t,y:e,size:i,getNeighbor:r})}_rotateFigure({x:t,y:e,size:i,rotation:r=0,draw:n}){var o;const s=t+i/2,a=e+i/2;n(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${s},${a})`)}_basicDot(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","circle"),this._element.setAttribute("cx",String(i+e/2)),this._element.setAttribute("cy",String(r+e/2)),this._element.setAttribute("r",String(e/2))}}))}_basicSquare(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect"),this._element.setAttribute("x",String(i)),this._element.setAttribute("y",String(r)),this._element.setAttribute("width",String(e)),this._element.setAttribute("height",String(e))}}))}_basicSideRounded(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${i} ${r}v ${e}h `+e/2+`a ${e/2} ${e/2}, 0, 0, 0, 0 ${-e}`)}}))}_basicCornerRounded(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${i} ${r}v ${e}h ${e}v `+-e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${-e/2} ${-e/2}`)}}))}_basicCornerExtraRounded(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${i} ${r}v ${e}h ${e}a ${e} ${e}, 0, 0, 0, ${-e} ${-e}`)}}))}_basicCornersRounded(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("d",`M ${i} ${r}v `+e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${e/2} ${e/2}h `+e/2+"v "+-e/2+`a ${e/2} ${e/2}, 0, 0, 0, ${-e/2} ${-e/2}`)}}))}_drawDot({x:t,y:e,size:i}){this._basicDot({x:t,y:e,size:i,rotation:0})}_drawSquare({x:t,y:e,size:i}){this._basicSquare({x:t,y:e,size:i,rotation:0})}_drawRounded({x:t,y:e,size:i,getNeighbor:r}){const n=r?+r(-1,0):0,o=r?+r(1,0):0,s=r?+r(0,-1):0,a=r?+r(0,1):0,h=n+o+s+a;if(0!==h)if(h>2||n&&o||s&&a)this._basicSquare({x:t,y:e,size:i,rotation:0});else{if(2===h){let r=0;return n&&s?r=Math.PI/2:s&&o?r=Math.PI:o&&a&&(r=-Math.PI/2),void this._basicCornerRounded({x:t,y:e,size:i,rotation:r})}if(1===h){let r=0;return s?r=Math.PI/2:o?r=Math.PI:a&&(r=-Math.PI/2),void this._basicSideRounded({x:t,y:e,size:i,rotation:r})}}else this._basicDot({x:t,y:e,size:i,rotation:0})}_drawExtraRounded({x:t,y:e,size:i,getNeighbor:r}){const n=r?+r(-1,0):0,o=r?+r(1,0):0,s=r?+r(0,-1):0,a=r?+r(0,1):0,h=n+o+s+a;if(0!==h)if(h>2||n&&o||s&&a)this._basicSquare({x:t,y:e,size:i,rotation:0});else{if(2===h){let r=0;return n&&s?r=Math.PI/2:s&&o?r=Math.PI:o&&a&&(r=-Math.PI/2),void this._basicCornerExtraRounded({x:t,y:e,size:i,rotation:r})}if(1===h){let r=0;return s?r=Math.PI/2:o?r=Math.PI:a&&(r=-Math.PI/2),void this._basicSideRounded({x:t,y:e,size:i,rotation:r})}}else this._basicDot({x:t,y:e,size:i,rotation:0})}_drawClassy({x:t,y:e,size:i,getNeighbor:r}){const n=r?+r(-1,0):0,o=r?+r(1,0):0,s=r?+r(0,-1):0,a=r?+r(0,1):0;0!==n+o+s+a?n||s?o||a?this._basicSquare({x:t,y:e,size:i,rotation:0}):this._basicCornerRounded({x:t,y:e,size:i,rotation:Math.PI/2}):this._basicCornerRounded({x:t,y:e,size:i,rotation:-Math.PI/2}):this._basicCornersRounded({x:t,y:e,size:i,rotation:Math.PI/2})}_drawClassyRounded({x:t,y:e,size:i,getNeighbor:r}){const n=r?+r(-1,0):0,o=r?+r(1,0):0,s=r?+r(0,-1):0,a=r?+r(0,1):0;0!==n+o+s+a?n||s?o||a?this._basicSquare({x:t,y:e,size:i,rotation:0}):this._basicCornerExtraRounded({x:t,y:e,size:i,rotation:Math.PI/2}):this._basicCornerExtraRounded({x:t,y:e,size:i,rotation:-Math.PI/2}):this._basicCornersRounded({x:t,y:e,size:i,rotation:Math.PI/2})}}const a={dot:"dot",square:"square",extraRounded:"extra-rounded"},h=Object.values(a);class d{constructor({svg:t,type:e,window:i}){this._svg=t,this._type=e,this._window=i}draw(t,e,i,r){let n;switch(this._type){case a.square:n=this._drawSquare;break;case a.extraRounded:n=this._drawExtraRounded;break;default:n=this._drawDot}n.call(this,{x:t,y:e,size:i,rotation:r})}_rotateFigure({x:t,y:e,size:i,rotation:r=0,draw:n}){var o;const s=t+i/2,a=e+i/2;n(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${s},${a})`)}_basicDot(t){const{size:e,x:i,y:r}=t,n=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${i+e/2} ${r}a ${e/2} ${e/2} 0 1 0 0.1 0zm 0 ${n}a ${e/2-n} ${e/2-n} 0 1 1 -0.1 0Z`)}}))}_basicSquare(t){const{size:e,x:i,y:r}=t,n=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${i} ${r}v ${e}h ${e}v `+-e+"z"+`M ${i+n} ${r+n}h `+(e-2*n)+"v "+(e-2*n)+"h "+(2*n-e)+"z")}}))}_basicExtraRounded(t){const{size:e,x:i,y:r}=t,n=e/7;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","path"),this._element.setAttribute("clip-rule","evenodd"),this._element.setAttribute("d",`M ${i} ${r+2.5*n}v `+2*n+`a ${2.5*n} ${2.5*n}, 0, 0, 0, ${2.5*n} ${2.5*n}h `+2*n+`a ${2.5*n} ${2.5*n}, 0, 0, 0, ${2.5*n} ${2.5*-n}v `+-2*n+`a ${2.5*n} ${2.5*n}, 0, 0, 0, ${2.5*-n} ${2.5*-n}h `+-2*n+`a ${2.5*n} ${2.5*n}, 0, 0, 0, ${2.5*-n} ${2.5*n}`+`M ${i+2.5*n} ${r+n}h `+2*n+`a ${1.5*n} ${1.5*n}, 0, 0, 1, ${1.5*n} ${1.5*n}v `+2*n+`a ${1.5*n} ${1.5*n}, 0, 0, 1, ${1.5*-n} ${1.5*n}h `+-2*n+`a ${1.5*n} ${1.5*n}, 0, 0, 1, ${1.5*-n} ${1.5*-n}v `+-2*n+`a ${1.5*n} ${1.5*n}, 0, 0, 1, ${1.5*n} ${1.5*-n}`)}}))}_drawDot({x:t,y:e,size:i,rotation:r}){this._basicDot({x:t,y:e,size:i,rotation:r})}_drawSquare({x:t,y:e,size:i,rotation:r}){this._basicSquare({x:t,y:e,size:i,rotation:r})}_drawExtraRounded({x:t,y:e,size:i,rotation:r}){this._basicExtraRounded({x:t,y:e,size:i,rotation:r})}}const u={dot:"dot",square:"square"},c=Object.values(u);class l{constructor({svg:t,type:e,window:i}){this._svg=t,this._type=e,this._window=i}draw(t,e,i,r){let n;n=this._type===u.square?this._drawSquare:this._drawDot,n.call(this,{x:t,y:e,size:i,rotation:r})}_rotateFigure({x:t,y:e,size:i,rotation:r=0,draw:n}){var o;const s=t+i/2,a=e+i/2;n(),null===(o=this._element)||void 0===o||o.setAttribute("transform",`rotate(${180*r/Math.PI},${s},${a})`)}_basicDot(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","circle"),this._element.setAttribute("cx",String(i+e/2)),this._element.setAttribute("cy",String(r+e/2)),this._element.setAttribute("r",String(e/2))}}))}_basicSquare(t){const{size:e,x:i,y:r}=t;this._rotateFigure(Object.assign(Object.assign({},t),{draw:()=>{this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect"),this._element.setAttribute("x",String(i)),this._element.setAttribute("y",String(r)),this._element.setAttribute("width",String(e)),this._element.setAttribute("height",String(e))}}))}_drawDot({x:t,y:e,size:i,rotation:r}){this._basicDot({x:t,y:e,size:i,rotation:r})}_drawSquare({x:t,y:e,size:i,rotation:r}){this._basicSquare({x:t,y:e,size:i,rotation:r})}}const g="circle",f=[[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,0,0,0,0,0,1],[1,1,1,1,1,1,1]],w=[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,1,1,1,0,0],[0,0,1,1,1,0,0],[0,0,1,1,1,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];class p{constructor(t,e){this._roundSize=t=>this._options.dotsOptions.roundSize?Math.floor(t):t,this._window=e,this._element=this._window.document.createElementNS("http://www.w3.org/2000/svg","svg"),this._element.setAttribute("width",String(t.width)),this._element.setAttribute("height",String(t.height)),this._element.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink"),t.dotsOptions.roundSize||this._element.setAttribute("shape-rendering","crispEdges"),this._element.setAttribute("viewBox",`0 0 ${t.width} ${t.height}`),this._defs=this._window.document.createElementNS("http://www.w3.org/2000/svg","defs"),this._element.appendChild(this._defs),this._imageUri=t.image,this._instanceId=p.instanceCount++,this._options=t}get width(){return this._options.width}get height(){return this._options.height}getElement(){return this._element}async drawQR(t){const e=t.getModuleCount(),i=Math.min(this._options.width,this._options.height)-2*this._options.margin,r=this._options.shape===g?i/Math.sqrt(2):i,n=this._roundSize(r/e);let s={hideXDots:0,hideYDots:0,width:0,height:0};if(this._qr=t,this._options.image){if(await this.loadImage(),!this._image)return;const{imageOptions:t,qrOptions:i}=this._options,r=t.imageSize*o[i.errorCorrectionLevel],a=Math.floor(r*e*e);s=function({originalHeight:t,originalWidth:e,maxHiddenDots:i,maxHiddenAxisDots:r,dotSize:n}){const o={x:0,y:0},s={x:0,y:0};if(t<=0||e<=0||i<=0||n<=0)return{height:0,width:0,hideYDots:0,hideXDots:0};const a=t/e;return o.x=Math.floor(Math.sqrt(i/a)),o.x<=0&&(o.x=1),r&&r<o.x&&(o.x=r),o.x%2==0&&o.x--,s.x=o.x*n,o.y=1+2*Math.ceil((o.x*a-1)/2),s.y=Math.round(s.x*a),(o.y*o.x>i||r&&r<o.y)&&(r&&r<o.y?(o.y=r,o.y%2==0&&o.x--):o.y-=2,s.y=o.y*n,o.x=1+2*Math.ceil((o.y/a-1)/2),s.x=Math.round(s.y/a)),{height:s.y,width:s.x,hideYDots:o.y,hideXDots:o.x}}({originalWidth:this._image.width,originalHeight:this._image.height,maxHiddenDots:a,maxHiddenAxisDots:e-14,dotSize:n})}this.drawBackground(),this.drawDots(((t,i)=>{var r,n,o,a,h,d;return!(this._options.imageOptions.hideBackgroundDots&&t>=(e-s.hideYDots)/2&&t<(e+s.hideYDots)/2&&i>=(e-s.hideXDots)/2&&i<(e+s.hideXDots)/2||(null===(r=f[t])||void 0===r?void 0:r[i])||(null===(n=f[t-e+7])||void 0===n?void 0:n[i])||(null===(o=f[t])||void 0===o?void 0:o[i-e+7])||(null===(a=w[t])||void 0===a?void 0:a[i])||(null===(h=w[t-e+7])||void 0===h?void 0:h[i])||(null===(d=w[t])||void 0===d?void 0:d[i-e+7]))})),this.drawCorners(),this._options.image&&await this.drawImage({width:s.width,height:s.height,count:e,dotSize:n})}drawBackground(){var t,e,i;const r=this._element,n=this._options;if(r){const r=null===(t=n.backgroundOptions)||void 0===t?void 0:t.gradient,o=null===(e=n.backgroundOptions)||void 0===e?void 0:e.color;let s=n.height,a=n.width;if(r||o){const t=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect");this._backgroundClipPath=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),this._backgroundClipPath.setAttribute("id",`clip-path-background-color-${this._instanceId}`),this._defs.appendChild(this._backgroundClipPath),(null===(i=n.backgroundOptions)||void 0===i?void 0:i.round)&&(s=a=Math.min(n.width,n.height),t.setAttribute("rx",String(s/2*n.backgroundOptions.round))),t.setAttribute("x",String(this._roundSize((n.width-a)/2))),t.setAttribute("y",String(this._roundSize((n.height-s)/2))),t.setAttribute("width",String(a)),t.setAttribute("height",String(s)),this._backgroundClipPath.appendChild(t),this._createColor({options:r,color:o,additionalRotation:0,x:0,y:0,height:n.height,width:n.width,name:`background-color-${this._instanceId}`})}}}drawDots(t){var e,i;if(!this._qr)throw"QR code is not defined";const r=this._options,n=this._qr.getModuleCount();if(n>r.width||n>r.height)throw"The canvas is too small.";const o=Math.min(r.width,r.height)-2*r.margin,a=r.shape===g?o/Math.sqrt(2):o,h=this._roundSize(a/n),d=this._roundSize((r.width-n*h)/2),u=this._roundSize((r.height-n*h)/2),c=new s({svg:this._element,type:r.dotsOptions.type,window:this._window});this._dotsClipPath=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),this._dotsClipPath.setAttribute("id",`clip-path-dot-color-${this._instanceId}`),this._defs.appendChild(this._dotsClipPath),this._createColor({options:null===(e=r.dotsOptions)||void 0===e?void 0:e.gradient,color:r.dotsOptions.color,additionalRotation:0,x:0,y:0,height:r.height,width:r.width,name:`dot-color-${this._instanceId}`});for(let e=0;e<n;e++)for(let r=0;r<n;r++)t&&!t(e,r)||(null===(i=this._qr)||void 0===i?void 0:i.isDark(e,r))&&(c.draw(d+r*h,u+e*h,h,((i,o)=>!(r+i<0||e+o<0||r+i>=n||e+o>=n)&&!(t&&!t(e+o,r+i))&&!!this._qr&&this._qr.isDark(e+o,r+i))),c._element&&this._dotsClipPath&&this._dotsClipPath.appendChild(c._element));if(r.shape===g){const t=this._roundSize((o/h-n)/2),e=n+2*t,i=d-t*h,r=u-t*h,s=[],a=this._roundSize(e/2);for(let i=0;i<e;i++){s[i]=[];for(let r=0;r<e;r++)i>=t-1&&i<=e-t&&r>=t-1&&r<=e-t||Math.sqrt((i-a)*(i-a)+(r-a)*(r-a))>a?s[i][r]=0:s[i][r]=this._qr.isDark(r-2*t<0?r:r>=n?r-2*t:r-t,i-2*t<0?i:i>=n?i-2*t:i-t)?1:0}for(let t=0;t<e;t++)for(let n=0;n<e;n++)s[t][n]&&(c.draw(i+n*h,r+t*h,h,((e,i)=>{var r;return!!(null===(r=s[t+i])||void 0===r?void 0:r[n+e])})),c._element&&this._dotsClipPath&&this._dotsClipPath.appendChild(c._element))}}drawCorners(){if(!this._qr)throw"QR code is not defined";const t=this._element,e=this._options;if(!t)throw"Element code is not defined";const i=this._qr.getModuleCount(),r=Math.min(e.width,e.height)-2*e.margin,n=e.shape===g?r/Math.sqrt(2):r,o=this._roundSize(n/i),a=7*o,u=3*o,p=this._roundSize((e.width-i*o)/2),v=this._roundSize((e.height-i*o)/2);[[0,0,0],[1,0,Math.PI/2],[0,1,-Math.PI/2]].forEach((([t,r,n])=>{var g,_,m,b,y,x,S,C,A,M,$,O,D,k;const z=p+t*o*(i-7),B=v+r*o*(i-7);let P=this._dotsClipPath,I=this._dotsClipPath;if(((null===(g=e.cornersSquareOptions)||void 0===g?void 0:g.gradient)||(null===(_=e.cornersSquareOptions)||void 0===_?void 0:_.color))&&(P=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),P.setAttribute("id",`clip-path-corners-square-color-${t}-${r}-${this._instanceId}`),this._defs.appendChild(P),this._cornersSquareClipPath=this._cornersDotClipPath=I=P,this._createColor({options:null===(m=e.cornersSquareOptions)||void 0===m?void 0:m.gradient,color:null===(b=e.cornersSquareOptions)||void 0===b?void 0:b.color,additionalRotation:n,x:z,y:B,height:a,width:a,name:`corners-square-color-${t}-${r}-${this._instanceId}`})),(null===(y=e.cornersSquareOptions)||void 0===y?void 0:y.type)&&h.includes(e.cornersSquareOptions.type)){const t=new d({svg:this._element,type:e.cornersSquareOptions.type,window:this._window});t.draw(z,B,a,n),t._element&&P&&P.appendChild(t._element)}else{const t=new s({svg:this._element,type:(null===(x=e.cornersSquareOptions)||void 0===x?void 0:x.type)||e.dotsOptions.type,window:this._window});for(let e=0;e<f.length;e++)for(let i=0;i<f[e].length;i++)(null===(S=f[e])||void 0===S?void 0:S[i])&&(t.draw(z+i*o,B+e*o,o,((t,r)=>{var n;return!!(null===(n=f[e+r])||void 0===n?void 0:n[i+t])})),t._element&&P&&P.appendChild(t._element))}if(((null===(C=e.cornersDotOptions)||void 0===C?void 0:C.gradient)||(null===(A=e.cornersDotOptions)||void 0===A?void 0:A.color))&&(I=this._window.document.createElementNS("http://www.w3.org/2000/svg","clipPath"),I.setAttribute("id",`clip-path-corners-dot-color-${t}-${r}-${this._instanceId}`),this._defs.appendChild(I),this._cornersDotClipPath=I,this._createColor({options:null===(M=e.cornersDotOptions)||void 0===M?void 0:M.gradient,color:null===($=e.cornersDotOptions)||void 0===$?void 0:$.color,additionalRotation:n,x:z+2*o,y:B+2*o,height:u,width:u,name:`corners-dot-color-${t}-${r}-${this._instanceId}`})),(null===(O=e.cornersDotOptions)||void 0===O?void 0:O.type)&&c.includes(e.cornersDotOptions.type)){const t=new l({svg:this._element,type:e.cornersDotOptions.type,window:this._window});t.draw(z+2*o,B+2*o,u,n),t._element&&I&&I.appendChild(t._element)}else{const t=new s({svg:this._element,type:(null===(D=e.cornersDotOptions)||void 0===D?void 0:D.type)||e.dotsOptions.type,window:this._window});for(let e=0;e<w.length;e++)for(let i=0;i<w[e].length;i++)(null===(k=w[e])||void 0===k?void 0:k[i])&&(t.draw(z+i*o,B+e*o,o,((t,r)=>{var n;return!!(null===(n=w[e+r])||void 0===n?void 0:n[i+t])})),t._element&&I&&I.appendChild(t._element))}}))}loadImage(){return new Promise(((t,e)=>{var i;const r=this._options;if(!r.image)return e("Image is not defined");if(null===(i=r.nodeCanvas)||void 0===i?void 0:i.loadImage)r.nodeCanvas.loadImage(r.image).then((e=>{var i,n;if(this._image=e,this._options.imageOptions.saveAsBlob){const t=null===(i=r.nodeCanvas)||void 0===i?void 0:i.createCanvas(this._image.width,this._image.height);null===(n=null==t?void 0:t.getContext("2d"))||void 0===n||n.drawImage(e,0,0),this._imageUri=null==t?void 0:t.toDataURL()}t()})).catch(e);else{const e=new this._window.Image;"string"==typeof r.imageOptions.crossOrigin&&(e.crossOrigin=r.imageOptions.crossOrigin),this._image=e,e.onload=async()=>{this._options.imageOptions.saveAsBlob&&(this._imageUri=await async function(t,e){return new Promise((i=>{const r=new e.XMLHttpRequest;r.onload=function(){const t=new e.FileReader;t.onloadend=function(){i(t.result)},t.readAsDataURL(r.response)},r.open("GET",t),r.responseType="blob",r.send()}))}(r.image||"",this._window)),t()},e.src=r.image}}))}async drawImage({width:t,height:e,count:i,dotSize:r}){const n=this._options,o=this._roundSize((n.width-i*r)/2),s=this._roundSize((n.height-i*r)/2),a=o+this._roundSize(n.imageOptions.margin+(i*r-t)/2),h=s+this._roundSize(n.imageOptions.margin+(i*r-e)/2),d=t-2*n.imageOptions.margin,u=e-2*n.imageOptions.margin,c=this._window.document.createElementNS("http://www.w3.org/2000/svg","image");c.setAttribute("href",this._imageUri||""),c.setAttribute("xlink:href",this._imageUri||""),c.setAttribute("x",String(a)),c.setAttribute("y",String(h)),c.setAttribute("width",`${d}px`),c.setAttribute("height",`${u}px`),this._element.appendChild(c)}_createColor({options:t,color:e,additionalRotation:i,x:r,y:n,height:o,width:s,name:a}){const h=s>o?s:o,d=this._window.document.createElementNS("http://www.w3.org/2000/svg","rect");if(d.setAttribute("x",String(r)),d.setAttribute("y",String(n)),d.setAttribute("height",String(o)),d.setAttribute("width",String(s)),d.setAttribute("clip-path",`url('#clip-path-${a}')`),t){let e;if("radial"===t.type)e=this._window.document.createElementNS("http://www.w3.org/2000/svg","radialGradient"),e.setAttribute("id",a),e.setAttribute("gradientUnits","userSpaceOnUse"),e.setAttribute("fx",String(r+s/2)),e.setAttribute("fy",String(n+o/2)),e.setAttribute("cx",String(r+s/2)),e.setAttribute("cy",String(n+o/2)),e.setAttribute("r",String(h/2));else{const h=((t.rotation||0)+i)%(2*Math.PI),d=(h+2*Math.PI)%(2*Math.PI);let u=r+s/2,c=n+o/2,l=r+s/2,g=n+o/2;d>=0&&d<=.25*Math.PI||d>1.75*Math.PI&&d<=2*Math.PI?(u-=s/2,c-=o/2*Math.tan(h),l+=s/2,g+=o/2*Math.tan(h)):d>.25*Math.PI&&d<=.75*Math.PI?(c-=o/2,u-=s/2/Math.tan(h),g+=o/2,l+=s/2/Math.tan(h)):d>.75*Math.PI&&d<=1.25*Math.PI?(u+=s/2,c+=o/2*Math.tan(h),l-=s/2,g-=o/2*Math.tan(h)):d>1.25*Math.PI&&d<=1.75*Math.PI&&(c+=o/2,u+=s/2/Math.tan(h),g-=o/2,l-=s/2/Math.tan(h)),e=this._window.document.createElementNS("http://www.w3.org/2000/svg","linearGradient"),e.setAttribute("id",a),e.setAttribute("gradientUnits","userSpaceOnUse"),e.setAttribute("x1",String(Math.round(u))),e.setAttribute("y1",String(Math.round(c))),e.setAttribute("x2",String(Math.round(l))),e.setAttribute("y2",String(Math.round(g)))}t.colorStops.forEach((({offset:t,color:i})=>{const r=this._window.document.createElementNS("http://www.w3.org/2000/svg","stop");r.setAttribute("offset",100*t+"%"),r.setAttribute("stop-color",i),e.appendChild(r)})),d.setAttribute("fill",`url('#${a}')`),this._defs.appendChild(e)}else e&&d.setAttribute("fill",e);this._element.appendChild(d)}}p.instanceCount=0;const v=p,_="canvas",m={};for(let t=0;t<=40;t++)m[t]=t;const b={type:_,shape:"square",width:300,height:300,data:"",margin:0,qrOptions:{typeNumber:m[0],mode:void 0,errorCorrectionLevel:"Q"},imageOptions:{saveAsBlob:!0,hideBackgroundDots:!0,imageSize:.4,crossOrigin:void 0,margin:0},dotsOptions:{type:"square",color:"#000",roundSize:!0},backgroundOptions:{round:0,color:"#fff"}};function y(t){const e=Object.assign({},t);if(!e.colorStops||!e.colorStops.length)throw"Field 'colorStops' is required in gradient";return e.rotation?e.rotation=Number(e.rotation):e.rotation=0,e.colorStops=e.colorStops.map((t=>Object.assign(Object.assign({},t),{offset:Number(t.offset)}))),e}function x(t){const e=Object.assign({},t);return e.width=Number(e.width),e.height=Number(e.height),e.margin=Number(e.margin),e.imageOptions=Object.assign(Object.assign({},e.imageOptions),{hideBackgroundDots:Boolean(e.imageOptions.hideBackgroundDots),imageSize:Number(e.imageOptions.imageSize),margin:Number(e.imageOptions.margin)}),e.margin>Math.min(e.width,e.height)&&(e.margin=Math.min(e.width,e.height)),e.dotsOptions=Object.assign({},e.dotsOptions),e.dotsOptions.gradient&&(e.dotsOptions.gradient=y(e.dotsOptions.gradient)),e.cornersSquareOptions&&(e.cornersSquareOptions=Object.assign({},e.cornersSquareOptions),e.cornersSquareOptions.gradient&&(e.cornersSquareOptions.gradient=y(e.cornersSquareOptions.gradient))),e.cornersDotOptions&&(e.cornersDotOptions=Object.assign({},e.cornersDotOptions),e.cornersDotOptions.gradient&&(e.cornersDotOptions.gradient=y(e.cornersDotOptions.gradient))),e.backgroundOptions&&(e.backgroundOptions=Object.assign({},e.backgroundOptions),e.backgroundOptions.gradient&&(e.backgroundOptions.gradient=y(e.backgroundOptions.gradient))),e}var S=i(873),C=i.n(S);function A(t){if(!t)throw new Error("Extension must be defined");"."===t[0]&&(t=t.substring(1));const e={bmp:"image/bmp",gif:"image/gif",ico:"image/vnd.microsoft.icon",jpeg:"image/jpeg",jpg:"image/jpeg",png:"image/png",svg:"image/svg+xml",tif:"image/tiff",tiff:"image/tiff",webp:"image/webp",pdf:"application/pdf"}[t.toLowerCase()];if(!e)throw new Error(`Extension "${t}" is not supported`);return e}class M{constructor(t){(null==t?void 0:t.jsdom)?this._window=new t.jsdom("",{resources:"usable"}).window:this._window=window,this._options=t?x(e(b,t)):b,this.update()}static _clearContainer(t){t&&(t.innerHTML="")}_setupSvg(){if(!this._qr)return;const t=new v(this._options,this._window);this._svg=t.getElement(),this._svgDrawingPromise=t.drawQR(this._qr).then((()=>{var e;this._svg&&(null===(e=this._extension)||void 0===e||e.call(this,t.getElement(),this._options))}))}_setupCanvas(){var t,e;this._qr&&((null===(t=this._options.nodeCanvas)||void 0===t?void 0:t.createCanvas)?(this._nodeCanvas=this._options.nodeCanvas.createCanvas(this._options.width,this._options.height),this._nodeCanvas.width=this._options.width,this._nodeCanvas.height=this._options.height):(this._domCanvas=document.createElement("canvas"),this._domCanvas.width=this._options.width,this._domCanvas.height=this._options.height),this._setupSvg(),this._canvasDrawingPromise=null===(e=this._svgDrawingPromise)||void 0===e?void 0:e.then((()=>{var t;if(!this._svg)return;const e=this._svg,i=(new this._window.XMLSerializer).serializeToString(e),r=btoa(i),n=`data:${A("svg")};base64,${r}`;if(null===(t=this._options.nodeCanvas)||void 0===t?void 0:t.loadImage)return this._options.nodeCanvas.loadImage(n).then((t=>{var e,i;t.width=this._options.width,t.height=this._options.height,null===(i=null===(e=this._nodeCanvas)||void 0===e?void 0:e.getContext("2d"))||void 0===i||i.drawImage(t,0,0)}));{const t=new this._window.Image;return new Promise((e=>{t.onload=()=>{var i,r;null===(r=null===(i=this._domCanvas)||void 0===i?void 0:i.getContext("2d"))||void 0===r||r.drawImage(t,0,0),e()},t.src=n}))}})))}async _getElement(t="png"){if(!this._qr)throw"QR code is empty";return"svg"===t.toLowerCase()?(this._svg&&this._svgDrawingPromise||this._setupSvg(),await this._svgDrawingPromise,this._svg):((this._domCanvas||this._nodeCanvas)&&this._canvasDrawingPromise||this._setupCanvas(),await this._canvasDrawingPromise,this._domCanvas||this._nodeCanvas)}update(t){M._clearContainer(this._container),this._options=t?x(e(this._options,t)):this._options,this._options.data&&(this._qr=C()(this._options.qrOptions.typeNumber,this._options.qrOptions.errorCorrectionLevel),this._qr.addData(this._options.data,this._options.qrOptions.mode||function(t){switch(!0){case/^[0-9]*$/.test(t):return"Numeric";case/^[0-9A-Z $%*+\-./:]*$/.test(t):return"Alphanumeric";default:return"Byte"}}(this._options.data)),this._qr.make(),this._options.type===_?this._setupCanvas():this._setupSvg(),this.append(this._container))}append(t){if(t){if("function"!=typeof t.appendChild)throw"Container should be a single DOM node";this._options.type===_?this._domCanvas&&t.appendChild(this._domCanvas):this._svg&&t.appendChild(this._svg),this._container=t}}applyExtension(t){if(!t)throw"Extension function should be defined.";this._extension=t,this.update()}deleteExtension(){this._extension=void 0,this.update()}async getRawData(t="png"){if(!this._qr)throw"QR code is empty";const e=await this._getElement(t),i=A(t);if(!e)return null;if("svg"===t.toLowerCase()){const t=`<?xml version="1.0" standalone="no"?>\r\n${(new this._window.XMLSerializer).serializeToString(e)}`;return"undefined"==typeof Blob||this._options.jsdom?Buffer.from(t):new Blob([t],{type:i})}return new Promise((t=>{const r=e;if("toBuffer"in r)if("image/png"===i)t(r.toBuffer(i));else if("image/jpeg"===i)t(r.toBuffer(i));else{if("application/pdf"!==i)throw Error("Unsupported extension");t(r.toBuffer(i))}else"toBlob"in r&&r.toBlob(t,i,1)}))}async download(t){if(!this._qr)throw"QR code is empty";if("undefined"==typeof Blob)throw"Cannot download in Node.js, call getRawData instead.";let e="png",i="qr";"string"==typeof t?(e=t,console.warn("Extension is deprecated as argument for 'download' method, please pass object { name: '...', extension: '...' } as argument")):"object"==typeof t&&null!==t&&(t.name&&(i=t.name),t.extension&&(e=t.extension));const r=await this._getElement(e);if(r)if("svg"===e.toLowerCase()){let t=(new XMLSerializer).serializeToString(r);t='<?xml version="1.0" standalone="no"?>\r\n'+t,n(`data:${A(e)};charset=utf-8,${encodeURIComponent(t)}`,`${i}.svg`)}else n(r.toDataURL(A(e)),`${i}.${e}`)}}const $=M})(),r.default})()));
+//# sourceMappingURL=qr-code-styling.js.map
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
+(() => {
+"use strict";
+/*!*********************************!*\
+  !*** ./resources/js/qr-code.js ***!
+  \*********************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! qr-code-styling */ "./node_modules/qr-code-styling/lib/qr-code-styling.js");
+/* harmony import */ var qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(qr_code_styling__WEBPACK_IMPORTED_MODULE_0__);
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+// QR Code modal and bulk-print functionality
+window.QRCodeModal = {
+  init: function init() {
+    this.bindEvents();
+  },
+  bindEvents: function bindEvents() {
+    var _this = this;
+    document.addEventListener('click', /*#__PURE__*/function () {
+      var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(e) {
+        var qrButton, qrData, fishBoxName, bulkPrintButton;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.n) {
+            case 0:
+              qrButton = e.target.closest('.qr-code-btn');
+              if (!qrButton) {
+                _context.n = 1;
+                break;
+              }
+              e.preventDefault();
+              qrData = qrButton.dataset.qrData;
+              fishBoxName = qrButton.dataset.fishBoxName;
+              _this.showQRModal(qrData, fishBoxName);
+              return _context.a(2);
+            case 1:
+              bulkPrintButton = e.target.closest('.bulk-qr-print-btn');
+              if (!bulkPrintButton) {
+                _context.n = 3;
+                break;
+              }
+              e.preventDefault();
+              _context.n = 2;
+              return _this.printBulkQRCodes(bulkPrintButton);
+            case 2:
+              return _context.a(2);
+            case 3:
+              if (e.target.classList.contains('qr-modal-overlay') || e.target.closest('.qr-modal-close')) {
+                _this.hideQRModal();
+              }
+            case 4:
+              return _context.a(2);
+          }
+        }, _callee);
+      }));
+      return function (_x) {
+        return _ref.apply(this, arguments);
+      };
+    }());
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        _this.hideQRModal();
+      }
+    });
+  },
+  getQRCodeOptions: function getQRCodeOptions(data) {
+    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
+    var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'svg';
+    return {
+      width: size,
+      height: size,
+      type: type,
+      data: data,
+      dotsOptions: {
+        color: '#2563eb',
+        type: 'rounded'
+      },
+      backgroundOptions: {
+        color: '#ffffff'
+      },
+      cornersSquareOptions: {
+        color: '#1d4ed8',
+        type: 'extra-rounded'
+      },
+      cornersDotOptions: {
+        color: '#1e40af',
+        type: 'dot'
+      },
+      qrOptions: {
+        errorCorrectionLevel: 'M'
+      }
+    };
+  },
+  createQRCode: function createQRCode(data) {
+    var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 256;
+    var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'svg';
+    return new (qr_code_styling__WEBPACK_IMPORTED_MODULE_0___default())(this.getQRCodeOptions(data, size, type));
+  },
+  showQRModal: function showQRModal(qrData, fishBoxName) {
+    this.hideQRModal();
+    var modalHTML = "\n            <div id=\"qr-modal\" class=\"fixed inset-0 z-50 overflow-y-auto qr-modal-overlay\" aria-labelledby=\"modal-title\" role=\"dialog\" aria-modal=\"true\">\n                <div class=\"flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\">\n                    <div class=\"fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity\" aria-hidden=\"true\"></div>\n                    <span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span>\n\n                    <div class=\"relative inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full\">\n                        <div class=\"bg-white px-6 py-4 border-b border-gray-200\">\n                            <div class=\"flex items-center justify-between\">\n                                <h3 class=\"text-lg font-semibold text-gray-900\" id=\"modal-title\">\n                                    QR Code - ".concat(this.escapeHtml(fishBoxName), "\n                                </h3>\n                                <button class=\"qr-modal-close text-gray-400 hover:text-gray-600 transition-colors\" type=\"button\">\n                                    <svg class=\"w-6 h-6\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n                                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path>\n                                    </svg>\n                                </button>\n                            </div>\n                        </div>\n\n                        <div class=\"bg-white px-6 py-6\">\n                            <div class=\"flex flex-col items-center\">\n                                <div id=\"qr-code-container\" class=\"mb-4\"></div>\n                                <p class=\"text-sm text-gray-600 text-center mb-4\">\n                                    Scan this QR code to view fish box details\n                                </p>\n                                <div class=\"flex space-x-3\">\n                                    <button id=\"download-png\" type=\"button\" class=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm\">\n                                        Download PNG\n                                    </button>\n                                    <button id=\"download-svg\" type=\"button\" class=\"px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm\">\n                                        Download SVG\n                                    </button>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        ");
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    this.generateQRCode(qrData);
+  },
+  generateQRCode: function generateQRCode(data) {
+    var qrCode = this.createQRCode(data, 256);
+    var container = document.getElementById('qr-code-container');
+    qrCode.append(container);
+    document.getElementById('download-png').addEventListener('click', function () {
+      qrCode.download({
+        name: "qr-code-".concat(Date.now()),
+        extension: 'png'
+      });
+    });
+    document.getElementById('download-svg').addEventListener('click', function () {
+      qrCode.download({
+        name: "qr-code-".concat(Date.now()),
+        extension: 'svg'
+      });
+    });
+    this.currentQRCode = qrCode;
+  },
+  getBulkPrintBoxes: function getBulkPrintBoxes(button) {
+    var sourceId = button.dataset.bulkQrSource;
+    var sourceElement = sourceId ? document.getElementById(sourceId) : null;
+    if (!sourceElement) {
+      return [];
+    }
+    try {
+      var parsedBoxes = JSON.parse(sourceElement.textContent || '[]');
+      return Array.isArray(parsedBoxes) ? parsedBoxes : [];
+    } catch (error) {
+      this.notify('Bulk QR data could not be read. Please refresh the page and try again.', 'error');
+      return [];
+    }
+  },
+  getBulkQrPrintSize: function getBulkQrPrintSize(button) {
+    var sizeSourceId = button.dataset.bulkQrSizeSource;
+    var sizeSource = sizeSourceId ? document.getElementById(sizeSourceId) : null;
+    var requestedSize = Number.parseInt((sizeSource === null || sizeSource === void 0 ? void 0 : sizeSource.value) || '', 10);
+    var allowedSizes = [150, 180, 220];
+    return allowedSizes.includes(requestedSize) ? requestedSize : 180;
+  },
+  getBulkQrSizeLabel: function getBulkQrSizeLabel(size) {
+    var labels = {
+      150: 'Small',
+      180: 'Medium',
+      220: 'Large'
+    };
+    return labels[size] || 'Medium';
+  },
+  getBulkQrPrintDimension: function getBulkQrPrintDimension(size) {
+    var dimensions = {
+      150: 220,
+      180: 320,
+      220: 560
+    };
+    return dimensions[size] || 320;
+  },
+  renderBulkQrMarkup: function renderBulkQrMarkup(qrData) {
+    var _arguments = arguments,
+      _this2 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var size, tempContainer, qrCode, canvas;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.n) {
+          case 0:
+            size = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : 180;
+            tempContainer = document.createElement('div');
+            qrCode = _this2.createQRCode(qrData, size, 'canvas');
+            qrCode.append(tempContainer);
+            _context2.n = 1;
+            return _this2.waitForBulkQrCanvas(tempContainer);
+          case 1:
+            canvas = _context2.v;
+            if (canvas) {
+              _context2.n = 2;
+              break;
+            }
+            return _context2.a(2, tempContainer.innerHTML);
+          case 2:
+            return _context2.a(2, "<img src=\"".concat(canvas.toDataURL('image/png'), "\" width=\"").concat(size, "\" height=\"").concat(size, "\" alt=\"Fish box QR code\">"));
+        }
+      }, _callee2);
+    }))();
+  },
+  waitForBulkQrCanvas: function waitForBulkQrCanvas(container) {
+    var _this3 = this;
+    return new Promise(function (resolve) {
+      var attempts = 0;
+      var _findCanvas = function findCanvas() {
+        var canvas = container.querySelector('canvas');
+        if (canvas && _this3.isCanvasReadyForPrint(canvas)) {
+          resolve(canvas);
+          return;
+        }
+        attempts += 1;
+        if (attempts >= 90) {
+          resolve(canvas || null);
+          return;
+        }
+        window.requestAnimationFrame(_findCanvas);
+      };
+      _findCanvas();
+    });
+  },
+  isCanvasReadyForPrint: function isCanvasReadyForPrint(canvas) {
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+      return false;
+    }
+    try {
+      var context = canvas.getContext('2d', {
+        willReadFrequently: true
+      });
+      if (!context) {
+        return true;
+      }
+      var sampleSize = Math.min(canvas.width, canvas.height, 80);
+      var offsetX = Math.max(0, Math.floor((canvas.width - sampleSize) / 2));
+      var offsetY = Math.max(0, Math.floor((canvas.height - sampleSize) / 2));
+      var pixels = context.getImageData(offsetX, offsetY, sampleSize, sampleSize).data;
+      for (var index = 0; index < pixels.length; index += 4) {
+        var red = pixels[index];
+        var green = pixels[index + 1];
+        var blue = pixels[index + 2];
+        var alpha = pixels[index + 3];
+        if (alpha > 0 && (red < 245 || green < 245 || blue < 245)) {
+          return true;
+        }
+      }
+    } catch (error) {
+      return true;
+    }
+    return false;
+  },
+  printBulkQRCodes: function printBulkQRCodes(button) {
+    var _this4 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var fishBoxes, originalContent, qrSize, printQrSize, printWindow, qrCards, _t6;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.p = _context4.n) {
+          case 0:
+            if (!button.disabled) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2);
+          case 1:
+            fishBoxes = _this4.getBulkPrintBoxes(button);
+            if (!(fishBoxes.length === 0)) {
+              _context4.n = 2;
+              break;
+            }
+            _this4.notify('No fish boxes match the current filters for bulk QR printing.', 'info');
+            return _context4.a(2);
+          case 2:
+            originalContent = button.innerHTML;
+            qrSize = _this4.getBulkQrPrintSize(button);
+            printQrSize = _this4.getBulkQrPrintDimension(qrSize);
+            printWindow = _this4.openEdgePrintWindow();
+            button.disabled = true;
+            button.innerHTML = "\n            <svg class=\"w-4 h-4 animate-spin\" fill=\"none\" viewBox=\"0 0 24 24\">\n                <circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle>\n                <path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z\"></path>\n            </svg>\n            <span>Preparing QR...</span>\n        ";
+            _context4.p = 3;
+            _context4.n = 4;
+            return Promise.all(fishBoxes.map(/*#__PURE__*/function () {
+              var _ref2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(fishBox) {
+                var _t, _t2, _t3, _t4, _t5;
+                return _regenerator().w(function (_context3) {
+                  while (1) switch (_context3.n) {
+                    case 0:
+                      _t = _objectSpread;
+                      _t2 = _objectSpread({}, fishBox);
+                      _t3 = {};
+                      _context3.n = 1;
+                      return _this4.renderBulkQrMarkup(fishBox.qr_code, printQrSize);
+                    case 1:
+                      _t4 = _context3.v;
+                      _t5 = {
+                        qrMarkup: _t4
+                      };
+                      return _context3.a(2, _t(_t2, _t3, _t5));
+                  }
+                }, _callee3);
+              }));
+              return function (_x2) {
+                return _ref2.apply(this, arguments);
+              };
+            }()));
+          case 4:
+            qrCards = _context4.v;
+            _context4.n = 5;
+            return _this4.printDocument(_this4.buildBulkPrintDocument(qrCards, button.dataset.filterSummary || '', qrSize, printQrSize), printWindow);
+          case 5:
+            _context4.n = 7;
+            break;
+          case 6:
+            _context4.p = 6;
+            _t6 = _context4.v;
+            if (printWindow && !printWindow.closed) {
+              printWindow.close();
+            }
+            _this4.notify('Bulk QR print could not be prepared. Please try again.', 'error');
+          case 7:
+            _context4.p = 7;
+            button.disabled = false;
+            button.innerHTML = originalContent;
+            return _context4.f(7);
+          case 8:
+            return _context4.a(2);
+        }
+      }, _callee4, null, [[3, 6, 7, 8]]);
+    }))();
+  },
+  isMicrosoftEdge: function isMicrosoftEdge() {
+    return /\bEdg\//.test(window.navigator.userAgent);
+  },
+  openEdgePrintWindow: function openEdgePrintWindow() {
+    if (!this.isMicrosoftEdge()) {
+      return null;
+    }
+    var printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      return null;
+    }
+    printWindow.document.open();
+    printWindow.document.write("\n            <!DOCTYPE html>\n            <html lang=\"en\">\n                <head>\n                    <meta charset=\"utf-8\">\n                    <title>Preparing QR Print</title>\n                    <style>\n                        body {\n                            margin: 0;\n                            min-height: 100vh;\n                            display: grid;\n                            place-items: center;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n                    </style>\n                </head>\n                <body>\n                    <p>Preparing QR print...</p>\n                </body>\n            </html>\n        ");
+    printWindow.document.close();
+    return printWindow;
+  },
+  waitForPrintDocument: function waitForPrintDocument(iframeDocument) {
+    var _iframeDocument$fonts;
+    var waitForReadyState = new Promise(function (resolve) {
+      if (iframeDocument.readyState === 'complete') {
+        resolve();
+        return;
+      }
+      iframeDocument.addEventListener('readystatechange', function () {
+        if (iframeDocument.readyState === 'complete') {
+          resolve();
+        }
+      }, {
+        once: true
+      });
+    });
+    var waitForFonts = ((_iframeDocument$fonts = iframeDocument.fonts) === null || _iframeDocument$fonts === void 0 || (_iframeDocument$fonts = _iframeDocument$fonts.ready) === null || _iframeDocument$fonts === void 0 ? void 0 : _iframeDocument$fonts["catch"](function () {
+      return null;
+    })) || Promise.resolve();
+    return Promise.race([Promise.all([waitForReadyState, waitForFonts]), new Promise(function (resolve) {
+      return window.setTimeout(resolve, 1200);
+    })]);
+  },
+  printDocument: function printDocument(printMarkup) {
+    var _arguments2 = arguments,
+      _this5 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+      var printWindow, iframe, iframeWindow, iframeDocument, cleanupTimer, cleanup;
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.n) {
+          case 0:
+            printWindow = _arguments2.length > 1 && _arguments2[1] !== undefined ? _arguments2[1] : null;
+            if (!(printWindow && !printWindow.closed)) {
+              _context5.n = 2;
+              break;
+            }
+            _context5.n = 1;
+            return _this5.printWindowDocument(printWindow, printMarkup);
+          case 1:
+            return _context5.a(2);
+          case 2:
+            iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '1px';
+            iframe.style.height = '1px';
+            iframe.style.border = '0';
+            iframe.style.opacity = '0';
+            iframe.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(iframe);
+            iframeWindow = iframe.contentWindow;
+            iframeDocument = iframeWindow === null || iframeWindow === void 0 ? void 0 : iframeWindow.document;
+            if (!(!iframeWindow || !iframeDocument)) {
+              _context5.n = 3;
+              break;
+            }
+            iframe.remove();
+            throw new Error('Print frame could not be created.');
+          case 3:
+            cleanupTimer = null;
+            cleanup = function cleanup() {
+              if (cleanupTimer) {
+                window.clearTimeout(cleanupTimer);
+              }
+              iframe.remove();
+            };
+            iframeDocument.open();
+            iframeDocument.write(printMarkup);
+            iframeDocument.close();
+            _context5.n = 4;
+            return _this5.waitForPrintDocument(iframeDocument);
+          case 4:
+            iframeWindow.addEventListener('afterprint', cleanup, {
+              once: true
+            });
+            cleanupTimer = window.setTimeout(cleanup, 60000);
+            iframeWindow.focus();
+            iframeWindow.print();
+          case 5:
+            return _context5.a(2);
+        }
+      }, _callee5);
+    }))();
+  },
+  printWindowDocument: function printWindowDocument(printWindow, printMarkup) {
+    var _this6 = this;
+    return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+      var printDocument;
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.n) {
+          case 0:
+            printDocument = printWindow.document;
+            printDocument.open();
+            printDocument.write(printMarkup);
+            printDocument.close();
+            _context6.n = 1;
+            return _this6.waitForPrintDocument(printDocument);
+          case 1:
+            printWindow.focus();
+            window.setTimeout(function () {
+              printWindow.print();
+            }, 250);
+          case 2:
+            return _context6.a(2);
+        }
+      }, _callee6);
+    }))();
+  },
+  buildBulkPrintDocument: function buildBulkPrintDocument(fishBoxes, filterSummary) {
+    var _this7 = this;
+    var layoutSize = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 180;
+    var qrSize = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 320;
+    var cardsPerPage = layoutSize <= 150 ? 4 : layoutSize >= 220 ? 1 : 2;
+    var gridColumns = cardsPerPage === 1 ? 1 : 2;
+    var cardMinHeight = cardsPerPage === 1 ? '250mm' : '125mm';
+    var pageChunks = [];
+    for (var index = 0; index < fishBoxes.length; index += cardsPerPage) {
+      pageChunks.push(fishBoxes.slice(index, index + cardsPerPage));
+    }
+    var renderCard = function renderCard(fishBox) {
+      return "\n            <article class=\"qr-card\">\n                <div class=\"qr-card__code\">\n                    ".concat(fishBox.qrMarkup, "\n                </div>\n                <div class=\"qr-card__meta\">\n                    <h2>").concat(_this7.escapeHtml(fishBox.name), "</h2>\n                </div>\n            </article>\n        ");
+    };
+    var pagesMarkup = pageChunks.map(function (chunk) {
+      return "\n            <main class=\"sheet\">\n                <section class=\"qr-grid\">\n                    ".concat(chunk.map(renderCard).join(''), "\n                </section>\n            </main>\n        ");
+    }).join('');
+    return "\n            <!DOCTYPE html>\n            <html lang=\"en\">\n                <head>\n                    <meta charset=\"utf-8\">\n                    <title>Broker Fish Box QR Codes</title>\n                    <style>\n                        * {\n                            box-sizing: border-box;\n                        }\n\n                        body {\n                            margin: 0;\n                            font-family: Arial, sans-serif;\n                            color: #0f172a;\n                            background: #ffffff;\n                        }\n\n                        .sheet {\n                            min-height: 273mm;\n                            padding: 0;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                            break-after: page;\n                            page-break-after: always;\n                        }\n\n                        .sheet:last-child {\n                            break-after: auto;\n                            page-break-after: auto;\n                        }\n\n                        .qr-grid {\n                            width: 100%;\n                            display: grid;\n                            grid-template-columns: repeat(".concat(gridColumns, ", minmax(0, 1fr));\n                            gap: 18px;\n                        }\n\n                        .qr-card {\n                            border: 1px solid #cbd5e1;\n                            border-radius: 18px;\n                            padding: 22px;\n                            min-height: ").concat(cardMinHeight, ";\n                            display: flex;\n                            flex-direction: column;\n                            align-items: center;\n                            justify-content: center;\n                            gap: 18px;\n                            page-break-inside: avoid;\n                            break-inside: avoid;\n                        }\n\n                        .qr-card__code {\n                            width: ").concat(qrSize, "px;\n                            height: ").concat(qrSize, "px;\n                            display: flex;\n                            align-items: center;\n                            justify-content: center;\n                        }\n\n                        .qr-card__code svg,\n                        .qr-card__code canvas,\n                        .qr-card__code img {\n                            width: ").concat(qrSize, "px;\n                            height: ").concat(qrSize, "px;\n                            display: block;\n                        }\n\n                        .qr-card__meta {\n                            width: 100%;\n                            text-align: center;\n                        }\n\n                        .qr-card__meta h2 {\n                            margin: 0;\n                            font-size: 18px;\n                            line-height: 1.2;\n                        }\n\n                        @page {\n                            size: A4 portrait;\n                            margin: 12mm;\n                        }\n\n                        @media print {\n                            .sheet {\n                                padding: 0;\n                            }\n                        }\n                    </style>\n                </head>\n                <body>\n                    ").concat(pagesMarkup, "\n                </body>\n            </html>\n        ");
+  },
+  escapeHtml: function escapeHtml(value) {
+    return String(value !== null && value !== void 0 ? value : '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  },
+  notify: function notify(message) {
+    var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'info';
+    if (window.toastr && typeof window.toastr[type] === 'function') {
+      window.toastr[type](message);
+      return;
+    }
+    if (window.Swal) {
+      window.Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: type,
+        title: message,
+        showConfirmButton: false,
+        timer: 2400,
+        timerProgressBar: true
+      });
+      return;
+    }
+    var notification = document.createElement('div');
+    notification.textContent = message;
+    notification.setAttribute('role', 'status');
+    notification.style.cssText = ['position:fixed', 'right:1rem', 'top:1rem', 'z-index:9999', 'max-width:22rem', 'padding:0.85rem 1rem', 'border-radius:0.75rem', 'background:#0f172a', 'color:#fff', 'box-shadow:0 16px 36px rgba(15,23,42,0.22)', 'font:600 0.875rem system-ui,sans-serif'].join(';');
+    document.body.appendChild(notification);
+    window.setTimeout(function () {
+      return notification.remove();
+    }, 2800);
+  },
+  hideQRModal: function hideQRModal() {
+    var modal = document.getElementById('qr-modal');
+    if (modal) {
+      modal.remove();
+    }
+    this.currentQRCode = null;
+  }
+};
+document.addEventListener('DOMContentLoaded', function () {
+  window.QRCodeModal.init();
+});
+})();
+
+/******/ })()
+;

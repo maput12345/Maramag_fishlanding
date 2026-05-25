@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationOpening;
+use App\Models\RequirementType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -47,8 +48,9 @@ class PublicPageController extends Controller
             ->get()
             ->sortBy('start_date')
             ->values();
+        $publicRequirementTypes = RequirementType::officialChecklistTypes();
 
-        return view('public.stalls', compact('openings'));
+        return view('public.stalls', compact('openings', 'publicRequirementTypes'));
     }
 
     private function servicesList(): array

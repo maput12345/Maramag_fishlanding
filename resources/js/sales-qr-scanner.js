@@ -408,6 +408,63 @@ class SalesQRScanner {
         return indexes.length > 0 ? Math.max(...indexes) + 1 : 0;
     }
 
+    getScannedUnitPrice(fishBox) {
+        const price = fishBox.unit_price
+            ?? fishBox.price
+            ?? fishBox.suggested_price
+            ?? fishBox.latest_price
+            ?? null;
+        const numericPrice = Number(price);
+
+        return Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : null;
+    }
+
+    ensureFishTypeOption(fishTypeSelect, fishTypeId, fishTypeName, suggestedPrice = null) {
+        if (!fishTypeSelect || !fishTypeId) {
+            return null;
+        }
+
+        const normalizedFishTypeId = String(fishTypeId);
+        let option = Array.from(fishTypeSelect.options)
+            .find((candidate) => candidate.value === normalizedFishTypeId);
+
+        if (!option) {
+            option = new Option(fishTypeName || `Fish #${normalizedFishTypeId}`, normalizedFishTypeId);
+            fishTypeSelect.appendChild(option);
+        } else if (fishTypeName && (!option.textContent || option.textContent.trim() === 'Select Fish')) {
+            option.textContent = fishTypeName;
+        }
+
+        if (suggestedPrice !== null) {
+            option.dataset.suggestedPrice = String(suggestedPrice);
+        }
+
+        return option;
+    }
+
+    applyScannedUnitPrice(targetRow, suggestedPrice) {
+        if (suggestedPrice === null) {
+            return;
+        }
+
+        const unitPriceInput = targetRow.querySelector('.unit-price-input');
+        if (!unitPriceInput) {
+            return;
+        }
+
+        const currentValue = Number(String(unitPriceInput.value || '').replace(/[₱,\s]/g, ''));
+        if (unitPriceInput.value !== '' && Number.isFinite(currentValue) && currentValue > 0) {
+            return;
+        }
+
+        unitPriceInput.value = suggestedPrice.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        unitPriceInput.dispatchEvent(new Event('input', { bubbles: true }));
+        unitPriceInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     addFishBoxToSalesDetails(fishBox) {
         const salesFormRoot = this.getActiveSalesFormRoot();
         const container = salesFormRoot.querySelector('#sales-details-container');
@@ -417,6 +474,7 @@ class SalesQRScanner {
 
         const fishTypeId = fishBox.fish_type_id || fishBox.fish_type?.id || null;
         const fishTypeName = fishBox.fish_type?.name || fishBox.fish_type_name || fishBox.fish_type || '';
+        const scannedUnitPrice = this.getScannedUnitPrice(fishBox);
 
         const existingRows = container.querySelectorAll('.sales-detail-row');
         let targetRow = null;
@@ -467,6 +525,7 @@ class SalesQRScanner {
 
         const fishTypeSelect = targetRow.querySelector('.fish-type-select');
         if (fishTypeSelect && fishTypeId) {
+            this.ensureFishTypeOption(fishTypeSelect, fishTypeId, fishTypeName, scannedUnitPrice);
             fishTypeSelect.value = String(fishTypeId);
 
             const existingHiddenTypeInput = fishTypeSelect.parentNode.querySelector('.fish-type-hidden-input');
@@ -491,6 +550,8 @@ class SalesQRScanner {
                     showMissingPriceWarning: true,
                 });
             }
+
+            this.applyScannedUnitPrice(targetRow, scannedUnitPrice);
         }
 
         const quantityInput = targetRow.querySelector('.quantity-input');

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -13,6 +14,7 @@ class Buyer extends Model
     protected $table = 'Buyer';
 
     protected $fillable = [
+        'broker_id',
         'first_name',
         'middle_name',
         'last_name',
@@ -31,6 +33,11 @@ class Buyer extends Model
         return $this->hasMany(SalesTransaction::class, 'buyer_id');
     }
 
+    public function scopeForBroker(Builder $query, int $brokerId): Builder
+    {
+        return $query->where('broker_id', $brokerId);
+    }
+
     /**
      * Get the buyer's full name.
      */
@@ -46,7 +53,7 @@ class Buyer extends Model
     /**
      * Resolve a buyer record from sale form inputs.
      */
-    public static function resolveForSale(string $name, ?string $contact = null): self
+    public static function resolveForSale(string $name, ?string $contact = null, ?int $brokerId = null): self
     {
         $nameParts = User::splitName($name);
 
@@ -54,21 +61,55 @@ class Buyer extends Model
             $nameParts['first_name'],
             $nameParts['middle_name'],
             $nameParts['last_name'],
-            $contact
+            $contact,
+            $brokerId
         );
     }
 
     /**
      * Resolve a buyer record from structured sale form inputs.
      */
-    public static function resolveForSaleParts(string $firstName, ?string $middleName, string $lastName, ?string $contact = null): self
+    public static function resolveForSaleParts(string $firstName, ?string $middleName, string $lastName, ?string $contact = null, ?int $brokerId = null, ?int $buyerId = null): self
     {
-        return static::firstOrCreate([
+        $buyerData = [
+            'broker_id' => $brokerId,
             'first_name' => trim($firstName),
             'middle_name' => static::nullableText($middleName),
             'last_name' => trim($lastName),
             'contact' => static::nullableText($contact),
-        ]);
+        ];
+
+        if ($buyerId && $brokerId) {
+            $buyer = static::query()
+                ->forBroker($brokerId)
+                ->whereKey($buyerId)
+                ->first();
+
+            if ($buyer) {
+                $buyer->fill($buyerData)->save();
+
+                return $buyer;
+            }
+        }
+
+        return static::firstOrCreate($buyerData);
+    }
+
+    public static function getRegularOptionsForBroker(int $brokerId)
+    {
+        return static::query()
+            ->forBroker($brokerId)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'contact'])
+            ->map(fn (self $buyer): array => [
+                'id' => $buyer->id,
+                'name' => $buyer->name,
+                'first_name' => $buyer->first_name,
+                'middle_name' => $buyer->middle_name,
+                'last_name' => $buyer->last_name,
+                'contact' => $buyer->contact,
+            ]);
     }
 
     private static function nullableText(?string $value): ?string

@@ -147,6 +147,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             @else
                 <section class="rounded-xl bg-white p-4 shadow-lg">
                     <script type="application/json" data-sales-form-config>{!! json_encode($salesFormConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+                    <p class="sr-only">Price per box auto-fills from your current broker fish price list when available.</p>
 
                     <form action="{{ route('broker.sales.store') }}"
                           method="POST"
@@ -255,6 +256,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                 <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
                                                <input type="text" name="sales_details[{{ $index }}][unit_price]"
                                                       value="{{ isset($detail['unit_price']) && $detail['unit_price'] !== '' ? number_format((float) $detail['unit_price'], 2) : '' }}"
+                                                      data-currency-input="true"
                                                       inputmode="decimal"
                                                        class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
                                                        placeholder="0.00"
@@ -355,11 +357,29 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                         <div class="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-gray-900">
                                             Total: <span id="buyer-total-amount-display" class="tabular-nums">₱0.00</span>
                                         </div>
-                                        <button type="button"
-                                                data-buyer-info-cancel
-                                                class="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50">
-                                            Cancel
-                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <div class="relative" data-regular-buyer-picker>
+                                        <label for="regular_buyer_search" class="mb-2 block text-sm font-medium text-gray-700">Regular Customer</label>
+                                        <script type="application/json" data-regular-buyers-json>{!! json_encode($regularBuyers ?? collect(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+                                        <input type="hidden"
+                                               name="buyer_id"
+                                               value="{{ old('buyer_id', '') }}"
+                                               data-regular-buyer-id
+                                               data-buyer-final-field
+                                               {{ $buyerSectionInitiallyVisible ? '' : 'disabled' }}>
+                                        <input type="search"
+                                               id="regular_buyer_search"
+                                               data-regular-buyer-search
+                                               data-buyer-final-field
+                                               autocomplete="off"
+                                               class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                               placeholder="Search name or contact..."
+                                               {{ $buyerSectionInitiallyVisible ? '' : 'disabled' }}>
+                                        <div class="absolute left-0 right-0 top-full z-30 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+                                             data-regular-buyer-results></div>
                                     </div>
                                 </div>
 
@@ -421,7 +441,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                 <div class="transaction-buyer-grid mt-4">
                                     <div>
                                         <label for="initial_paid_amount" class="mb-2 block text-sm font-medium text-gray-700">
-                                            Paid Amount <span class="text-red-500">*</span>
+                                            Paid Amount
                                         </label>
                                        <div class="currency-input-group">
                                            <span class="currency-input-symbol">₱</span>
@@ -432,7 +452,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                                   data-buyer-final-field
                                                   class="currency-input-field transaction-buyer-field"
                                                   placeholder="0.00"
-                                                  {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                                  {{ $buyerSectionInitiallyVisible ? '' : 'disabled' }}>
                                        </div>
                                         <div class="mt-2 text-xs text-gray-500">
                                             Maximum payment: ₱<span id="initial-payment-max-amount" class="inline-block min-w-[4rem] text-right tabular-nums">0.00</span>
@@ -442,12 +462,12 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
                                     <div>
                                         <label for="initial_payment_method" class="mb-2 block text-sm font-medium text-gray-700">
-                                            Payment Method <span class="text-red-500">*</span>
+                                            Payment Method
                                         </label>
                                         <select id="initial_payment_method" name="initial_payment_method"
                                                 data-buyer-final-field
                                                 class="transaction-buyer-field w-full border border-gray-200 bg-white text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                                {{ $buyerSectionInitiallyVisible ? 'required' : 'disabled' }}>
+                                                {{ $buyerSectionInitiallyVisible ? '' : 'disabled' }}>
                                             <option value="">Select Payment Method</option>
                                             <option value="Cash" {{ old('initial_payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
                                             <option value="GCash" {{ old('initial_payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
@@ -526,6 +546,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                 <div class="min-w-0">
                     <label class="mb-2 block text-sm font-medium text-gray-700">Price per Box</label>
                     <input type="text" name="sales_details[INDEX][unit_price]" inputmode="decimal"
+                           data-currency-input="true"
                            class="unit-price-input h-12 w-full cursor-not-allowed rounded-2xl border border-gray-200 bg-gray-50 px-4 text-right text-sm tabular-nums text-gray-500"
                            placeholder="0.00"
                            readonly>
@@ -744,8 +765,6 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                 'buyer_first_name',
                 'buyer_last_name',
                 'buyer_contact',
-                'initial_paid_amount',
-                'initial_payment_method',
             ]);
 
             const showMessage = (message) => {
@@ -913,6 +932,9 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
             initializeTransactionBuyerStep(root);
             if (typeof window.bindRemoteSalesScannerButtons === 'function') {
                 window.bindRemoteSalesScannerButtons();
+            }
+            if (typeof window.resumeRemoteSalesScannerSession === 'function') {
+                window.resumeRemoteSalesScannerSession();
             }
             maybeAutoPrintReceipt();
         };

@@ -1,4 +1,9 @@
 (function () {
+    const AUTO_SYNC_INTERVAL_MS = 5000;
+    let autoSyncTimer = null;
+    let autoSyncInProgress = false;
+    let lastAutoSyncAt = 0;
+
     function getSwal() {
         return window.Swal || null;
     }
@@ -108,7 +113,89 @@
         window.setTimeout(removeToast, 3200);
     }
 
-    async function refreshInventoryTabFromResponse(response) {
+    function executeInlineScripts(container) {
+        container.querySelectorAll('script').forEach((script) => {
+            if (script.type && script.type !== 'text/javascript' && script.type !== 'application/javascript') {
+                return;
+            }
+
+            const replacement = document.createElement('script');
+            Array.from(script.attributes).forEach((attribute) => {
+                replacement.setAttribute(attribute.name, attribute.value);
+            });
+            replacement.textContent = script.textContent;
+            script.replaceWith(replacement);
+        });
+    }
+
+    function setInventoryLoading(isLoading) {
+        const container = document.querySelector('[data-inventory-tab-content]');
+
+        if (!container) {
+            return;
+        }
+
+        container.classList.toggle('opacity-50', isLoading);
+        container.classList.toggle('pointer-events-none', isLoading);
+        container.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+    }
+
+    function isFishBoxesScreen() {
+        const currentUrl = new URL(window.location.href);
+
+        return currentUrl.pathname.includes('/broker/inventory')
+            && (currentUrl.searchParams.get('tab') || 'fishBoxes') === 'fishBoxes'
+            && Boolean(document.querySelector('[data-fish-box-summary], [data-fish-box-card]'));
+    }
+
+    function hasOpenInventoryOverlay() {
+        return Boolean(
+            document.querySelector([
+                '.workspace-modal-host [role="dialog"]:not(.hidden)',
+                '[data-app-modal-root][role="dialog"]:not([style*="display: none"])',
+                '#fish-box-history-modal:not(.hidden)',
+                '#fish-type-edit-modal:not(.hidden)',
+                '#fish-price-history-modal:not(.hidden)',
+                '#fish-price-edit-modal:not(.hidden)',
+                '#qrScannerModal:not(.hidden)',
+            ].join(', '))
+        );
+    }
+
+    function isUserEditingField() {
+        const activeElement = document.activeElement;
+
+        if (!activeElement) {
+            return false;
+        }
+
+        return activeElement.matches('input, textarea, select, [contenteditable="true"]');
+    }
+
+    function syncInventoryChrome(doc) {
+        const currentTabs = document.querySelector('[data-inventory-tabs]');
+        const newTabs = doc.querySelector('[data-inventory-tabs]');
+
+        if (currentTabs && newTabs) {
+            currentTabs.innerHTML = newTabs.innerHTML;
+        }
+    }
+
+    function removeDetachedInventoryModals() {
+        [
+            'fish-box-history-modal',
+            'fish-type-edit-modal',
+            'fish-price-history-modal',
+            'fish-price-edit-modal',
+        ].forEach((id) => {
+            document.querySelectorAll(`body > #${id}`).forEach((modal) => modal.remove());
+        });
+
+        document.documentElement.classList.remove('modal-scroll-lock');
+        document.body.classList.remove('modal-scroll-lock');
+    }
+
+    async function refreshInventoryTabFromResponse(response, historyMode = 'replace') {
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -121,10 +208,17 @@
             return;
         }
 
+        syncInventoryChrome(doc);
+        removeDetachedInventoryModals();
         currentContainer.innerHTML = newContainer.innerHTML;
+        if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+            window.Alpine.initTree(currentContainer);
+        }
+        executeInlineScripts(currentContainer);
 
         if (response.url) {
-            window.history.replaceState({}, '', response.url);
+            const method = historyMode === 'push' ? 'pushState' : 'replaceState';
+            window.history[method]({}, '', response.url);
         }
 
         const flash = findFlashMessage(doc);
@@ -132,6 +226,124 @@
             showToast(flash.type, flash.message);
         }
     }
+
+    async function loadInventoryTab(url, historyMode = 'push', options = {}) {
+        const shouldFallbackToLocation = options.fallbackToLocation !== false;
+
+        if (!options.silent) {
+            setInventoryLoading(true);
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html, application/xhtml+xml',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Request failed.');
+            }
+
+            await refreshInventoryTabFromResponse(response, historyMode);
+        } catch (error) {
+            if (shouldFallbackToLocation) {
+                window.location.href = url;
+            }
+        } finally {
+            if (!options.silent) {
+                setInventoryLoading(false);
+            }
+        }
+    }
+
+    async function refreshFishBoxesQuietly() {
+        if (
+            autoSyncInProgress
+            || document.hidden
+            || !isFishBoxesScreen()
+            || hasOpenInventoryOverlay()
+            || isUserEditingField()
+        ) {
+            return;
+        }
+
+        autoSyncInProgress = true;
+
+        try {
+            await loadInventoryTab(window.location.href, 'replace', {
+                fallbackToLocation: false,
+                silent: true,
+            });
+            lastAutoSyncAt = Date.now();
+        } catch (error) {
+            // The normal navigation fallback inside loadInventoryTab handles hard failures.
+        } finally {
+            autoSyncInProgress = false;
+        }
+    }
+
+    function startFishBoxAutoSync() {
+        if (autoSyncTimer) {
+            clearInterval(autoSyncTimer);
+        }
+
+        autoSyncTimer = window.setInterval(refreshFishBoxesQuietly, AUTO_SYNC_INTERVAL_MS);
+    }
+
+    window.InventoryAsync = {
+        refreshCurrentTab() {
+            return loadInventoryTab(window.location.href, 'replace');
+        },
+        refreshFromUrl(url, historyMode = 'replace') {
+            return loadInventoryTab(url, historyMode);
+        },
+        refreshFishBoxesQuietly,
+    };
+
+    document.addEventListener('click', function (event) {
+        const link = event.target.closest('a[data-inventory-tab-link]');
+
+        if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+
+        const url = new URL(link.href, window.location.href);
+
+        if (url.origin !== window.location.origin) {
+            return;
+        }
+
+        event.preventDefault();
+        loadInventoryTab(url.toString(), 'push');
+    });
+
+    window.addEventListener('popstate', function () {
+        const currentUrl = new URL(window.location.href);
+
+        if (!currentUrl.pathname.includes('/broker/inventory')) {
+            return;
+        }
+
+        loadInventoryTab(currentUrl.toString(), 'replace');
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && Date.now() - lastAutoSyncAt > 1000) {
+            refreshFishBoxesQuietly();
+        }
+    });
+
+    window.addEventListener('focus', function () {
+        if (Date.now() - lastAutoSyncAt > 1000) {
+            refreshFishBoxesQuietly();
+        }
+    });
+
+    startFishBoxAutoSync();
 
     document.addEventListener('submit', async function (event) {
         const form = event.target;

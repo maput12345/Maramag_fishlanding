@@ -88,6 +88,8 @@ $receiptLineItems = $printingSales->salesDetails
                                         <div class="text-right">
                                             <div class="text-sm font-semibold text-gray-900">₱{{ number_format($lineItem['sub_total'], 2) }}</div>
                                             <div class="text-xs text-gray-500">{{ $lineItem['quantity'] }} x ₱{{ number_format($lineItem['unit_price'], 2) }}</div>
+                                            <span class="sr-only">{{ $lineItem['quantity'] }} x PHP {{ number_format($lineItem['unit_price'], 2) }}</span>
+                                            <span class="sr-only">PHP {{ number_format($lineItem['sub_total'], 2) }}</span>
                                         </div>
                                     </div>
 

@@ -76,8 +76,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes', 'modal' => 'bulk-restock']) }}"
                        class="app-button app-button--dark w-full sm:w-auto px-4 py-2 text-sm">
                         <x-heroicon-o-squares-2x2 class="w-4 h-4" />
-                        <span class="hidden sm:inline">Daily Restock</span>
-                        <span class="sm:hidden">Daily Restock</span>
+                        <span class="hidden sm:inline">Restock</span>
+                        <span class="sm:hidden">Restock</span>
                         <span class="inline-flex items-center justify-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">
                             {{ $bulkRestockEligibleCount }}
                         </span>
@@ -88,8 +88,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             class="app-button app-button--secondary w-full sm:w-auto px-4 py-2 text-sm"
                             style="background: #e5e7eb;">
                         <x-heroicon-o-squares-2x2 class="w-4 h-4" />
-                        <span class="hidden sm:inline">Daily Restock</span>
-                        <span class="sm:hidden">Daily Restock</span>
+                        <span class="hidden sm:inline">Restock</span>
+                        <span class="sm:hidden">Restock</span>
                         <span class="inline-flex items-center justify-center rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">0</span>
                     </button>
                 @endif
@@ -167,10 +167,13 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 ->map(fn ($value) => (string) $value)
                 ->all();
+            $selectedRestockFishType = old('fish_type_id')
+                ? $fishTypes->firstWhere('id', (int) old('fish_type_id'))
+                : null;
         @endphp
 <x-app-modal
-            title="Assign / Daily Restock"
-            subtitle="Select reusable boxes, choose today's fish, and auto-fill the daily cost from Fish Prices when available."
+            title="Restock"
+            subtitle="Select unassigned or returned boxes only. Boxes already in stock stay active for sales."
             :close-url="route('broker.inventory.index', ['tab' => 'fishBoxes'])"
         >
             <x-slot:icon>
@@ -186,46 +189,58 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="bulk_restock_fish_type_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    <div data-fish-type-combobox class="relative">
+                        <label for="bulk_restock_fish_type_search" class="block text-sm font-medium text-gray-700 mb-2">
                             Fish <span class="text-red-500">*</span>
                         </label>
-                        <select id="bulk_restock_fish_type_id"
-                                name="fish_type_id"
-                                required
-                                data-fish-type-select
-                                class="app-select w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                            <option value="">Select Fish</option>
+                        <input type="hidden"
+                               id="bulk_restock_fish_type_id"
+                               name="fish_type_id"
+                               value="{{ old('fish_type_id') }}"
+                               data-fish-type-select
+                               data-stock-cost="{{ old('fish_type_id') ? ($fishTypeDefaultCosts[(string) old('fish_type_id')] ?? '') : '' }}">
+                        <input type="search"
+                               id="bulk_restock_fish_type_search"
+                               data-fish-type-filter
+                               autocomplete="off"
+                               value="{{ $selectedRestockFishType?->display_name ?? '' }}"
+                               class="app-input w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                               placeholder="Search and select fish type...">
+                        <div class="absolute left-0 right-0 z-50 mt-1 hidden max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-xl ring-1 ring-black/5"
+                             style="z-index: 80;"
+                             data-fish-type-list>
                             @foreach($fishTypes as $fishType)
-                                <option value="{{ $fishType->id }}"
-                                    {{ (string) old('fish_type_id') === (string) $fishType->id ? 'selected' : '' }}>
+                                <button type="button"
+                                        class="block w-full px-4 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                                        data-fish-type-option
+                                        data-value="{{ $fishType->id }}"
+                                        data-label="{{ $fishType->display_name }}"
+                                        data-stock-cost="{{ $fishTypeDefaultCosts[(string) $fishType->id] ?? '' }}"
+                                        data-fish-type-search="{{ \Illuminate\Support\Str::lower($fishType->display_name . ' ' . $fishType->id) }}">
                                     {{ $fishType->display_name }}
-                                </option>
+                                </button>
                             @endforeach
-                        </select>
+                            <p class="hidden px-4 py-3 text-sm text-gray-500" data-fish-type-empty>
+                                No fish type found.
+                            </p>
+                        </div>
                         @error('fish_type_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="bulk_restock_cost_price" class="block text-sm font-medium text-gray-700 mb-2">
-                            Cost
-                        </label>
-                        <div class="currency-input-group">
-                            <span class="currency-input-symbol">₱</span>
-                            <input type="number"
-                                   id="bulk_restock_cost_price"
-                                   name="cost_price"
-                                   min="0"
-                                   step="0.01"
-                                   value="{{ old('cost_price') }}"
-                                   data-cost-input
-                                   class="currency-input-field"
-                                   placeholder="Auto-filled from Fish Prices when available">
+                        <p class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Cost
+                        </p>
+                        <div class="rounded-xl border border-gray-300 bg-gray-50 px-4 py-3">
+                            <p class="text-right text-sm font-semibold tabular-nums text-gray-900" data-cost-display>
+                                Select a fish
+                            </p>
+                            <input type="hidden" data-cost-input>
                         </div>
                         <p class="mt-1 text-xs text-gray-500" data-default-cost-note>
-                            Select a fish to load the daily cost. You can still enter a manual cost if needed.
+                            Restock uses the stock cost already set in Fish Prices.
                         </p>
                         @error('cost_price')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -240,19 +255,35 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 <input type="checkbox"
                                        data-select-all-restock
                                        class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <span>Select all {{ $bulkRestockEligibleBoxes->count() }} boxes</span>
+                                <span data-select-all-restock-label>Select all {{ $bulkRestockEligibleBoxes->count() }} boxes</span>
                             </label>
+                            <span class="text-xs font-medium text-blue-800" data-restock-filter-summary>
+                                {{ $bulkRestockEligibleBoxes->count() }} boxes shown, 0 selected
+                            </span>
                         @endif
                     </div>
 
                     @if(($bulkRestockEligibleBoxes ?? collect())->isEmpty())
                         <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-                            No reusable fish boxes are available for daily restocking right now.
+                            No unassigned or returned fish boxes are available for restocking right now.
                         </div>
                     @else
+                        <div>
+                            <label for="restock_box_filter" class="block text-sm font-medium text-gray-700 mb-2">
+                                Find boxes
+                            </label>
+                            <input type="search"
+                                   id="restock_box_filter"
+                                   data-restock-filter
+                                   class="app-input w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                   placeholder="Type box number, fish, QR, or range like 120-150">
+                        </div>
                         <div class="grid max-h-80 grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
                             @foreach($bulkRestockEligibleBoxes as $restockFishBox)
-                                <label class="flex items-start gap-3 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:border-blue-300 hover:bg-blue-50/40">
+                                <label class="flex items-start gap-3 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:border-blue-300 hover:bg-blue-50/40"
+                                       data-restock-card
+                                       data-restock-box-number="{{ $restockFishBox->broker_box_number }}"
+                                       data-restock-search="{{ \Illuminate\Support\Str::lower($restockFishBox->name . ' ' . ($restockFishBox->fish_type_name ?? 'unassigned') . ' ' . $restockFishBox->status . ' ' . $restockFishBox->qr_code) }}">
                                     <input type="checkbox"
                                            name="fish_box_ids[]"
                                            value="{{ $restockFishBox->id }}"
@@ -265,7 +296,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                             Current fish: {{ $restockFishBox->fish_type_name ?? 'Unassigned' }}
                                         </span>
                                         <span class="mt-1 block text-xs text-gray-500">
-                                            Current cost:
+                                            Current stock cost:
                                             {{ $restockFishBox->cost_price !== null ? '₱' . number_format((float) $restockFishBox->cost_price, 2) : 'Not set' }}
                                         </span>
                                         <x-status-badge :status="$restockFishBox->status" size="sm" class="mt-2" />
@@ -291,7 +322,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     <button type="submit"
                             {{ ($bulkRestockEligibleBoxes ?? collect())->isEmpty() ? 'disabled' : '' }}
                             class="app-button app-button--success w-full px-4 py-2.5 text-sm sm:w-auto">
-                        Apply Daily Restock
+                        Restock
                     </button>
                 </div>
             </form>
@@ -345,7 +376,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 </div>
 
                 <div class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                    Newly created boxes will appear in Fish Boxes as <span class="font-semibold">Unassigned</span>. Use <span class="font-semibold">Daily Restock</span> when the broker is ready to assign fish name and cost.
+                    Newly created boxes will appear in Fish Boxes as <span class="font-semibold">Unassigned</span>. Use <span class="font-semibold">Restock</span> when the broker is ready to assign fish name and stock cost.
                 </div>
 
                 <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
@@ -414,7 +445,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
@@ -540,6 +571,24 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
     <!-- Fish Boxes Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
         @forelse($fishBoxes as $fishBox)
+            @php
+                $stockDate = $fishBox->currentPurchase?->purchase_date;
+                $stockAgeDays = $stockDate ? (int) $stockDate->copy()->startOfDay()->diffInDays(now()->startOfDay()) : null;
+                $stockAgeLabel = match (true) {
+                    $stockAgeDays === null => 'No active stock',
+                    $stockAgeDays === 0 => 'Today stock',
+                    $stockAgeDays === 1 => 'Yesterday stock',
+                    $stockAgeDays < 7 => $stockAgeDays . ' days old',
+                    $stockAgeDays < 14 => '1 week old',
+                    default => floor($stockAgeDays / 7) . ' weeks old',
+                };
+                $stockAgeBadgeClass = match (true) {
+                    $stockAgeDays === null => 'bg-slate-100 text-slate-600',
+                    $stockAgeDays === 0 => 'bg-emerald-100 text-emerald-700',
+                    $stockAgeDays === 1 => 'bg-amber-100 text-amber-700',
+                    default => 'bg-red-100 text-red-700',
+                };
+            @endphp
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow"
                  data-fish-box-card
                  data-fish-box-id="{{ $fishBox->id }}"
@@ -614,8 +663,19 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 </div>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $fishBox->name }}</h3>
                 <p class="text-gray-600 text-sm mb-3">{{ $fishBox->fish_type_name ?? 'Unassigned' }}</p>
+                <div class="mb-3 rounded-lg border border-gray-100 bg-white px-3 py-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Stocked</p>
+                        <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold {{ $stockAgeBadgeClass }}">
+                            {{ $stockAgeLabel }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm font-semibold text-gray-900">
+                        {{ $stockDate ? $stockDate->format('M d, Y') : 'No active stock' }}
+                    </p>
+                </div>
                 <div class="mb-3 rounded-lg bg-gray-50 px-3 py-2">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Cost Price</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Stock Cost</p>
                     <p class="text-right text-sm font-semibold tabular-nums text-gray-900">
                         {{ $fishBox->cost_price !== null ? '₱' . number_format((float) $fishBox->cost_price, 2) : 'Not set' }}
                     </p>
@@ -625,10 +685,6 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 </div>
                 @if($fishBox->status === 'Unassigned')
                 @endif
-                <div class="flex items-center justify-between text-sm text-gray-500">
-                    <span class="font-mono text-xs">{{ Str::limit($fishBox->qr_code, 12) }}</span>
-                    <span>{{ $fishBox->created_at->format('M d, Y') }}</span>
-                </div>
             </div>
         @empty
             <div class="col-span-full">
@@ -703,7 +759,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200 bg-white" data-fish-box-history-rows></tbody>
@@ -723,7 +779,8 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
+            const initializeFishBoxInventory = function () {
             const costMapElement = document.getElementById('fish-box-default-cost-map');
 
             if (costMapElement) {
@@ -733,66 +790,274 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     maximumFractionDigits: 2,
                 }).format(Number(value));
 
-                document.querySelectorAll('[data-cost-autofill-form]').forEach((form) => {
-                    const fishTypeSelect = form.querySelector('[data-fish-type-select]');
-                    const costInput = form.querySelector('[data-cost-input]');
-                    const noteElement = form.querySelector('[data-default-cost-note]');
-
-                    if (!fishTypeSelect || !costInput || !noteElement) {
+                window.fishBoxRestockCostMap = defaultCostMap;
+                window.updateFishBoxRestockCost = (form) => {
+                    if (!form) {
                         return;
                     }
 
-                    const updateDefaultCost = (forceFill = false) => {
+                    const fishTypeSelect = form.querySelector('[data-fish-type-select]');
+                    const costInput = form.querySelector('[data-cost-input]');
+                    const costDisplay = form.querySelector('[data-cost-display]');
+                    const noteElement = form.querySelector('[data-default-cost-note]');
+
+                    if (!fishTypeSelect || !noteElement) {
+                        return;
+                    }
+
+                    const updateDefaultCost = () => {
                         const selectedFishTypeId = fishTypeSelect.value;
 
                         if (!selectedFishTypeId) {
-                            noteElement.textContent = 'Select a fish to load the daily cost. You can still enter a manual cost if needed.';
+                            if (costInput) {
+                                costInput.value = '';
+                                costInput.dataset.autofilled = 'false';
+                            }
+                            if (costDisplay) {
+                                costDisplay.textContent = 'Select a fish';
+                            }
+                            noteElement.textContent = 'Restock uses the stock cost already set in Fish Prices.';
                             return;
                         }
 
-                        const defaultCost = Object.prototype.hasOwnProperty.call(defaultCostMap, selectedFishTypeId)
+                        const optionStockCost = fishTypeSelect.dataset.stockCost ?? '';
+                        const defaultCost = optionStockCost !== ''
+                            ? optionStockCost
+                            : Object.prototype.hasOwnProperty.call(defaultCostMap, selectedFishTypeId)
                             ? defaultCostMap[selectedFishTypeId]
                             : null;
 
                         if (defaultCost !== null && defaultCost !== '') {
-                            if (forceFill || costInput.value.trim() === '' || costInput.dataset.autofilled === 'true') {
+                            if (costInput && (costInput.value.trim() === '' || costInput.dataset.autofilled === 'true')) {
                                 costInput.value = defaultCost;
                                 costInput.dataset.autofilled = 'true';
                             }
 
-                            noteElement.textContent = `Cost from Fish Prices: ₱${formatCost(defaultCost)}. You can still override it manually.`;
+                            if (costDisplay) {
+                                costDisplay.textContent = `₱${formatCost(defaultCost)}`;
+                            }
+                            noteElement.textContent = 'This stock cost will be saved to the selected boxes for this restock.';
                             return;
                         }
 
-                        if (costInput.dataset.autofilled === 'true') {
+                        if (costInput && costInput.dataset.autofilled === 'true') {
                             costInput.value = '';
                         }
 
-                        costInput.dataset.autofilled = 'false';
-                        noteElement.textContent = 'No cost is set for this fish in Fish Prices yet. Enter a manual cost price.';
+                        if (costInput) {
+                            costInput.dataset.autofilled = 'false';
+                        }
+                        if (costDisplay) {
+                            costDisplay.textContent = 'Not set';
+                        }
+                            noteElement.textContent = 'No stock cost is set for this fish in Fish Prices yet. Set it first before restocking.';
                     };
 
-                    fishTypeSelect.addEventListener('change', () => updateDefaultCost(true));
-                    costInput.addEventListener('input', () => {
-                        costInput.dataset.autofilled = 'false';
+                    updateDefaultCost();
+                };
+
+                if (!window.fishBoxRestockCostListenersBound) {
+                    document.addEventListener('change', (event) => {
+                        if (event.target.matches('[data-fish-type-select]')) {
+                            window.updateFishBoxRestockCost?.(event.target.closest('[data-cost-autofill-form]'));
+                        }
                     });
 
-                    updateDefaultCost(false);
+                    document.addEventListener('click', (event) => {
+                        const form = event.target.closest?.('[data-cost-autofill-form]');
+                        if (form) {
+                            window.setTimeout(() => window.updateFishBoxRestockCost?.(form), 0);
+                        }
+                    });
+
+                    new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            mutation.addedNodes.forEach((node) => {
+                                if (!(node instanceof HTMLElement)) {
+                                    return;
+                                }
+
+                                if (node.matches('[data-cost-autofill-form]')) {
+                                    window.updateFishBoxRestockCost?.(node);
+                                }
+
+                                node.querySelectorAll?.('[data-cost-autofill-form]').forEach((form) => {
+                                    window.updateFishBoxRestockCost?.(form);
+                                });
+                            });
+                        });
+                    }).observe(document.body, { childList: true, subtree: true });
+
+                    window.fishBoxRestockCostListenersBound = true;
+                }
+
+                document.querySelectorAll('[data-cost-autofill-form]').forEach((form) => {
+                    window.updateFishBoxRestockCost(form);
                 });
             }
 
             const selectAllCheckbox = document.querySelector('[data-select-all-restock]');
             const restockCheckboxes = Array.from(document.querySelectorAll('[data-restock-checkbox]'));
+            const restockFilter = document.querySelector('[data-restock-filter]');
+            const restockCards = Array.from(document.querySelectorAll('[data-restock-card]'));
+            const restockFilterSummary = document.querySelector('[data-restock-filter-summary]');
+            const selectAllLabel = document.querySelector('[data-select-all-restock-label]');
+            const fishTypeCombobox = document.querySelector('[data-fish-type-combobox]');
+            const fishTypeFilter = document.querySelector('[data-fish-type-filter]');
+            const fishTypeSelect = document.querySelector('[data-fish-type-select]');
+            const fishTypeList = document.querySelector('[data-fish-type-list]');
+            const fishTypeOptions = Array.from(document.querySelectorAll('[data-fish-type-option]'));
+            const fishTypeEmpty = document.querySelector('[data-fish-type-empty]');
+
+            if (fishTypeCombobox && fishTypeFilter && fishTypeSelect && fishTypeList) {
+                const closeFishTypeList = () => {
+                    fishTypeList.classList.add('hidden');
+                };
+
+                const openFishTypeList = () => {
+                    fishTypeList.classList.remove('hidden');
+                };
+
+                const filterFishTypeOptions = (shouldOpen = true) => {
+                    const query = fishTypeFilter.value.trim().toLowerCase();
+                    let visibleCount = 0;
+
+                    fishTypeOptions.forEach((option) => {
+                        const matches = query === ''
+                            || (option.dataset.fishTypeSearch || '').includes(query)
+                            || option.textContent.toLowerCase().includes(query);
+
+                        option.classList.toggle('hidden', !matches);
+                        visibleCount += matches ? 1 : 0;
+                    });
+
+                    fishTypeEmpty?.classList.toggle('hidden', visibleCount > 0);
+
+                    if (shouldOpen) {
+                        openFishTypeList();
+                    }
+                };
+
+                const selectFishType = (option) => {
+                    fishTypeSelect.value = option.dataset.value || '';
+                    fishTypeSelect.dataset.stockCost = option.dataset.stockCost || '';
+                    fishTypeFilter.value = option.dataset.label || option.textContent.trim();
+                    closeFishTypeList();
+                    window.updateFishBoxRestockCost?.(fishTypeSelect.closest('[data-cost-autofill-form]'));
+                };
+
+                fishTypeFilter.addEventListener('focus', () => filterFishTypeOptions(true));
+                fishTypeFilter.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        closeFishTypeList();
+                        fishTypeFilter.blur();
+                    }
+                });
+                fishTypeFilter.addEventListener('input', () => {
+                    fishTypeSelect.value = '';
+                    fishTypeSelect.dataset.stockCost = '';
+                    window.updateFishBoxRestockCost?.(fishTypeSelect.closest('[data-cost-autofill-form]'));
+                    filterFishTypeOptions(true);
+                });
+
+                fishTypeList.addEventListener('mousedown', (event) => {
+                    if (event.target === fishTypeList) {
+                        closeFishTypeList();
+                    }
+                });
+
+                fishTypeOptions.forEach((option) => {
+                    option.addEventListener('click', () => selectFishType(option));
+                });
+
+                document.addEventListener('mousedown', (event) => {
+                    if (!fishTypeCombobox.contains(event.target)) {
+                        closeFishTypeList();
+                    }
+                }, true);
+
+                document.addEventListener('focusin', (event) => {
+                    if (!fishTypeCombobox.contains(event.target)) {
+                        closeFishTypeList();
+                    }
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!fishTypeCombobox.contains(event.target)) {
+                        closeFishTypeList();
+                    }
+                });
+
+                filterFishTypeOptions(false);
+            }
 
             if (selectAllCheckbox && restockCheckboxes.length > 0) {
+                const parseRangeFilter = (query) => {
+                    const rangeMatch = query.match(/^#?\s*(\d+)\s*-\s*#?\s*(\d+)$/);
+
+                    if (!rangeMatch) {
+                        return null;
+                    }
+
+                    const start = Number(rangeMatch[1]);
+                    const end = Number(rangeMatch[2]);
+
+                    return {
+                        min: Math.min(start, end),
+                        max: Math.max(start, end),
+                    };
+                };
+
+                const getVisibleCheckboxes = () => restockCheckboxes.filter((checkbox) => {
+                    const card = checkbox.closest('[data-restock-card]');
+
+                    return !card || card.style.display !== 'none';
+                });
+
+                const updateRestockFilter = () => {
+                    const query = (restockFilter?.value || '').trim().toLowerCase();
+                    const queryDigits = (query.match(/\d+/) || [''])[0];
+                    const hasQueryNumber = queryDigits !== '';
+                    const rangeFilter = parseRangeFilter(query);
+
+                    restockCards.forEach((card) => {
+                        const boxNumber = Number(card.dataset.restockBoxNumber || 0);
+                        const boxNumberText = String(boxNumber);
+                        const searchText = card.dataset.restockSearch || '';
+                        const matches = query === ''
+                            || (hasQueryNumber && boxNumberText.startsWith(String(Number(queryDigits))))
+                            || (!hasQueryNumber && searchText.includes(query))
+                            || (rangeFilter && boxNumber >= rangeFilter.min && boxNumber <= rangeFilter.max);
+
+                        card.style.display = matches ? '' : 'none';
+                    });
+
+                    syncSelectAllState();
+                };
+
                 const syncSelectAllState = () => {
+                    const visibleCheckboxes = getVisibleCheckboxes();
                     const selectedCount = restockCheckboxes.filter((checkbox) => checkbox.checked).length;
-                    selectAllCheckbox.checked = selectedCount === restockCheckboxes.length;
-                    selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < restockCheckboxes.length;
+                    const visibleSelectedCount = visibleCheckboxes.filter((checkbox) => checkbox.checked).length;
+                    const visibleCount = visibleCheckboxes.length;
+
+                    selectAllCheckbox.checked = visibleCount > 0 && visibleSelectedCount === visibleCount;
+                    selectAllCheckbox.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visibleCount;
+                    selectAllCheckbox.disabled = visibleCount === 0;
+
+                    if (selectAllLabel) {
+                        selectAllLabel.textContent = visibleCount === restockCheckboxes.length
+                            ? `Select all ${visibleCount} boxes`
+                            : `Select all ${visibleCount} shown`;
+                    }
+
+                    if (restockFilterSummary) {
+                        restockFilterSummary.textContent = `${visibleCount} boxes shown, ${selectedCount} selected`;
+                    }
                 };
 
                 selectAllCheckbox.addEventListener('change', () => {
-                    restockCheckboxes.forEach((checkbox) => {
+                    getVisibleCheckboxes().forEach((checkbox) => {
                         checkbox.checked = selectAllCheckbox.checked;
                     });
 
@@ -803,6 +1068,9 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     checkbox.addEventListener('change', syncSelectAllState);
                 });
 
+                restockFilter?.addEventListener('input', updateRestockFilter);
+
+                updateRestockFilter();
                 syncSelectAllState();
             }
 
@@ -917,7 +1185,14 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     closeHistoryModal();
                 }
             });
-        });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeFishBoxInventory, { once: true });
+            } else {
+                initializeFishBoxInventory();
+            }
+        })();
     </script>
 
 </div>

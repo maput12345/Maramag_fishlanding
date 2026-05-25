@@ -43,8 +43,8 @@ $breadcrumbs = [
                     <form method="GET" action="{{ route('broker.sales.sales') }}" x-data="{
                         search: '{{ request('search') }}',
                         status: '{{ request('status') }}',
-                        dateFrom: '{{ request('date_from') }}',
-                        dateTo: '{{ request('date_to') }}'
+                        dateFrom: '{{ $dateFrom ?? request('date_from') }}',
+                        dateTo: '{{ $dateTo ?? request('date_to') }}'
                     }">
                         <div class="sales-filter-layout">
                             <!-- Search Field -->
@@ -112,6 +112,9 @@ $breadcrumbs = [
                 <div class="mb-4">
                     <p class="text-sm text-gray-600">
                         Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }} sales
+                        @if(($dateFrom ?? null) && ($dateTo ?? null))
+                            <span class="text-gray-500">for {{ \Illuminate\Support\Carbon::parse($dateFrom)->format('M d, Y') }}{{ $dateFrom !== $dateTo ? ' - ' . \Illuminate\Support\Carbon::parse($dateTo)->format('M d, Y') : '' }}</span>
+                        @endif
                         @if(request()->hasAny(['search', 'status', 'date_from', 'date_to']))
                             <span class="text-blue-600">(filtered)</span>
                         @endif
@@ -121,44 +124,44 @@ $breadcrumbs = [
                 <!-- Sales Table -->
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full">
+                        <table class="w-full table-fixed">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodities</th>
+                                    <th class="w-44 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buyer</th>
+                                    <th class="w-32 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th class="w-32 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                                    <th class="w-36 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="w-40 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
                                 @forelse($sales as $sale)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <tr class="group hover:bg-gray-50">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {{ $sale->sales_date->format('M d, Y') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td class="px-4 py-4 text-sm text-gray-900">
                                             {{ $sale->formatted_items }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div>
-                                                <div class="text-sm font-medium text-gray-900">{{ $sale->buyer_name }}</div>
-                                                <div class="text-sm text-gray-500">{{ $sale->buyer_contact }}</div>
+                                        <td class="px-4 py-4">
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm font-medium text-gray-900" title="{{ $sale->buyer_name }}">{{ $sale->buyer_name }}</div>
+                                                <div class="truncate text-sm text-gray-500" title="{{ $sale->buyer_contact }}">{{ $sale->buyer_contact }}</div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
+                                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
                                             ₱{{ number_format($sale->total_amount, 2) }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
+                                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm tabular-nums text-gray-900">
                                             ₱{{ number_format($sale->paid_amount, 2) }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-4 py-4">
                                             <x-status-badge :status="$salesStatusesWithDisplayNames[$sale->status]" />
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div class="flex items-center space-x-2">
+                                        <td class="px-4 py-4 text-sm font-medium">
+                                            <div class="flex items-center justify-center gap-2">
                                                 <a href="{{ route('broker.sales.sales', ['modal' => 'show', 'show' => $sale->id]) }}"
                                                    class="text-green-600 hover:text-green-900 transition-colors"
                                                    title="View Sale">

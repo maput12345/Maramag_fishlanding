@@ -39,13 +39,12 @@ class BulkRestockFishBoxesRequest extends FormRequest
                         ->where('broker_id', $brokerId)
                         ->whereIn('box_status', [
                             FishBoxStatusConstant::UNASSIGNED,
-                            FishBoxStatusConstant::IN_STOCK,
                             FishBoxStatusConstant::RETURNED,
                         ])
                         ->exists();
 
                     if (!$isEligible) {
-                        $fail('One or more selected fish boxes are no longer available for daily restocking.');
+                        $fail('Only unassigned or returned fish boxes can be selected for daily restocking.');
                     }
                 },
             ],
