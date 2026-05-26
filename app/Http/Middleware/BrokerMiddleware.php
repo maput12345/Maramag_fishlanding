@@ -34,6 +34,8 @@ class BrokerMiddleware
                 'broker.sales-payments.store',
                 'broker.fish-boxes.qr',
                 'broker.sales.scan-sessions.store',
+                'broker.sales.scan-sessions.scanner',
+                'broker.sales.scan-sessions.scan',
                 'broker.sales.scan-sessions.items',
                 'broker.sales.scan-sessions.close',
             ];

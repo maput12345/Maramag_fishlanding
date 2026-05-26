@@ -98,15 +98,7 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        if ($user->isAdmin() || $user->isStaff()) {
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->isBroker()) {
-            return redirect()->route('broker.dashboard');
-        } elseif ($user->isCashier()) {
-            return redirect()->route('broker.transaction');
-        }
-
-        return redirect()->route('applications.index');
+        return redirect()->intended($this->redirectTo());
     }
 
     /**
