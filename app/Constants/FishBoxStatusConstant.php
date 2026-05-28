@@ -28,7 +28,7 @@ class FishBoxStatusConstant
 
     public static function label(string $status): string
     {
-        return $status === self::RETIRED ? 'Inactive' : $status;
+        return $status === self::RETIRED ? 'Damaged' : $status;
     }
 
     public static function getEditableStatuses(): array

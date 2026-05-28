@@ -18,6 +18,7 @@ class PaymentRecord extends Model
         'paid_amount',
         'payment_date',
         'payment_method',
+        'reference_number',
     ];
 
     protected $casts = [

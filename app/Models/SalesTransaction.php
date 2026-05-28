@@ -213,6 +213,7 @@ class SalesTransaction extends Model
                     'paid_amount' => $initialPayment['paid_amount'],
                     'payment_date' => $initialPayment['payment_date'],
                     'payment_method' => $initialPayment['payment_method'],
+                    'reference_number' => $initialPayment['reference_number'] ?? null,
                 ]);
 
                 $sale->updatePaidAmount();

@@ -270,64 +270,55 @@
                                     : 0;
                             @endphp
                             <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50/30">
-                                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="text-base font-semibold text-gray-900">Sale #{{ $sale->id }}</span>
-                                            <x-status-badge :status="\App\Constants\SalesStatusConstant::getDisplayName($sale->status)" size="sm" />
-                                            <span class="text-sm text-gray-500">{{ $sale->sales_date?->format('M d, Y') }}</span>
-                                        </div>
-                                        <p class="mt-2 truncate text-sm text-gray-600" title="{{ $sale->formatted_items }}">{{ $sale->formatted_items }}</p>
-                                        @php($lineItems = $buyerLedgerLineItems($sale))
-                                        @if($lineItems->isNotEmpty())
-                                            <div class="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                                                <table class="w-full text-left text-xs">
-                                                    <thead class="bg-gray-50 text-gray-500">
-                                                        <tr>
-                                                            <th class="px-3 py-2 font-medium">Item</th>
-                                                            <th class="px-3 py-2 text-right font-medium">Qty</th>
-                                                            <th class="px-3 py-2 font-medium">Box No.</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="divide-y divide-gray-100">
-                                                        @foreach($lineItems as $lineItem)
-                                                            <tr>
-                                                                <td class="px-3 py-2 text-gray-700">{{ $lineItem['item'] }}</td>
-                                                                <td class="px-3 py-2 text-right tabular-nums text-gray-900">{{ number_format($lineItem['quantity']) }}</td>
-                                                                <td class="px-3 py-2 text-gray-600">
-                                                                    {{ $lineItem['fish_boxes']->isNotEmpty() ? $lineItem['fish_boxes']->implode(', ') : 'No box recorded' }}
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        @endif
-                                        <div class="mt-3 h-2 w-full max-w-md rounded-full bg-gray-200">
-                                            <div class="h-2 rounded-full bg-gradient-to-r from-green-500 to-green-600" style="width: {{ $paymentProgress }}%"></div>
-                                        </div>
-                                    </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-base font-semibold text-gray-900">Sale #{{ $sale->id }}</span>
+                                    <x-status-badge :status="\App\Constants\SalesStatusConstant::getDisplayName($sale->status)" size="sm" />
+                                    <span class="text-sm text-gray-500">{{ $sale->sales_date?->format('M d, Y') }}</span>
+                                </div>
+                                <p class="mt-2 truncate text-sm text-gray-600" title="{{ $sale->formatted_items }}">{{ $sale->formatted_items }}</p>
 
-                                    <div class="grid grid-cols-3 gap-3 text-right sm:min-w-96">
-                                        <div>
-                                            <p class="text-xs text-gray-500">Total</p>
-                                            <p class="mt-1 text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format((float) $sale->total_amount, 2) }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500">Paid</p>
-                                            <p class="mt-1 text-sm font-semibold tabular-nums text-green-700">₱{{ number_format((float) $sale->paid_amount, 2) }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500">Balance</p>
-                                            <p class="mt-1 text-sm font-semibold tabular-nums {{ $sale->remaining_amount > 0 ? 'text-orange-600' : 'text-green-700' }}">₱{{ number_format((float) $sale->remaining_amount, 2) }}</p>
-                                        </div>
+                                @php($lineItems = $buyerLedgerLineItems($sale))
+                                @if($lineItems->isNotEmpty())
+                                    <div class="mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                                        <table class="w-full min-w-[58rem] text-left text-xs">
+                                            <thead class="bg-gray-50 text-gray-500">
+                                                <tr>
+                                                    <th class="px-3 py-2 font-medium">Item</th>
+                                                    <th class="px-3 py-2 text-right font-medium">Qty</th>
+                                                    <th class="px-3 py-2 font-medium">Box No.</th>
+                                                    <th class="px-3 py-2 text-right font-medium">Total</th>
+                                                    <th class="px-3 py-2 text-right font-medium">Paid</th>
+                                                    <th class="px-3 py-2 text-right font-medium">Balance</th>
+                                                    <th class="px-3 py-2 text-center font-medium">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100">
+                                                @foreach($lineItems as $lineItemIndex => $lineItem)
+                                                    <tr>
+                                                        <td class="px-3 py-2 text-gray-700">{{ $lineItem['item'] }}</td>
+                                                        <td class="px-3 py-2 text-right tabular-nums text-gray-900">{{ number_format($lineItem['quantity']) }}</td>
+                                                        <td class="px-3 py-2 text-gray-600">
+                                                            {{ $lineItem['fish_boxes']->isNotEmpty() ? $lineItem['fish_boxes']->implode(', ') : 'No box recorded' }}
+                                                        </td>
+                                                        @if($lineItemIndex === 0)
+                                                            <td rowspan="{{ $lineItems->count() }}" class="px-3 py-2 text-right align-middle text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format((float) $sale->total_amount, 2) }}</td>
+                                                            <td rowspan="{{ $lineItems->count() }}" class="px-3 py-2 text-right align-middle text-sm font-semibold tabular-nums text-green-700">₱{{ number_format((float) $sale->paid_amount, 2) }}</td>
+                                                            <td rowspan="{{ $lineItems->count() }}" class="px-3 py-2 text-right align-middle text-sm font-semibold tabular-nums {{ $sale->remaining_amount > 0 ? 'text-orange-600' : 'text-green-700' }}">₱{{ number_format((float) $sale->remaining_amount, 2) }}</td>
+                                                            <td rowspan="{{ $lineItems->count() }}" class="px-3 py-2 text-center align-middle">
+                                                                <span class="inline-flex rounded-xl {{ $sale->remaining_amount > 0 ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-green-200 bg-green-50 text-green-700' }} border px-3 py-2 text-sm font-semibold">
+                                                                    {{ $sale->remaining_amount > 0 ? 'Has balance' : 'Settled' }}
+                                                                </span>
+                                                            </td>
+                                                        @endif
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
                                     </div>
+                                @endif
 
-                                    <div class="flex shrink-0 flex-col gap-2 sm:items-end">
-                                        <div class="rounded-xl {{ $sale->remaining_amount > 0 ? 'border-orange-200 bg-orange-50 text-orange-700' : 'border-green-200 bg-green-50 text-green-700' }} border px-3 py-2 text-sm font-semibold">
-                                            {{ $sale->remaining_amount > 0 ? 'Has balance' : 'Settled' }}
-                                        </div>
-                                    </div>
+                                <div class="mt-3 h-2 w-full max-w-md rounded-full bg-gray-200">
+                                    <div class="h-2 rounded-full bg-gradient-to-r from-green-500 to-green-600" style="width: {{ $paymentProgress }}%"></div>
                                 </div>
                             </article>
                         @empty
@@ -422,6 +413,9 @@
                                    name="contact"
                                    value="{{ old('contact') }}"
                                    placeholder="09XXXXXXXXX"
+                                   inputmode="numeric"
+                                   maxlength="11"
+                                   pattern="09[0-9]{9}"
                                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                             @error('contact')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -525,6 +519,9 @@
                                    name="contact"
                                    value="{{ old('contact', $selectedBuyer->contact) }}"
                                    placeholder="09XXXXXXXXX"
+                                   inputmode="numeric"
+                                   maxlength="11"
+                                   pattern="09[0-9]{9}"
                                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                             @error('contact')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -591,7 +588,10 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('broker.buyers.payments.store') }}" method="POST" class="space-y-5">
+                    <form action="{{ route('broker.buyers.payments.store') }}"
+                          method="POST"
+                          class="space-y-5"
+                          x-data="{ paymentMethod: @js(old('payment_method', '')), requiresReferenceNumber() { return ['GCash', 'Bank Transfer'].includes(this.paymentMethod); } }">
                         @csrf
                         <input type="hidden" name="buyer_id" value="{{ $selectedBuyer->id }}">
                         <input type="hidden" name="buyer_search" value="{{ $search }}">
@@ -644,6 +644,7 @@
                             <select id="buyer_ledger_payment_method"
                                     name="payment_method"
                                     required
+                                    x-model="paymentMethod"
                                     class="app-select w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
                                 <option value="">Select Payment Method</option>
                                 @foreach(['Cash', 'GCash', 'Bank Transfer', 'Check', 'Other'] as $paymentMethod)
@@ -651,6 +652,23 @@
                                 @endforeach
                             </select>
                             @error('payment_method')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div x-show="requiresReferenceNumber()" x-cloak>
+                            <label for="buyer_ledger_reference_number" class="mb-2 block text-sm font-medium text-gray-700">
+                                Reference Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="buyer_ledger_reference_number"
+                                   name="reference_number"
+                                   value="{{ old('reference_number') }}"
+                                   maxlength="100"
+                                   :required="requiresReferenceNumber()"
+                                   placeholder="Enter GCash or bank reference number"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('reference_number')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>

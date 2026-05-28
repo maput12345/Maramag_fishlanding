@@ -25,6 +25,7 @@ class SalesRequest extends FormRequest
         }
         $contact = trim((string) $this->input('buyer_contact', ''));
         $buyerName = trim(collect([$firstName, $middleName, $lastName])->filter()->implode(' '));
+        $initialReferenceNumber = trim((string) $this->input('initial_reference_number', ''));
 
         $this->merge([
             'buyer_first_name' => $firstName,
@@ -32,6 +33,7 @@ class SalesRequest extends FormRequest
             'buyer_last_name' => $lastName,
             'buyer_contact' => $contact,
             'buyer_name' => $buyerName ?: trim((string) $this->input('buyer_name', '')),
+            'initial_reference_number' => $initialReferenceNumber,
         ]);
     }
 
@@ -62,6 +64,13 @@ class SalesRequest extends FormRequest
             'initial_paid_amount' => 'nullable|numeric|min:0.01',
             'initial_payment_date' => 'nullable|required_with:initial_paid_amount|date',
             'initial_payment_method' => 'nullable|required_with:initial_paid_amount|string|max:255',
+            'initial_reference_number' => [
+                'nullable',
+                \Illuminate\Validation\Rule::requiredIf(fn (): bool => $this->filled('initial_paid_amount')
+                    && in_array($this->input('initial_payment_method'), ['GCash', 'Bank Transfer'], true)),
+                'string',
+                'max:100',
+            ],
             'sales_details' => 'required|array|min:1',
             'sales_details.*.box_id' => 'nullable|array',
             'sales_details.*.box_id.*' => 'nullable|exists:FishBox,id',
@@ -208,6 +217,8 @@ class SalesRequest extends FormRequest
             'initial_payment_date.date' => 'Please enter a valid initial payment date.',
             'initial_payment_method.required_with' => 'Please select the initial payment method.',
             'initial_payment_method.max' => 'Initial payment method cannot exceed 255 characters.',
+            'initial_reference_number.required' => 'Please enter the reference number for GCash or bank transfer payments.',
+            'initial_reference_number.max' => 'Reference number cannot exceed 100 characters.',
             'sales_details.required' => 'Please add at least one sales detail.',
             'sales_details.min' => 'Please add at least one sales detail.',
             'sales_details.*.box_id.array' => 'Fish boxes must be provided as an array.',
@@ -244,6 +255,7 @@ class SalesRequest extends FormRequest
             'initial_paid_amount' => 'initial paid amount',
             'initial_payment_date' => 'initial payment date',
             'initial_payment_method' => 'initial payment method',
+            'initial_reference_number' => 'reference number',
             'sales_details' => 'sales details',
             'sales_details.*.box_id' => 'fish box',
             'sales_details.*.fish_type_id' => 'fish type',

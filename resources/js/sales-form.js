@@ -37,6 +37,8 @@ function initializeSalesForm(config, scope = document) {
     const totalAmountInput = root.querySelector('#total_amount');
     const initialPaidAmountInput = root.querySelector('#initial_paid_amount');
     const initialPaymentMethodSelect = root.querySelector('#initial_payment_method');
+    const initialReferenceNumberGroup = root.querySelector('[data-initial-reference-number-group]');
+    const initialReferenceNumberInput = root.querySelector('[data-initial-reference-number]');
     const initialPaymentMaxAmount = root.querySelector('#initial-payment-max-amount');
     const initialPaymentError = root.querySelector('#initial-payment-error');
     const salesForm = root.querySelector('form[data-sales-async-form]');
@@ -870,6 +872,19 @@ function initializeSalesForm(config, scope = document) {
         const maxPaymentAmount = parseMoney(totalAmountInput?.value || 0);
         const currentAmount = parseMoney(initialPaidAmountInput.value);
         const hasCurrentAmount = initialPaidAmountInput.value !== '';
+        const requiresReferenceNumber = ['GCash', 'Bank Transfer'].includes(initialPaymentMethodSelect?.value || '');
+
+        if (initialReferenceNumberGroup) {
+            initialReferenceNumberGroup.classList.toggle('hidden', !requiresReferenceNumber);
+        }
+
+        if (initialReferenceNumberInput) {
+            initialReferenceNumberInput.required = hasCurrentAmount && requiresReferenceNumber;
+            if (!requiresReferenceNumber) {
+                initialReferenceNumberInput.value = '';
+                initialReferenceNumberInput.setCustomValidity('');
+            }
+        }
 
         initialPaidAmountInput.max = maxPaymentAmount.toFixed(2);
         if (initialPaymentMethodSelect) {
@@ -904,6 +919,7 @@ function initializeSalesForm(config, scope = document) {
     }
 
     initialPaymentMethodSelect?.addEventListener('change', validateInitialPayment);
+    validateInitialPayment();
 
     // Initialize total amount
     root.querySelectorAll('.sales-detail-row').forEach((row) => {

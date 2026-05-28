@@ -640,6 +640,7 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                     ? Number(config.initialPaidAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     : '',
                 maxPaymentAmount: Number(config.maxPaymentAmount ?? 0),
+                paymentMethod: config.initialPaymentMethod ?? '',
                 paymentError: '',
 
                 initializePaymentForm() {
@@ -673,6 +674,10 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
 
                 normalizePaymentAmount() {
                     this.paidAmount = this.parseMoney(this.paidAmount).toFixed(2);
+                },
+
+                requiresReferenceNumber() {
+                    return ['GCash', 'Bank Transfer'].includes(this.paymentMethod);
                 },
 
                 validatePaymentAmount() {

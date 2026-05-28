@@ -219,14 +219,21 @@ class BuyerLedgerController extends Controller
     {
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $user = Auth::user();
+        $request->merge([
+            'reference_number' => trim((string) $request->input('reference_number', '')),
+        ]);
 
         $validated = $request->validate([
             'buyer_id' => ['required', 'integer'],
             'paid_amount' => ['required', 'numeric', 'min:0.01'],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'string', 'max:255'],
+            'reference_number' => ['nullable', 'required_if:payment_method,GCash,Bank Transfer', 'string', 'max:100'],
             'buyer_search' => ['nullable', 'string', 'max:255'],
             'buyer_page' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'reference_number.required_if' => 'Please enter the reference number for GCash or bank transfer payments.',
+            'reference_number.max' => 'Reference number cannot exceed 100 characters.',
         ]);
 
         $returnParameters = array_filter([
@@ -296,6 +303,7 @@ class BuyerLedgerController extends Controller
                     'paid_amount' => $appliedAmount,
                     'payment_date' => $validated['payment_date'],
                     'payment_method' => $validated['payment_method'],
+                    'reference_number' => ($validated['reference_number'] ?? '') !== '' ? $validated['reference_number'] : null,
                 ]);
 
                 $sale->updatePaidAmount();

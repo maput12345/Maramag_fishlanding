@@ -356,10 +356,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function paymentForm() {
+function paymentForm(config = {}) {
     return {
-        paidAmount: '',
-        maxPaymentAmount: {{ $saleForPayment ? $saleForPayment->remaining_amount : 0 }},
+        paidAmount: Number(config.initialPaidAmount ?? 0) > 0
+            ? Number(config.initialPaidAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '',
+        maxPaymentAmount: Number(config.maxPaymentAmount ?? {{ $saleForPayment ? $saleForPayment->remaining_amount : 0 }}),
+        paymentMethod: config.initialPaymentMethod ?? '',
         paymentError: '',
 
         initializePaymentForm() {
@@ -391,6 +394,10 @@ function paymentForm() {
 
         normalizePaymentAmount() {
             this.paidAmount = this.parseMoney(this.paidAmount).toFixed(2);
+        },
+
+        requiresReferenceNumber() {
+            return ['GCash', 'Bank Transfer'].includes(this.paymentMethod);
         },
 
         validatePaymentAmount() {

@@ -856,26 +856,27 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 const pageRecords = records.slice(pageStart, pageStart + historyPageSize);
 
                 if (historyPagination) {
-                    historyPagination.innerHTML = records.length > historyPageSize
-                        ? `
-                            <span>Showing ${pageStart + 1}-${Math.min(pageStart + historyPageSize, records.length)} of ${records.length}</span>
-                            <span class="inline-flex items-center gap-2">
-                                <button type="button"
-                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-fish-price-history-page="prev"
-                                        ${activeHistoryPage === 1 ? 'disabled' : ''}>
-                                    Previous
-                                </button>
-                                <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
-                                <button type="button"
-                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-fish-price-history-page="next"
-                                        ${activeHistoryPage === totalPages ? 'disabled' : ''}>
-                                    Next
-                                </button>
-                            </span>
-                        `
-                        : '';
+                    const showingStart = records.length > 0 ? pageStart + 1 : 0;
+                    const showingEnd = records.length > 0 ? Math.min(pageStart + historyPageSize, records.length) : 0;
+
+                    historyPagination.innerHTML = `
+                        <span>Showing ${showingStart}-${showingEnd} of ${records.length}</span>
+                        <span class="inline-flex items-center gap-2">
+                            <button type="button"
+                                    class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    data-fish-price-history-page="prev"
+                                    ${activeHistoryPage === 1 ? 'disabled' : ''}>
+                                Previous
+                            </button>
+                            <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
+                            <button type="button"
+                                    class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    data-fish-price-history-page="next"
+                                    ${activeHistoryPage === totalPages ? 'disabled' : ''}>
+                                Next
+                            </button>
+                        </span>
+                    `;
                 }
 
                 if (records.length === 0) {

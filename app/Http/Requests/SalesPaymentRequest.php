@@ -10,6 +10,13 @@ use Illuminate\Validation\Validator;
 
 class SalesPaymentRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'reference_number' => trim((string) $this->input('reference_number', '')),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -45,6 +52,7 @@ class SalesPaymentRequest extends FormRequest
             ],
             'payment_date' => 'required|date',
             'payment_method' => 'required|string|max:255',
+            'reference_number' => 'nullable|required_if:payment_method,GCash,Bank Transfer|string|max:100',
         ];
     }
 
@@ -134,6 +142,8 @@ class SalesPaymentRequest extends FormRequest
             'payment_date.date' => 'Please enter a valid payment date.',
             'payment_method.required' => 'Please enter the payment method.',
             'payment_method.max' => 'Payment method cannot exceed 255 characters.',
+            'reference_number.required_if' => 'Please enter the reference number for GCash or bank transfer payments.',
+            'reference_number.max' => 'Reference number cannot exceed 100 characters.',
         ];
     }
 
@@ -149,6 +159,7 @@ class SalesPaymentRequest extends FormRequest
             'paid_amount' => 'paid amount',
             'payment_date' => 'payment date',
             'payment_method' => 'payment method',
+            'reference_number' => 'reference number',
         ];
     }
 }

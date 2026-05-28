@@ -979,11 +979,12 @@ class FishBox extends Model
     }
 
     /**
-     * Check if a retired fish box can be restored for future restocking.
+     * Retired fish boxes are permanent because they represent boxes that
+     * should no longer be used, such as damaged physical boxes.
      */
     public function canBeRestored(): bool
     {
-        return $this->status === FishBoxStatusConstant::RETIRED;
+        return false;
     }
 
     /**

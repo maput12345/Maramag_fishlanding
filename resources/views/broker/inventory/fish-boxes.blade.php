@@ -62,7 +62,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                             \App\Constants\FishBoxStatusConstant::SOLD => 'Used in a sales transaction.',
                             \App\Constants\FishBoxStatusConstant::RETURNED => 'Returned to the broker.',
                             \App\Constants\FishBoxStatusConstant::MISSING => 'Marked missing for tracking.',
-                            \App\Constants\FishBoxStatusConstant::RETIRED => 'Marked inactive.',
+                            \App\Constants\FishBoxStatusConstant::RETIRED => 'Marked damaged.',
                             default => 'Status updated.',
                         };
 
@@ -188,7 +188,7 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 <p class="summary-stat-value text-yellow-600" data-fish-box-summary="returned">{{ number_format($fishBoxSummary['returned'] ?? 0) }}</p>
             </div>
             <div class="summary-strip-item">
-                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Inactive</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Damaged</p>
                 <p class="summary-stat-value text-red-600" data-fish-box-summary="retired">{{ number_format($fishBoxSummary['retired'] ?? 0) }}</p>
             </div>
         </div>
@@ -772,15 +772,16 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                   method="POST"
                                   class="inline-block"
                                   data-swal="{{ $willRetireFishBox ? 'confirm' : 'delete' }}"
-                                  data-swal-title="{{ $willRetireFishBox ? 'Make fish box inactive?' : 'Delete fish box?' }}"
-                                  data-swal-text="{{ $willRetireFishBox ? 'This will make ' . $fishBox->name . ' inactive and keep its history for receipts and reports.' : 'This will permanently delete ' . $fishBox->name . ' because it has no history yet.' }}"
-                                  data-swal-confirm="{{ $willRetireFishBox ? 'Yes, make inactive' : 'Yes, delete' }}"
+                                  data-swal-title="{{ $willRetireFishBox ? 'Mark fish box as damaged?' : 'Delete fish box?' }}"
+                                  data-swal-text="{{ $willRetireFishBox ? 'Are you sure you want to mark ' . $fishBox->name . ' as damaged? Use this for boxes that can no longer be used. It will not be available for restocking again, but its history will stay available for receipts and reports.' : 'This will permanently delete ' . $fishBox->name . ' because it has no history yet.' }}"
+                                  data-swal-confirm="{{ $willRetireFishBox ? 'Yes, mark damaged' : 'Yes, delete' }}"
+                                  data-swal-cancel="No, keep box"
                                   data-swal-icon="{{ $willRetireFishBox ? 'question' : 'warning' }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
                                         class="text-gray-400 hover:text-red-600 transition-colors"
-                                        title="{{ $willRetireFishBox ? 'Make Fish Box Inactive' : 'Delete Fish Box' }}">
+                                        title="{{ $willRetireFishBox ? 'Mark Fish Box as Damaged' : 'Delete Fish Box' }}">
                                     @if($willRetireFishBox)
                                         <x-heroicon-o-archive-box class="w-6 h-6" />
                                     @else
@@ -1289,26 +1290,27 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 const pageRecords = records.slice(pageStart, pageStart + historyPageSize);
 
                 if (historyPagination) {
-                    historyPagination.innerHTML = records.length > historyPageSize
-                        ? `
-                            <span>Showing ${pageStart + 1}-${Math.min(pageStart + historyPageSize, records.length)} of ${records.length}</span>
-                            <span class="inline-flex items-center gap-2">
-                                <button type="button"
-                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-fish-box-history-page="prev"
-                                        ${activeHistoryPage === 1 ? 'disabled' : ''}>
-                                    Previous
-                                </button>
-                                <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
-                                <button type="button"
-                                        class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                        data-fish-box-history-page="next"
-                                        ${activeHistoryPage === totalPages ? 'disabled' : ''}>
-                                    Next
-                                </button>
-                            </span>
-                        `
-                        : '';
+                    const showingStart = records.length > 0 ? pageStart + 1 : 0;
+                    const showingEnd = records.length > 0 ? Math.min(pageStart + historyPageSize, records.length) : 0;
+
+                    historyPagination.innerHTML = `
+                        <span>Showing ${showingStart}-${showingEnd} of ${records.length}</span>
+                        <span class="inline-flex items-center gap-2">
+                            <button type="button"
+                                    class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    data-fish-box-history-page="prev"
+                                    ${activeHistoryPage === 1 ? 'disabled' : ''}>
+                                Previous
+                            </button>
+                            <span class="font-medium text-gray-700">Page ${activeHistoryPage} of ${totalPages}</span>
+                            <button type="button"
+                                    class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    data-fish-box-history-page="next"
+                                    ${activeHistoryPage === totalPages ? 'disabled' : ''}>
+                                Next
+                            </button>
+                        </span>
+                    `;
                 }
 
                 if (records.length === 0) {

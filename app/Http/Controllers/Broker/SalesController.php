@@ -588,7 +588,8 @@ class SalesController extends Controller
                 'sale_id' => $sale->id,
                 'paid_amount' => $validated['paid_amount'],
                 'payment_date' => $validated['payment_date'],
-                'payment_method' => $validated['payment_method']
+                'payment_method' => $validated['payment_method'],
+                'reference_number' => ($validated['reference_number'] ?? '') !== '' ? $validated['reference_number'] : null,
             ]);
 
             // Update the sales paid amount and status
@@ -924,6 +925,7 @@ class SalesController extends Controller
             'paid_amount' => $paidAmount,
             'payment_date' => $validated['initial_payment_date'],
             'payment_method' => $validated['initial_payment_method'],
+            'reference_number' => ($validated['initial_reference_number'] ?? '') !== '' ? $validated['initial_reference_number'] : null,
         ];
     }
 

@@ -409,6 +409,23 @@ $suggestedPrice = $fishPriceMap[(string) $fishType->id] ?? $fishPriceMap[$fishTy
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        <div data-initial-reference-number-group class="hidden">
+                            <label for="initial_reference_number" class="mb-2 block text-sm font-medium text-gray-700">
+                                Reference Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="initial_reference_number"
+                                   name="initial_reference_number"
+                                   value="{{ old('initial_reference_number') }}"
+                                   maxlength="100"
+                                   data-initial-reference-number
+                                   class="h-14 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Enter GCash or bank reference number">
+                            @error('initial_reference_number')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 @endif
 

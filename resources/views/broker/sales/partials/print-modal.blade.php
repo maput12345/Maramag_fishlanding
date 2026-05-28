@@ -120,6 +120,9 @@ $receiptLineItems = $printingSales->salesDetails
                                         <div>
                                             <div class="font-medium">{{ $payment->payment_date->format('M d, Y') }}</div>
                                             <div class="text-gray-500">{{ $payment->payment_method }}</div>
+                                            @if($payment->reference_number)
+                                                <div class="text-gray-500">Ref: {{ $payment->reference_number }}</div>
+                                            @endif
                                         </div>
                                         <div class="font-semibold text-green-600">₱{{ number_format($payment->paid_amount, 2) }}</div>
                                     </div>

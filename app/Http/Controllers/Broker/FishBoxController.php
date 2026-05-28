@@ -239,7 +239,7 @@ class FishBoxController extends Controller
             FishBoxStatusConstant::SOLD => 'Used in a sales transaction.',
             FishBoxStatusConstant::RETURNED => 'Returned to the broker.',
             FishBoxStatusConstant::MISSING => 'Marked missing for tracking.',
-            FishBoxStatusConstant::RETIRED => 'Marked inactive.',
+            FishBoxStatusConstant::RETIRED => 'Marked damaged.',
             default => 'Status updated.',
         };
     }
@@ -321,7 +321,7 @@ class FishBoxController extends Controller
             FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::RETIRED, Auth::id());
 
             return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
-                ->with('success', 'Fish box marked inactive successfully. Its history remains available for receipts and reports.');
+                ->with('success', 'Fish box marked as damaged successfully. Its history remains available for receipts and reports.');
         }
 
         if (!$fishBox->canBeDeleted()) {
@@ -436,7 +436,7 @@ class FishBoxController extends Controller
 
         if (!$fishBox->canBeRestored()) {
             return redirect()->back()
-                ->with('error', 'Only inactive fish boxes can be restored.');
+                ->with('error', 'Damaged fish boxes cannot be restored for restocking.');
         }
 
         FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::UNASSIGNED, Auth::id());

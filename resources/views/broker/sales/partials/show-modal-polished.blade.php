@@ -284,7 +284,12 @@ $buyerName = $viewingSales->buyer?->name ?: 'Walk-in Buyer';
                                                             <div class="mr-3 rounded-lg bg-blue-100 p-1.5">
                                                                 <x-heroicon-o-credit-card class="h-4 w-4 text-blue-600" />
                                                             </div>
-                                                            <div class="text-sm font-medium text-gray-900">{{ $payment->payment_method }}</div>
+                                                            <div>
+                                                                <div class="text-sm font-medium text-gray-900">{{ $payment->payment_method }}</div>
+                                                                @if($payment->reference_number)
+                                                                    <div class="text-xs text-gray-500">Ref: {{ $payment->reference_number }}</div>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td class="whitespace-nowrap px-6 py-4">

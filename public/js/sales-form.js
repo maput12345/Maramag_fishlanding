@@ -51,6 +51,8 @@ function initializeSalesForm(config) {
   var totalAmountInput = root.querySelector('#total_amount');
   var initialPaidAmountInput = root.querySelector('#initial_paid_amount');
   var initialPaymentMethodSelect = root.querySelector('#initial_payment_method');
+  var initialReferenceNumberGroup = root.querySelector('[data-initial-reference-number-group]');
+  var initialReferenceNumberInput = root.querySelector('[data-initial-reference-number]');
   var initialPaymentMaxAmount = root.querySelector('#initial-payment-max-amount');
   var initialPaymentError = root.querySelector('#initial-payment-error');
   var salesForm = root.querySelector('form[data-sales-async-form]');
@@ -746,6 +748,17 @@ function initializeSalesForm(config) {
     var maxPaymentAmount = parseMoney((totalAmountInput === null || totalAmountInput === void 0 ? void 0 : totalAmountInput.value) || 0);
     var currentAmount = parseMoney(initialPaidAmountInput.value);
     var hasCurrentAmount = initialPaidAmountInput.value !== '';
+    var requiresReferenceNumber = ['GCash', 'Bank Transfer'].includes((initialPaymentMethodSelect === null || initialPaymentMethodSelect === void 0 ? void 0 : initialPaymentMethodSelect.value) || '');
+    if (initialReferenceNumberGroup) {
+      initialReferenceNumberGroup.classList.toggle('hidden', !requiresReferenceNumber);
+    }
+    if (initialReferenceNumberInput) {
+      initialReferenceNumberInput.required = hasCurrentAmount && requiresReferenceNumber;
+      if (!requiresReferenceNumber) {
+        initialReferenceNumberInput.value = '';
+        initialReferenceNumberInput.setCustomValidity('');
+      }
+    }
     initialPaidAmountInput.max = maxPaymentAmount.toFixed(2);
     if (initialPaymentMethodSelect) {
       initialPaymentMethodSelect.required = hasCurrentAmount;
@@ -769,6 +782,7 @@ function initializeSalesForm(config) {
     setInitialPaymentError('');
   }
   initialPaymentMethodSelect === null || initialPaymentMethodSelect === void 0 || initialPaymentMethodSelect.addEventListener('change', validateInitialPayment);
+  validateInitialPayment();
 
   // Initialize total amount
   root.querySelectorAll('.sales-detail-row').forEach(function (row) {

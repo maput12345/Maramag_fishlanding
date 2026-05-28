@@ -74,7 +74,8 @@
                               class="space-y-6"
                               x-data="paymentForm({
                                   maxPaymentAmount: {{ (float) $saleForPayment->remaining_amount }},
-                                  initialPaidAmount: {{ (float) old('paid_amount', 0) }}
+                                  initialPaidAmount: {{ (float) old('paid_amount', 0) }},
+                                  initialPaymentMethod: @js(old('payment_method', ''))
                               })"
                               x-init="initializePaymentForm()"
                               @submit="normalizePaymentAmount()"
@@ -125,6 +126,7 @@
                                     Payment Method <span class="text-red-500">*</span>
                                 </label>
                                 <select id="payment_method" name="payment_method" required
+                                        x-model="paymentMethod"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                                     <option value="">Select Payment Method</option>
                                     <option value="Cash" {{ old('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
@@ -134,6 +136,23 @@
                                     <option value="Other" {{ old('payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
                                 </select>
                                 @error('payment_method')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div x-show="requiresReferenceNumber()" x-cloak>
+                                <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Reference Number <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       id="reference_number"
+                                       name="reference_number"
+                                       value="{{ old('reference_number') }}"
+                                       maxlength="100"
+                                       :required="requiresReferenceNumber()"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                       placeholder="Enter GCash or bank reference number">
+                                @error('reference_number')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
