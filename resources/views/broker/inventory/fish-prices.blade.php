@@ -493,11 +493,9 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         </div>
     </div>
 
-    @if($brokerFishTypes->hasPages())
-        <div class="mt-8">
-            {{ $brokerFishTypes->appends(request()->query())->links('components.pagination') }}
-        </div>
-    @endif
+    <div class="mt-8">
+        {{ $brokerFishTypes->appends(request()->query())->links('components.pagination') }}
+    </div>
 
     <div id="fish-price-history-modal"
          class="fixed inset-0 z-[9999] hidden overflow-y-auto"

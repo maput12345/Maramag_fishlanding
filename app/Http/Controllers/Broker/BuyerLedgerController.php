@@ -10,6 +10,7 @@ use App\Models\PaymentRecord;
 use App\Models\SalesTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -119,36 +120,99 @@ class BuyerLedgerController extends Controller
             }
         }
 
-        $buyerBalanceRows = Buyer::query()
-            ->where('Buyer.broker_id', $brokerId)
-            ->leftJoin('SalesTransaction', function ($join) {
-                $join->on('Buyer.id', '=', 'SalesTransaction.buyer_id')
-                    ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses());
-            })
-            ->leftJoinSub($paymentTotals, 'payment_totals', function ($join) {
-                $join->on('SalesTransaction.id', '=', 'payment_totals.sale_id');
-            })
-            ->select('Buyer.id')
-            ->selectRaw('COALESCE(SUM(CASE
-                WHEN SalesTransaction.total_amount > COALESCE(payment_totals.paid_total, 0)
-                THEN SalesTransaction.total_amount - COALESCE(payment_totals.paid_total, 0)
-                ELSE 0
-            END), 0) as balance')
-            ->groupBy('Buyer.id')
-            ->get();
-
-        $totalBuyers = $buyerBalanceRows->count();
-        $buyersWithBalance = $buyerBalanceRows->filter(fn ($buyer) => (float) $buyer->balance > 0)->count();
-
         return view('broker.buyers.index', compact(
             'buyers',
             'search',
             'selectedBuyer',
             'selectedBuyerSales',
-            'broker',
-            'totalBuyers',
-            'buyersWithBalance'
+            'broker'
         ));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'contact' => ['nullable', 'regex:/^09\d{9}$/'],
+            'buyer_search' => ['nullable', 'string', 'max:255'],
+            'buyer_page' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'contact.regex' => 'Buyer contact must be an 11-digit mobile number starting with 09.',
+        ]);
+
+        $returnParameters = array_filter([
+            'search' => $validated['buyer_search'] ?? null,
+            'page' => $validated['buyer_page'] ?? null,
+        ], fn ($value) => $value !== null && $value !== '');
+
+        if ($user?->isAdmin() && Broker::isAdminBrokerViewReadOnly($user)) {
+            return redirect()->route('broker.buyers.index', $returnParameters)
+                ->with('error', 'Buyer details are read-only in this broker workspace.');
+        }
+
+        $buyer = new Buyer(['broker_id' => $brokerId]);
+        $buyer->updateDetails(
+            $validated['first_name'],
+            $validated['middle_name'] ?? null,
+            $validated['last_name'],
+            $validated['contact'] ?? null
+        );
+
+        return redirect()->route('broker.buyers.index', array_merge($returnParameters, [
+            'buyer' => $buyer->id,
+        ]))->with('success', 'Buyer added.');
+    }
+
+    public function update(Request $request, int $buyer): RedirectResponse
+    {
+        $brokerId = Broker::getBrokerIdByUserId(Auth::id());
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'contact' => ['nullable', 'regex:/^09\d{9}$/'],
+            'buyer_search' => ['nullable', 'string', 'max:255'],
+            'buyer_page' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'contact.regex' => 'Buyer contact must be an 11-digit mobile number starting with 09.',
+        ]);
+
+        $returnParameters = array_filter([
+            'search' => $validated['buyer_search'] ?? null,
+            'page' => $validated['buyer_page'] ?? null,
+            'buyer' => $buyer,
+        ], fn ($value) => $value !== null && $value !== '');
+
+        if ($user?->isAdmin() && Broker::isAdminBrokerViewReadOnly($user)) {
+            return redirect()->route('broker.buyers.index', $returnParameters)
+                ->with('error', 'Buyer details are read-only in this broker workspace.');
+        }
+
+        $selectedBuyer = Buyer::query()
+            ->forBroker($brokerId)
+            ->find($buyer);
+
+        if (!$selectedBuyer) {
+            return redirect()->route('broker.buyers.index', Arr::except($returnParameters, ['buyer']))
+                ->with('error', 'The selected buyer does not belong to your broker account.');
+        }
+
+        $selectedBuyer->updateDetails(
+            $validated['first_name'],
+            $validated['middle_name'] ?? null,
+            $validated['last_name'],
+            $validated['contact'] ?? null
+        );
+
+        return redirect()->route('broker.buyers.index', $returnParameters)
+            ->with('success', 'Buyer details updated.');
     }
 
     public function storePayment(Request $request): RedirectResponse

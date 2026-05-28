@@ -1,5 +1,4 @@
-@if ($paginator->hasPages())
-    <nav class="flex items-center justify-between px-4 py-6">
+<nav class="flex items-center justify-between px-4 py-6">
         <div class="flex flex-1 justify-between sm:hidden">
             {{-- Previous Page Link --}}
             @if ($paginator->onFirstPage())
@@ -32,9 +31,9 @@
             <div>
                 <p class="text-sm text-gray-500">
                     Showing
-                    <span class="font-medium text-gray-900">{{ $paginator->firstItem() }}</span>
+                    <span class="font-medium text-gray-900">{{ $paginator->firstItem() ?? 0 }}</span>
                     to
-                    <span class="font-medium text-gray-900">{{ $paginator->lastItem() }}</span>
+                    <span class="font-medium text-gray-900">{{ $paginator->lastItem() ?? 0 }}</span>
                     of
                     <span class="font-medium text-gray-900">{{ $paginator->total() }}</span>
                     results
@@ -56,29 +55,33 @@
                     @endif
 
                     {{-- Pagination Elements --}}
-                    @foreach ($elements as $element)
-                        {{-- "Three Dots" Separator --}}
-                        @if (is_string($element))
-                            <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500">
-                                {{ $element }}
-                            </span>
-                        @endif
+                    @forelse ($elements as $element)
+                    {{-- "Three Dots" Separator --}}
+                    @if (is_string($element))
+                        <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500">
+                            {{ $element }}
+                        </span>
+                    @endif
 
-                        {{-- Array Of Links --}}
-                        @if (is_array($element))
-                            @foreach ($element as $page => $url)
-                                @if ($page == $paginator->currentPage())
-                                    <span aria-current="page" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 border-b-2 border-blue-600">
-                                        {{ $page }}
-                                    </span>
-                                @else
-                                    <a href="{{ $url }}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
-                                        {{ $page }}
-                                    </a>
-                                @endif
-                            @endforeach
-                        @endif
-                    @endforeach
+                    {{-- Array Of Links --}}
+                    @if (is_array($element))
+                        @foreach ($element as $page => $url)
+                            @if ($page == $paginator->currentPage())
+                                <span aria-current="page" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 border-b-2 border-blue-600">
+                                    {{ $page }}
+                                </span>
+                            @else
+                                <a href="{{ $url }}" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                                    {{ $page }}
+                                </a>
+                            @endif
+                        @endforeach
+                    @endif
+                    @empty
+                        <span aria-current="page" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-blue-600 border-b-2 border-blue-600">
+                            {{ $paginator->currentPage() }}
+                        </span>
+                    @endforelse
 
                     {{-- Next Page Link --}}
                     @if ($paginator->hasMorePages())
@@ -96,4 +99,3 @@
             </div>
         </div>
     </nav>
-@endif

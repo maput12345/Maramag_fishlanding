@@ -127,7 +127,7 @@ class FishBox extends Model
             return null;
         }
 
-        $this->resolvedBrokerBoxNumber = static::withTrashed()
+        $this->resolvedBrokerBoxNumber = static::query()
             ->where('broker_id', $this->broker_id)
             ->where('id', '<=', $this->id)
             ->count();
@@ -235,7 +235,8 @@ class FishBox extends Model
             $subQuery->from('FishBox as broker_boxes')
                 ->selectRaw('COUNT(*)')
                 ->whereColumn('broker_boxes.broker_id', 'FishBox.broker_id')
-                ->whereColumn('broker_boxes.id', '<=', 'FishBox.id');
+                ->whereColumn('broker_boxes.id', '<=', 'FishBox.id')
+                ->whereNull('broker_boxes.deleted_at');
         }, 'broker_box_number');
     }
 
@@ -266,7 +267,9 @@ class FishBox extends Model
         ?string $search = null,
         ?string $status = null,
         ?int $fishTypeId = null,
-        ?int $brokerId = null
+        ?int $brokerId = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
     ): Builder {
         $query = static::with(['currentPurchase.fishType', 'broker.user'])
             ->select('FishBox.*')
@@ -282,7 +285,7 @@ class FishBox extends Model
 
                 if ($normalizedSearch !== '') {
                     $q->orWhereRaw(
-                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id) = ?',
+                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id AND broker_boxes.deleted_at IS NULL) = ?',
                         [(int) $normalizedSearch]
                     );
                 }
@@ -299,6 +302,18 @@ class FishBox extends Model
             });
         }
 
+        if ($dateFrom || $dateTo) {
+            $query->whereHas('currentPurchase', function ($purchaseQuery) use ($dateFrom, $dateTo) {
+                if ($dateFrom) {
+                    $purchaseQuery->whereDate('purchase_date', '>=', $dateFrom);
+                }
+
+                if ($dateTo) {
+                    $purchaseQuery->whereDate('purchase_date', '<=', $dateTo);
+                }
+            });
+        }
+
         if ($brokerId) {
             $query->where('broker_id', $brokerId);
         }
@@ -309,9 +324,9 @@ class FishBox extends Model
     /**
      * Get paginated fish boxes with search and filter functionality.
      */
-    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $fishTypeId = null, int $perPage = 12, ?int $brokerId = null): LengthAwarePaginator
+    public static function getPaginatedWithFilters(?string $search = null, ?string $status = null, ?int $fishTypeId = null, int $perPage = 12, ?int $brokerId = null, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
     {
-        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
+        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId, $dateFrom, $dateTo)
             ->orderBy('FishBox.created_at', 'desc')
             ->orderBy('FishBox.id', 'desc')
             ->paginate($perPage);
@@ -326,9 +341,11 @@ class FishBox extends Model
         ?string $search = null,
         ?string $status = null,
         ?int $fishTypeId = null,
-        ?int $brokerId = null
+        ?int $brokerId = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
     ): Collection {
-        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId)
+        return static::buildFilteredFishBoxQuery($search, $status, $fishTypeId, $brokerId, $dateFrom, $dateTo)
             ->orderBy('FishBox.created_at', 'desc')
             ->orderBy('FishBox.id', 'desc')
             ->get()
@@ -667,7 +684,7 @@ class FishBox extends Model
 
                 if ($normalizedSearch !== '') {
                     $trackingQuery->orWhereRaw(
-                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id) = ?',
+                        '(SELECT COUNT(*) FROM FishBox AS broker_boxes WHERE broker_boxes.broker_id = FishBox.broker_id AND broker_boxes.id <= FishBox.id AND broker_boxes.deleted_at IS NULL) = ?',
                         [(int) $normalizedSearch]
                     )
                     ->orWhere('FishBox.id', (int) $normalizedSearch);

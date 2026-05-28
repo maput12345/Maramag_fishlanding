@@ -70,6 +70,10 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
 
         <div id="sales-page-fragment">
 
+        <div class="mb-4">
+            <h2 class="text-2xl font-bold text-gray-900">{{ $reportDateLabel }}</h2>
+        </div>
+
         <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl bg-white p-5 shadow-lg">
                 <p class="text-sm font-medium text-gray-500">Sales Records</p>
@@ -84,8 +88,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
                 <p class="summary-stat-value text-right text-green-600">₱{{ number_format($salesSummary['paid_total'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-xl bg-white p-5 shadow-lg">
-                <p class="text-sm font-medium text-gray-500">Outstanding Balance</p>
-                <p class="summary-stat-value text-right text-orange-600">₱{{ number_format($salesSummary['balance_total'] ?? 0, 2) }}</p>
+                <p class="text-sm font-medium text-gray-500">Total Outstanding Balance</p>
+                <p class="summary-stat-value text-right text-orange-600">₱{{ number_format($totalOutstandingBalance ?? ($salesSummary['balance_total'] ?? 0), 2) }}</p>
             </div>
         </div>
 
@@ -93,8 +97,8 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             <form method="GET" action="{{ route('broker.sales.sales') }}" x-data="{
                 search: '{{ request('search') }}',
                 status: '{{ request('status') }}',
-                dateFrom: '{{ $dateFrom ?? request('date_from') }}',
-                dateTo: '{{ $dateTo ?? request('date_to') }}'
+                dateFrom: '{{ request('date_from') }}',
+                dateTo: '{{ request('date_to') }}'
             }">
                 <div class="sales-filter-layout {{ $isCashierStaff ? 'sales-filter-layout--cashier' : '' }}">
                     <div class="search-field">
@@ -307,11 +311,9 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             </div>
         </div>
 
-        @if($sales->hasPages())
-            <div class="mt-8">
-                {{ $sales->appends(request()->query())->links('components.pagination') }}
-            </div>
-        @endif
+        <div class="mt-8">
+            {{ $sales->appends(request()->query())->links('components.pagination') }}
+        </div>
         @include('broker.sales.partials.create-edit-modal')
         @include('broker.sales.partials.payment-modal')
         @include('broker.sales.partials.print-modal')

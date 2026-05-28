@@ -251,11 +251,9 @@
     </div>
 
     <!-- Pagination -->
-    @if($fishTypes->hasPages())
-        <div class="mt-8">
-            {{ $fishTypes->appends(request()->query())->links('components.pagination') }}
-        </div>
-    @endif
+    <div class="mt-8">
+        {{ $fishTypes->appends(request()->query())->links('components.pagination') }}
+    </div>
 
     <div id="fish-type-edit-modal"
          class="fixed inset-0 z-[9999] hidden overflow-y-auto"

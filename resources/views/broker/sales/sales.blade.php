@@ -218,11 +218,9 @@ $breadcrumbs = [
                 </div>
 
                 <!-- Pagination -->
-                @if($sales->hasPages())
-                    <div class="mt-8">
-                        {{ $sales->appends(request()->query())->links('components.pagination') }}
-                    </div>
-                @endif
+                <div class="mt-8">
+                    {{ $sales->appends(request()->query())->links('components.pagination') }}
+                </div>
 {{-- Modals --}}
 @include('broker.sales.partials.create-edit-modal')
 @include('broker.sales.partials.payment-modal')

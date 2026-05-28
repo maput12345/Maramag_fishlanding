@@ -1095,6 +1095,71 @@ class SalesTransaction extends Model
     }
 
     /**
+     * Get daily sales data for the current calendar week, Sunday through Saturday.
+     *
+     * @param int|null $brokerId
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getDailySalesCurrentWeek(?int $brokerId): \Illuminate\Support\Collection
+    {
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SUNDAY);
+        $weekEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY);
+
+        return static::getDailySalesForMarketWeek($brokerId, $weekStart, $weekEnd);
+    }
+
+    /**
+     * Get daily sales data for the previous calendar week, Sunday through Saturday.
+     *
+     * @param int|null $brokerId
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public static function getDailySalesPreviousMarketWeek(?int $brokerId): \Illuminate\Support\Collection
+    {
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->subWeek();
+        $weekEnd = $weekStart->copy()->addDays(6);
+
+        return static::getDailySalesForMarketWeek($brokerId, $weekStart, $weekEnd);
+    }
+
+    private static function getDailySalesForMarketWeek(?int $brokerId, Carbon $weekStart, Carbon $weekEnd): \Illuminate\Support\Collection
+    {
+        $query = self::whereIn('status', SalesStatusConstant::getAllActiveStatuses());
+
+        self::applyDateRange(
+            $query,
+            'sales_date',
+            $weekStart->toDateString(),
+            $weekEnd->toDateString()
+        );
+
+        if ($brokerId) {
+            $query->where('broker_id', $brokerId);
+        }
+
+        $dailySales = $query->selectRaw('DATE(sales_date) as date, SUM(total_amount) as total_sales')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $weekDays = [];
+        for ($date = $weekStart->copy(); $date->lte($weekEnd); $date->addDay()) {
+            $dateString = $date->toDateString();
+            $salesData = $dailySales->firstWhere('date', $dateString);
+
+            $weekDays[] = [
+                'date' => $dateString,
+                'day' => $date->format('D'),
+                'sales' => $salesData ? (float) $salesData->total_sales : 0,
+            ];
+        }
+
+        return collect($weekDays);
+    }
+
+    /**
      * Get analytics data for a specific date range
      *
      * @param int|null $brokerId

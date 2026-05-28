@@ -5,7 +5,7 @@ $breadcrumbs = [
 
     $maxDailySales = max(1, $dailySalesData->max('sales'));
     $thisWeekTotal = $dailySalesData->sum('sales');
-    $lastWeekTotal = 0;
+    $lastWeekTotal = ($previousWeekSalesData ?? collect())->sum('sales');
     $growthPercent = $lastWeekTotal > 0 ? (($thisWeekTotal - $lastWeekTotal) / $lastWeekTotal) * 100 : 0;
     $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
 @endphp

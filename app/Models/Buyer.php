@@ -44,9 +44,9 @@ class Buyer extends Model
     public function getNameAttribute(): string
     {
         return collect([
-            $this->first_name,
-            $this->middle_name,
-            $this->last_name,
+            static::formatNamePart($this->first_name),
+            static::formatNamePart($this->middle_name),
+            static::formatNamePart($this->last_name),
         ])->filter()->implode(' ');
     }
 
@@ -73,9 +73,9 @@ class Buyer extends Model
     {
         $buyerData = [
             'broker_id' => $brokerId,
-            'first_name' => trim($firstName),
-            'middle_name' => static::nullableText($middleName),
-            'last_name' => trim($lastName),
+            'first_name' => static::formatNamePart($firstName),
+            'middle_name' => static::nullableNamePart($middleName),
+            'last_name' => static::formatNamePart($lastName),
             'contact' => static::nullableText($contact),
         ];
 
@@ -112,10 +112,32 @@ class Buyer extends Model
             ]);
     }
 
+    public function updateDetails(string $firstName, ?string $middleName, string $lastName, ?string $contact = null): bool
+    {
+        return $this->fill([
+            'first_name' => static::formatNamePart($firstName),
+            'middle_name' => static::nullableNamePart($middleName),
+            'last_name' => static::formatNamePart($lastName),
+            'contact' => static::nullableText($contact),
+        ])->save();
+    }
+
     private static function nullableText(?string $value): ?string
     {
         $value = trim((string) $value);
 
         return $value !== '' ? $value : null;
+    }
+
+    private static function nullableNamePart(?string $value): ?string
+    {
+        return static::nullableText(static::formatNamePart($value));
+    }
+
+    private static function formatNamePart(?string $value): string
+    {
+        $value = trim(preg_replace('/\s+/', ' ', (string) $value));
+
+        return $value !== '' ? mb_convert_case(mb_strtolower($value), MB_CASE_TITLE, 'UTF-8') : '';
     }
 }

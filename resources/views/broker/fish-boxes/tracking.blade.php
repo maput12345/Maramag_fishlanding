@@ -115,11 +115,9 @@
             </table>
         </div>
 
-        @if($trackingFishBoxes->hasPages())
-            <div class="border-t border-gray-200 px-6 py-4">
-                {{ $trackingFishBoxes->appends(request()->query())->links('components.pagination') }}
-            </div>
-        @endif
+        <div class="border-t border-gray-200 px-6 py-4">
+            {{ $trackingFishBoxes->appends(request()->query())->links('components.pagination') }}
+        </div>
     </div>
 </div>
 @endsection

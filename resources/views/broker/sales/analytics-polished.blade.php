@@ -4,6 +4,8 @@ $breadcrumbs = [
     ];
 
     $maxWeeklySales = max(1, $weeklySalesData->max('sales'));
+    $maxDailyBalance = max(1, $dailyBalanceData->max('balance'));
+    $maxTopBuyerSales = max(1, $topBuyers->max('total_sales'));
     $periodLabel = \Carbon\Carbon::parse($dateFrom)->format('M d, Y')
         . ($dateFrom !== $dateTo ? ' - ' . \Carbon\Carbon::parse($dateTo)->format('M d, Y') : '');
     $trendPeriodLabel = \Carbon\Carbon::parse($trendDateFrom ?? $dateFrom)->format('M d')
@@ -14,6 +16,10 @@ $breadcrumbs = [
 
 @section('content')
 <div class="w-full dashboard-shell">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">{{ $periodLabel }}</h2>
+    </div>
+
     <section class="panel-card">
         <div class="panel-card__inner">
             <div class="panel-card__header">
@@ -24,8 +30,8 @@ $breadcrumbs = [
 
             <form method="GET" action="{{ route('broker.sales.analytics') }}" x-data="{
                 status: '{{ request('status') }}',
-                dateFrom: '{{ request('date_from', $dateFrom) }}',
-                dateTo: '{{ request('date_to', $dateTo) }}'
+                dateFrom: '{{ request('date_from') }}',
+                dateTo: '{{ request('date_to') }}'
             }">
                 <div class="analytics-filter-layout">
                     <div class="status-field">
@@ -67,7 +73,6 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow">Transactions</p>
                     <p class="metric-card__value">{{ number_format($totalOrders) }}</p>
-                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-document-text />
@@ -80,7 +85,6 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow">Period Sales</p>
                     <p class="metric-card__value metric-card__value--money">₱{{ number_format($totalRevenue, 2) }}</p>
-                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-chart-pie />
@@ -91,9 +95,8 @@ $breadcrumbs = [
         <div class="metric-card metric-card--warning">
             <div class="metric-card__row">
                 <div>
-                    <p class="metric-card__eyebrow" title="Outstanding Receivable Balance">Outstanding Balance</p>
+                    <p class="metric-card__eyebrow" title="Total outstanding receivable balance">Total Outstanding Balance</p>
                     <p class="metric-card__value metric-card__value--money">₱{{ number_format($totalBalance, 2) }}</p>
-                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-currency-dollar />
@@ -106,7 +109,6 @@ $breadcrumbs = [
                 <div>
                     <p class="metric-card__eyebrow">Fish Boxes Sold</p>
                     <p class="metric-card__value">{{ number_format($totalFishBoxes) }}</p>
-                    <p class="metric-card__meta">{{ $periodLabel }}</p>
                 </div>
                 <span class="metric-card__icon">
                     <x-heroicon-o-cube />
@@ -120,8 +122,8 @@ $breadcrumbs = [
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Sales Trend</h3>
-                        <p class="mt-1 text-sm text-gray-500">Rolling week: {{ $trendPeriodLabel }}</p>
+                        <h3 class="panel-card__title">Daily Sales Trend</h3>
+                        <p class="mt-1 text-sm text-gray-500">Calendar week: {{ $trendPeriodLabel }}</p>
                     </div>
                 </div>
 
@@ -141,13 +143,76 @@ $breadcrumbs = [
             </div>
         </section>
 
+        <section class="panel-card chart-card">
+            <div class="panel-card__inner">
+                <div class="panel-card__header">
+                    <div>
+                        <h3 class="panel-card__title">Daily Outstanding Balance</h3>
+                        <p class="mt-1 text-sm text-gray-500">Calendar week: {{ $trendPeriodLabel }}</p>
+                    </div>
+                </div>
+
+                @php
+                    $balancePointCount = max(1, $dailyBalanceData->count());
+                    $balanceChartWidth = 700;
+                    $balanceChartHeight = 230;
+                    $balanceChartPaddingX = 26;
+                    $balanceChartPaddingTop = 12;
+                    $balanceChartPaddingBottom = 32;
+                    $balancePlotWidth = $balanceChartWidth - ($balanceChartPaddingX * 2);
+                    $balancePlotHeight = $balanceChartHeight - $balanceChartPaddingTop - $balanceChartPaddingBottom;
+                    $balancePoints = $dailyBalanceData->values()->map(function ($balanceData, $index) use ($balancePointCount, $maxDailyBalance, $balanceChartPaddingX, $balanceChartPaddingTop, $balancePlotWidth, $balancePlotHeight) {
+                        $x = $balanceChartPaddingX + ($balancePointCount > 1 ? ($index / ($balancePointCount - 1)) * $balancePlotWidth : $balancePlotWidth / 2);
+                        $y = $balanceChartPaddingTop + ($balancePlotHeight - (((float) $balanceData['balance'] / $maxDailyBalance) * $balancePlotHeight));
+
+                        return [
+                            'x' => round($x, 2),
+                            'y' => round($y, 2),
+                            'day' => $balanceData['day'],
+                            'balance' => (float) $balanceData['balance'],
+                        ];
+                    });
+                    $balancePolylinePoints = $balancePoints->map(fn ($point) => $point['x'] . ',' . $point['y'])->implode(' ');
+                    $balanceAreaPoints = $balancePoints->isNotEmpty()
+                        ? $balanceChartPaddingX . ',' . ($balanceChartHeight - $balanceChartPaddingBottom) . ' ' . $balancePolylinePoints . ' ' . ($balanceChartWidth - $balanceChartPaddingX) . ',' . ($balanceChartHeight - $balanceChartPaddingBottom)
+                        : '';
+                @endphp
+
+                <div class="balance-chart-frame">
+                    <svg viewBox="0 0 {{ $balanceChartWidth }} {{ $balanceChartHeight }}" class="balance-chart-svg" role="img" aria-label="Daily outstanding balance line chart">
+                        @for($gridLine = 0; $gridLine <= 3; $gridLine++)
+                            @php
+                                $gridY = $balanceChartPaddingTop + (($balancePlotHeight / 3) * $gridLine);
+                            @endphp
+                            <line x1="{{ $balanceChartPaddingX }}" y1="{{ $gridY }}" x2="{{ $balanceChartWidth - $balanceChartPaddingX }}" y2="{{ $gridY }}" stroke="#e5e7eb" stroke-width="1" />
+                        @endfor
+
+                        @if($balanceAreaPoints !== '')
+                            <polygon points="{{ $balanceAreaPoints }}" fill="#f97316" opacity="0.10" />
+                            <polyline points="{{ $balancePolylinePoints }}" fill="none" stroke="#f97316" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        @endif
+
+                        @foreach($balancePoints as $point)
+                            <g>
+                                <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="5" fill="#f97316" stroke="#fff" stroke-width="2" />
+                                <text x="{{ $point['x'] }}" y="{{ max(14, $point['y'] - 12) }}" text-anchor="middle" class="fill-gray-900 text-[12px] font-semibold">₱{{ number_format($point['balance'], 0) }}</text>
+                                <text x="{{ $point['x'] }}" y="{{ $balanceChartHeight - 4 }}" text-anchor="middle" class="fill-gray-600 text-[12px]">{{ $point['day'] }}</text>
+                            </g>
+                        @endforeach
+                    </svg>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <section class="panel-card">
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
                         <h3 class="panel-card__title">Top Selling Commodities</h3>
                     </div>
-                    <span class="panel-card__hint">{{ $periodLabel }}</span>
+                    <span class="panel-card__hint">{{ $trendPeriodLabel }}</span>
                 </div>
 
                 <div class="top-item-list">
@@ -173,6 +238,47 @@ $breadcrumbs = [
                         <div class="empty-state">
                             <x-heroicon-o-cube class="heroicon" />
                             <p class="text-sm">No sales data available for this period.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-card">
+            <div class="panel-card__inner">
+                <div class="panel-card__header">
+                    <div>
+                        <h3 class="panel-card__title">Top Buyers</h3>
+                    </div>
+                    <span class="panel-card__hint">{{ $trendPeriodLabel }}</span>
+                </div>
+
+                <div class="top-item-list">
+                    @forelse($topBuyers as $buyer)
+                        <div class="top-item-row">
+                            <div class="top-item-row__lead">
+                                <div class="top-item-row__rank">{{ $loop->iteration }}</div>
+                                <div>
+                                    <p class="top-item-row__title">{{ $buyer->name }}</p>
+                                    <p class="top-item-row__meta tabular-nums">
+                                        {{ number_format($buyer->transaction_count) }} transaction{{ (int) $buyer->transaction_count === 1 ? '' : 's' }}
+                                        @if((float) $buyer->balance > 0)
+                                            · Balance ₱{{ number_format((float) $buyer->balance, 2) }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="min-w-[9rem] text-right">
+                                <p class="text-sm font-semibold tabular-nums text-gray-900">₱{{ number_format((float) $buyer->total_sales, 2) }}</p>
+                                <div class="progress-track">
+                                    <div class="progress-bar" style="width: {{ ((float) $buyer->total_sales / $maxTopBuyerSales) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="empty-state">
+                            <x-heroicon-o-user-group class="heroicon" />
+                            <p class="text-sm">No buyer sales available for this period.</p>
                         </div>
                     @endforelse
                 </div>
@@ -234,11 +340,9 @@ $breadcrumbs = [
                 </table>
             </div>
 
-            @if($sales->hasPages())
-                <div class="pt-4">
-                    {{ $sales->appends(request()->query())->links('components.pagination') }}
-                </div>
-            @endif
+            <div class="pt-4">
+                {{ $sales->appends(request()->query())->links('components.pagination') }}
+            </div>
         </div>
     </section>
 </div>

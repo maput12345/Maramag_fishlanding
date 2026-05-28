@@ -58,6 +58,21 @@
     .filter-layout .buttons-field {
         grid-column: span 4;
     }
+
+    .fish-box-filter-layout {
+        grid-template-columns: minmax(260px, 2fr) repeat(4, minmax(135px, 1fr)) auto;
+    }
+
+    .fish-box-filter-layout .search-field,
+    .fish-box-filter-layout .status-field,
+    .fish-box-filter-layout .fish-type-field,
+    .fish-box-filter-layout .buttons-field {
+        grid-column: auto;
+    }
+
+    .fish-box-filter-layout .buttons-field {
+        white-space: nowrap;
+    }
 }
 
 /* Sales Page Specific Layout - 5 elements */
@@ -212,4 +227,3 @@
         white-space: nowrap;
     }
 }
-

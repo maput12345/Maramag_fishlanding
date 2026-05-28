@@ -12,24 +12,82 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
             request('search') ? 'Search: ' . request('search') : null,
             request('status') ? 'Status: ' . request('status') : null,
             $selectedFishTypeForBulkQr ? 'Fish: ' . $selectedFishTypeForBulkQr->display_name : null,
+            request('date_from') ? 'From: ' . request('date_from') : null,
+            request('date_to') ? 'To: ' . request('date_to') : null,
         ])->filter()->implode(' | ');
         $fishBoxListQuery = array_merge(
             request()->except(['modal', 'history', 'box_history_date', 'box_history_date_from', 'box_history_date_to']),
             ['tab' => 'fishBoxes']
         );
         $fishBoxHistoryPayload = $fishBoxes->getCollection()
-            ->filter(fn ($fishBox) => $fishBox->purchases->isNotEmpty())
-            ->mapWithKeys(fn ($fishBox) => [
-                (string) $fishBox->id => [
-                    'name' => $fishBox->name,
-                    'records' => $fishBox->purchases->map(fn ($stockCycle) => [
-                        'date' => optional($stockCycle->purchase_date)->format('Y-m-d'),
-                        'date_label' => optional($stockCycle->purchase_date)->format('M d, Y') ?? 'Not set',
-                        'fish' => \App\Models\BrokerFishTypeAssignment::resolveDisplayName($fishBox->broker_id, $stockCycle->fishType) ?? 'Unassigned',
-                        'cost' => $stockCycle->cost_price !== null ? '₱' . number_format((float) $stockCycle->cost_price, 2) : 'Not set',
-                    ])->values(),
-                ],
-            ]);
+            ->filter(fn ($fishBox) => $fishBox->purchases->isNotEmpty() || $fishBox->created_at)
+            ->mapWithKeys(function ($fishBox) {
+                $records = collect();
+
+                if ($fishBox->created_at) {
+                    $records->push([
+                        'date' => $fishBox->created_at->format('Y-m-d'),
+                        'date_time' => $fishBox->created_at->toDateTimeString(),
+                        'date_label' => $fishBox->created_at->format('M d, Y h:i A'),
+                        'event' => 'Created',
+                        'status' => \App\Constants\FishBoxStatusConstant::UNASSIGNED,
+                        'fish' => 'Unassigned',
+                        'cost' => 'Not set',
+                        'details' => 'Reusable box profile created.',
+                    ]);
+                }
+
+                $fishBox->purchases->each(function ($stockCycle) use ($fishBox, $records) {
+                    $fishName = \App\Models\BrokerFishTypeAssignment::resolveDisplayName($fishBox->broker_id, $stockCycle->fishType) ?? 'Unassigned';
+                    $cost = $stockCycle->cost_price !== null ? '₱' . number_format((float) $stockCycle->cost_price, 2) : 'Not set';
+                    $hasStockedLog = $stockCycle->inventoryLogs->contains('status', \App\Constants\FishBoxStatusConstant::IN_STOCK);
+
+                    if (!$hasStockedLog && $stockCycle->purchase_date) {
+                        $records->push([
+                            'date' => $stockCycle->purchase_date->format('Y-m-d'),
+                            'date_time' => $stockCycle->purchase_date->format('Y-m-d 00:00:00'),
+                            'date_label' => $stockCycle->purchase_date->format('M d, Y'),
+                            'event' => 'Stocked',
+                            'status' => \App\Constants\FishBoxStatusConstant::IN_STOCK,
+                            'fish' => $fishName,
+                            'cost' => $cost,
+                            'details' => 'Stock cycle recorded.',
+                        ]);
+                    }
+
+                    $stockCycle->inventoryLogs->each(function ($movement) use ($records, $fishName, $cost) {
+                        $status = $movement->status;
+                        $details = match ($status) {
+                            \App\Constants\FishBoxStatusConstant::IN_STOCK => 'Marked available for sales.',
+                            \App\Constants\FishBoxStatusConstant::SOLD => 'Used in a sales transaction.',
+                            \App\Constants\FishBoxStatusConstant::RETURNED => 'Returned to the broker.',
+                            \App\Constants\FishBoxStatusConstant::MISSING => 'Marked missing for tracking.',
+                            \App\Constants\FishBoxStatusConstant::RETIRED => 'Marked inactive.',
+                            default => 'Status updated.',
+                        };
+
+                        $records->push([
+                            'date' => optional($movement->created_at)->format('Y-m-d'),
+                            'date_time' => optional($movement->created_at)->toDateTimeString(),
+                            'date_label' => optional($movement->created_at)->format('M d, Y h:i A') ?? 'Not set',
+                            'event' => \App\Constants\FishBoxStatusConstant::label($status),
+                            'status' => $status,
+                            'fish' => $fishName,
+                            'cost' => $cost,
+                            'details' => $details,
+                        ]);
+                    });
+                });
+
+                return [
+                    (string) $fishBox->id => [
+                        'name' => $fishBox->name,
+                        'records' => $records
+                            ->sortByDesc('date_time')
+                            ->values(),
+                    ],
+                ];
+            });
     @endphp
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
         <div>
@@ -400,7 +458,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
     @if(request('modal') === 'history')
         <x-app-modal
             title="Fish Box History"
-            :subtitle="$historyFishBox ? 'Previous stock records for ' . $historyFishBox->name . '.' : 'No fish box history was found.'"
+            :subtitle="$historyFishBox ? 'Status timeline for ' . $historyFishBox->name . '.' : 'No fish box history was found.'"
             :close-url="route('broker.inventory.index', $fishBoxListQuery)"
         >
             <x-slot:icon>
@@ -462,22 +520,26 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status/Event</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 bg-white">
-                                @forelse($historyFishBox->purchases as $stockCycle)
+                                @forelse($historyFishBoxEvents as $event)
                                     <tr>
                                         <td class="whitespace-nowrap px-4 py-3 text-left text-sm text-gray-900">
-                                            {{ $stockCycle->purchase_date?->format('M d, Y') ?? 'Not set' }}
+                                            {{ $event['date']?->format('M d, Y h:i A') ?? 'Not set' }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                                            <x-status-badge :status="$event['status']" :label="$event['event']" size="sm" />
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
-                                            {{ \App\Models\BrokerFishTypeAssignment::resolveDisplayName($historyFishBox->broker_id, $stockCycle->fishType) ?? 'Unassigned' }}
+                                            {{ $event['fish'] }}
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">
-                                            @if($stockCycle->cost_price !== null)
-                                                ₱{{ number_format((float) $stockCycle->cost_price, 2) }}
+                                            @if($event['cost'] !== null)
+                                                ₱{{ number_format((float) $event['cost'], 2) }}
                                             @else
                                                 <span class="text-gray-400">Not set</span>
                                             @endif
@@ -485,7 +547,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                                        <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">
                                             {{ request()->filled('box_history_date_from') || request()->filled('box_history_date_to') ? 'No fish box history matched that date range.' : 'No fish box history yet.' }}
                                         </td>
                                     </tr>
@@ -514,10 +576,12 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
         <form method="GET" action="{{ route('broker.inventory.index') }}" x-data="{
             search: @js((string) request('search', '')),
             status: @js((string) request('status', '')),
-            fishType: @js((string) request('fish_type', ''))
+            fishType: @js((string) request('fish_type', '')),
+            dateFrom: @js((string) request('date_from', '')),
+            dateTo: @js((string) request('date_to', ''))
         }">
             <input type="hidden" name="tab" value="fishBoxes">
-            <div class="filter-layout">
+            <div class="filter-layout fish-box-filter-layout">
                 <!-- Search Field -->
                 <div class="search-field">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -559,6 +623,24 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                     </select>
                 </div>
 
+                <!-- Date From Filter -->
+                <div class="fish-type-field">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                    <input type="date"
+                        name="date_from"
+                        x-model="dateFrom"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+
+                <!-- Date To Filter -->
+                <div class="fish-type-field">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                    <input type="date"
+                        name="date_to"
+                        x-model="dateTo"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="buttons-field filter-action-group justify-end">
                     <a href="{{ route('broker.inventory.index', ['tab' => 'fishBoxes']) }}"
@@ -580,7 +662,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
         <p class="text-sm text-gray-600">
             <span class="hidden sm:inline">Showing {{ $fishBoxes->firstItem() ?? 0 }} to {{ $fishBoxes->lastItem() ?? 0 }} of {{ $fishBoxes->total() }} fish boxes</span>
             <span class="sm:hidden">{{ $fishBoxes->total() }} fish boxes</span>
-            @if(request()->hasAny(['search', 'status', 'fish_type']))
+            @if(request()->hasAny(['search', 'status', 'fish_type', 'date_from', 'date_to']))
                 <span class="text-green-600">(filtered)</span>
             @endif
         </p>
@@ -755,11 +837,9 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
     </div>
 
     <!-- Pagination -->
-    @if($fishBoxes->hasPages())
-        <div class="mt-8">
-            {{ $fishBoxes->appends(request()->query())->links('components.pagination') }}
-        </div>
-    @endif
+    <div class="mt-8">
+        {{ $fishBoxes->appends(request()->query())->links('components.pagination') }}
+    </div>
 
     <div id="fish-box-history-modal"
          class="fixed inset-0 z-[9999] hidden overflow-y-auto"
@@ -820,6 +900,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                                 <thead class="sticky top-0 z-10 bg-gray-50">
                                     <tr>
                                         <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                        <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status/Event</th>
                                         <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Fish</th>
                                         <th class="h-12 whitespace-nowrap bg-gray-50 px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Stock Cost</th>
                                     </tr>
@@ -1166,6 +1247,28 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
 
+            const historyStatusClass = (status) => {
+                const normalized = String(status || '').toLowerCase();
+
+                if (normalized === 'in stock') {
+                    return 'bg-green-100 text-green-700';
+                }
+
+                if (normalized === 'returned') {
+                    return 'bg-yellow-100 text-yellow-700';
+                }
+
+                if (normalized === 'missing' || normalized === 'retired') {
+                    return 'bg-red-100 text-red-700';
+                }
+
+                if (normalized === 'sold') {
+                    return 'bg-blue-100 text-blue-700';
+                }
+
+                return 'bg-gray-100 text-gray-700';
+            };
+
             const renderHistoryRows = () => {
                 if (!historyRows) {
                     return;
@@ -1211,7 +1314,7 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 if (records.length === 0) {
                     historyRows.innerHTML = `
                         <tr>
-                            <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">
+                            <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">
                                 ${hasDateRange ? 'No fish box history matched that date range.' : 'No fish box history yet.'}
                             </td>
                         </tr>
@@ -1222,6 +1325,11 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
                 historyRows.innerHTML = pageRecords.map((record) => `
                     <tr>
                         <td class="whitespace-nowrap px-4 py-3 text-left text-sm text-gray-900">${escapeHtml(record.date_label)}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-left text-sm">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${historyStatusClass(record.status)}">
+                                ${escapeHtml(record.event || record.status)}
+                            </span>
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">${escapeHtml(record.fish)}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-gray-900">${escapeHtml(record.cost)}</td>
                     </tr>
@@ -1239,8 +1347,8 @@ $oldRestockBoxIds = collect(old('fish_box_ids', []))
 
                 if (historySubtitle) {
                     historySubtitle.textContent = history.name
-                        ? `Previous stock records for ${history.name}.`
-                        : 'Previous stock records.';
+                        ? `Status timeline for ${history.name}.`
+                        : 'Status timeline.';
                 }
 
                 if (historyDateFromInput) {

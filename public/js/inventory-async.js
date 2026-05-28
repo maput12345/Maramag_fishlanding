@@ -3,6 +3,7 @@
     let autoSyncTimer = null;
     let autoSyncInProgress = false;
     let lastAutoSyncAt = 0;
+    let navigationVersion = 0;
 
     function getSwal() {
         return window.Swal || null;
@@ -195,10 +196,25 @@
         document.body.classList.remove('modal-scroll-lock');
     }
 
-    async function refreshInventoryTabFromResponse(response, historyMode = 'replace') {
+    async function refreshInventoryTabFromResponse(response, historyMode = 'replace', requestContext = {}) {
         const html = await response.text();
+
+        if (
+            typeof requestContext.navigationVersion === 'number'
+            && requestContext.navigationVersion !== navigationVersion
+        ) {
+            return;
+        }
+
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
+
+        if (
+            typeof requestContext.navigationVersion === 'number'
+            && requestContext.navigationVersion !== navigationVersion
+        ) {
+            return;
+        }
 
         const currentContainer = document.querySelector('[data-inventory-tab-content]');
         const newContainer = doc.querySelector('[data-inventory-tab-content]');
@@ -229,6 +245,9 @@
 
     async function loadInventoryTab(url, historyMode = 'push', options = {}) {
         const shouldFallbackToLocation = options.fallbackToLocation !== false;
+        const requestNavigationVersion = options.trackNavigation === false
+            ? navigationVersion
+            : ++navigationVersion;
 
         if (!options.silent) {
             setInventoryLoading(true);
@@ -248,13 +267,15 @@
                 throw new Error('Request failed.');
             }
 
-            await refreshInventoryTabFromResponse(response, historyMode);
+            await refreshInventoryTabFromResponse(response, historyMode, {
+                navigationVersion: requestNavigationVersion,
+            });
         } catch (error) {
-            if (shouldFallbackToLocation) {
+            if (shouldFallbackToLocation && requestNavigationVersion === navigationVersion) {
                 window.location.href = url;
             }
         } finally {
-            if (!options.silent) {
+            if (!options.silent && requestNavigationVersion === navigationVersion) {
                 setInventoryLoading(false);
             }
         }
@@ -277,6 +298,7 @@
             await loadInventoryTab(window.location.href, 'replace', {
                 fallbackToLocation: false,
                 silent: true,
+                trackNavigation: false,
             });
             lastAutoSyncAt = Date.now();
         } catch (error) {
@@ -298,38 +320,8 @@
         refreshCurrentTab() {
             return loadInventoryTab(window.location.href, 'replace');
         },
-        refreshFromUrl(url, historyMode = 'replace') {
-            return loadInventoryTab(url, historyMode);
-        },
         refreshFishBoxesQuietly,
     };
-
-    document.addEventListener('click', function (event) {
-        const link = event.target.closest('a[data-inventory-tab-link]');
-
-        if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-            return;
-        }
-
-        const url = new URL(link.href, window.location.href);
-
-        if (url.origin !== window.location.origin) {
-            return;
-        }
-
-        event.preventDefault();
-        loadInventoryTab(url.toString(), 'push');
-    });
-
-    window.addEventListener('popstate', function () {
-        const currentUrl = new URL(window.location.href);
-
-        if (!currentUrl.pathname.includes('/broker/inventory')) {
-            return;
-        }
-
-        loadInventoryTab(currentUrl.toString(), 'replace');
-    });
 
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden && Date.now() - lastAutoSyncAt > 1000) {
@@ -381,7 +373,11 @@
                 throw new Error('Request failed.');
             }
 
-            await refreshInventoryTabFromResponse(response);
+            const requestNavigationVersion = ++navigationVersion;
+
+            await refreshInventoryTabFromResponse(response, 'replace', {
+                navigationVersion: requestNavigationVersion,
+            });
         } catch (error) {
             showToast('error', 'The action could not be completed right now. Please try again.');
         } finally {

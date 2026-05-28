@@ -50,7 +50,8 @@ class SalesController extends Controller
         $paidAmountGrowthPercent = round($growthPercent, 2);
 
         $recentSales = SalesTransaction::getRecentSales(4, $brokerId);
-        $dailySalesData = SalesTransaction::getDailySalesLast7Days($brokerId);
+        $dailySalesData = SalesTransaction::getDailySalesCurrentWeek($brokerId);
+        $previousWeekSalesData = SalesTransaction::getDailySalesPreviousMarketWeek($brokerId);
 
         // Get top selling items without date filter (use a very wide date range)
         $allTimeStart = '2020-01-01'; // Use a very early date
@@ -64,7 +65,7 @@ class SalesController extends Controller
 
         return compact('ordersToday', 'salesToday', 'salesBalance',
             'recentSales', 'paidAmountGrowthPercent', 'totalFishBoxes',
-            'dailySalesData', 'topItems', 'weeklySalesData');
+            'dailySalesData', 'previousWeekSalesData', 'topItems', 'weeklySalesData');
     }
 
     /**
@@ -101,6 +102,11 @@ class SalesController extends Controller
             $salesSummary = SalesTransaction::getSummaryForFilters($search, $status, $brokerId, $dateFrom, $dateTo);
             $reportSales = SalesTransaction::getReportWithFilters($search, $status, $brokerId, $dateFrom, $dateTo);
         }
+
+        $totalOutstandingBalance = $user?->isCashier()
+            ? (float) ($salesSummary['balance_total'] ?? 0)
+            : SalesTransaction::getTotalSalesBalance($brokerId);
+
         $reportSoldBoxCount = $reportSales->sum(fn (SalesTransaction $sale) => $sale->salesDetails->count());
         $fishBoxes = FishBox::getAvailableForSale($brokerId);
         $allFishTypes = FishType::getFishTypeByBrokerId($brokerId);
@@ -162,7 +168,8 @@ class SalesController extends Controller
             'viewingSales', 'salesStatuses',
             'salesStatusesWithDisplayNames', 'salesStatusesWithColorClasses',
             'saleForPayment', 'printingSales', 'salesDetails', 'salesSummary', 'fishPriceMap',
-            'dateFrom', 'dateTo', 'regularBuyers', 'reportSales', 'reportSoldBoxCount', 'broker'
+            'dateFrom', 'dateTo', 'regularBuyers', 'reportSales', 'reportSoldBoxCount', 'broker',
+            'totalOutstandingBalance'
         );
     }
 
@@ -250,18 +257,24 @@ class SalesController extends Controller
         $userId = Auth::id();
         $brokerId = Broker::getBrokerIdByUserId($userId);
 
-        // Analytics summaries follow the daily operation filter; the trend chart uses a rolling week.
-        $dateFrom = $request->get('date_from', now()->toDateString());
-        $dateTo = $request->get('date_to', now()->toDateString());
+        // Analytics summaries follow the daily operation filter; trend cards use the calendar week.
+        $dateFrom = $request->filled('date_from') ? $request->get('date_from') : now()->toDateString();
+        $dateTo = $request->filled('date_to') ? $request->get('date_to') : now()->toDateString();
         $status = $request->get('status');
 
         // Get analytics data using sales history for the selected period.
         $analyticsData = SalesTransaction::getAnalyticsData($brokerId, $dateFrom, $dateTo, $status);
-        $trendDateTo = Carbon::parse($dateTo)->toDateString();
-        $trendDateFrom = Carbon::parse($trendDateTo)->subDays(6)->toDateString();
+        $analyticsData['totalBalance'] = SalesTransaction::getTotalSalesBalance($brokerId);
+
+        $trendDate = Carbon::parse($dateTo);
+        $trendDateFrom = $trendDate->copy()->startOfWeek(Carbon::SUNDAY)->toDateString();
+        $trendDateTo = $trendDate->copy()->endOfWeek(Carbon::SATURDAY)->toDateString();
         $analyticsData['weeklySalesData'] = SalesTransaction::getDailySalesForPeriod($brokerId, $trendDateFrom, $trendDateTo, $status);
+        $analyticsData['topItems'] = SalesTransaction::getTopSellingItems($brokerId, $trendDateFrom, $trendDateTo, 5, $status);
         $analyticsData['trendDateFrom'] = $trendDateFrom;
         $analyticsData['trendDateTo'] = $trendDateTo;
+        $analyticsData['dailyBalanceData'] = $this->getDailyOutstandingBalances($brokerId, $trendDateFrom, $trendDateTo, $status);
+        $analyticsData['topBuyers'] = $this->getTopBuyersForAnalytics($brokerId, $trendDateFrom, $trendDateTo, $status);
 
         // Get paginated sales for the period
         $sales = SalesTransaction::getPaginatedWithFilters(
@@ -276,6 +289,102 @@ class SalesController extends Controller
             'sales' => $sales,
             'status' => $request->get('status')
         ]);
+    }
+
+    private function getDailyOutstandingBalances(?int $brokerId, string $dateFrom, string $dateTo, ?string $status): \Illuminate\Support\Collection
+    {
+        $query = SalesTransaction::query()
+            ->leftJoinSub(SalesTransaction::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('SalesTransaction.id', '=', 'payment_totals.sale_id');
+            })
+            ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses());
+
+        SalesTransaction::applyDateRange($query, 'SalesTransaction.sales_date', $dateFrom, $dateTo);
+
+        if ($brokerId) {
+            $query->where('SalesTransaction.broker_id', $brokerId);
+        }
+
+        if ($status) {
+            $query->where('SalesTransaction.status', $status);
+        }
+
+        $dailyBalances = $query
+            ->selectRaw("
+                DATE(SalesTransaction.sales_date) as balance_date,
+                COALESCE(SUM(CASE
+                    WHEN SalesTransaction.total_amount > COALESCE(payment_totals.paid_total, 0)
+                    THEN SalesTransaction.total_amount - COALESCE(payment_totals.paid_total, 0)
+                    ELSE 0
+                END), 0) as balance_total
+            ")
+            ->groupBy('balance_date')
+            ->orderBy('balance_date')
+            ->get();
+
+        $periodDays = [];
+        $currentDate = Carbon::parse($dateFrom)->startOfDay();
+        $endDate = Carbon::parse($dateTo)->startOfDay();
+
+        while ($currentDate->lte($endDate)) {
+            $date = $currentDate->format('Y-m-d');
+            $balanceData = $dailyBalances->firstWhere('balance_date', $date);
+
+            $periodDays[] = [
+                'date' => $date,
+                'day' => $currentDate->format('M. j'),
+                'balance' => $balanceData ? (float) $balanceData->balance_total : 0.0,
+            ];
+
+            $currentDate->addDay();
+        }
+
+        return collect($periodDays);
+    }
+
+    private function getTopBuyersForAnalytics(?int $brokerId, string $dateFrom, string $dateTo, ?string $status, int $limit = 5): \Illuminate\Support\Collection
+    {
+        if (!$brokerId) {
+            return collect();
+        }
+
+        $query = Buyer::query()
+            ->where('Buyer.broker_id', $brokerId)
+            ->join('SalesTransaction', function ($join) {
+                $join->on('Buyer.id', '=', 'SalesTransaction.buyer_id')
+                    ->whereIn('SalesTransaction.status', SalesStatusConstant::getAllActiveStatuses());
+            })
+            ->leftJoinSub(SalesTransaction::paymentTotalsSubquery(), 'payment_totals', function ($join) {
+                $join->on('SalesTransaction.id', '=', 'payment_totals.sale_id');
+            });
+
+        SalesTransaction::applyDateRange($query, 'SalesTransaction.sales_date', $dateFrom, $dateTo);
+
+        if ($status) {
+            $query->where('SalesTransaction.status', $status);
+        }
+
+        return $query
+            ->select([
+                'Buyer.id',
+                'Buyer.first_name',
+                'Buyer.middle_name',
+                'Buyer.last_name',
+                'Buyer.contact',
+            ])
+            ->selectRaw('
+                COUNT(SalesTransaction.id) as transaction_count,
+                COALESCE(SUM(SalesTransaction.total_amount), 0) as total_sales,
+                COALESCE(SUM(CASE
+                    WHEN SalesTransaction.total_amount > COALESCE(payment_totals.paid_total, 0)
+                    THEN SalesTransaction.total_amount - COALESCE(payment_totals.paid_total, 0)
+                    ELSE 0
+                END), 0) as balance
+            ')
+            ->groupBy('Buyer.id', 'Buyer.first_name', 'Buyer.middle_name', 'Buyer.last_name', 'Buyer.contact')
+            ->orderByDesc('total_sales')
+            ->limit($limit)
+            ->get();
     }
 
     /**

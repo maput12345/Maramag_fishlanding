@@ -143,11 +143,9 @@
                 </table>
             </div>
 
-            @if($trackedFishBoxes->hasPages())
-                <div class="border-t border-gray-200 px-6 py-4">
-                    {{ $trackedFishBoxes->appends(request()->query())->links('components.pagination') }}
-                </div>
-            @endif
+            <div class="border-t border-gray-200 px-6 py-4">
+                {{ $trackedFishBoxes->appends(request()->query())->links('components.pagination') }}
+            </div>
         </div>
     </section>
 
@@ -225,11 +223,9 @@
                 </table>
             </div>
 
-            @if($inventoryLogs->hasPages())
-                <div class="border-t border-gray-200 px-6 py-4">
-                    {{ $inventoryLogs->appends(request()->query())->links('components.pagination') }}
-                </div>
-            @endif
+            <div class="border-t border-gray-200 px-6 py-4">
+                {{ $inventoryLogs->appends(request()->query())->links('components.pagination') }}
+            </div>
         </div>
     </section>
 </div>

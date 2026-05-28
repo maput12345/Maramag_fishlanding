@@ -338,11 +338,9 @@
         </div>
 
         <!-- Pagination -->
-        @if($brokersWithSales->hasPages())
-            <div class="mt-8">
-                {{ $brokersWithSales->appends(request()->query())->links('components.pagination') }}
-            </div>
-        @endif
+        <div class="mt-8">
+            {{ $brokersWithSales->appends(request()->query())->links('components.pagination') }}
+        </div>
     @endif
 </div>
 

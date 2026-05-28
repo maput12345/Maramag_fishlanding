@@ -144,6 +144,8 @@ Route::middleware(['auth', 'broker', 'prevent.back.history'])->group(function ()
     Route::get('/broker/transaction', [SalesManagementController::class, 'transaction'])->name('broker.transaction');
     Route::get('/broker/sales', [SalesManagementController::class, 'sales'])->name('broker.sales.sales');
     Route::get('/broker/buyers', [BuyerLedgerController::class, 'index'])->name('broker.buyers.index');
+    Route::post('/broker/buyers', [BuyerLedgerController::class, 'store'])->name('broker.buyers.store');
+    Route::patch('/broker/buyers/{buyer}', [BuyerLedgerController::class, 'update'])->name('broker.buyers.update');
     Route::post('/broker/buyers/payments', [BuyerLedgerController::class, 'storePayment'])->name('broker.buyers.payments.store');
     Route::get('/broker/financial-statement', [FinancialStatementController::class, 'index'])->name('broker.financial-statements.index');
     Route::post('/broker/financial-statement/entries', [FinancialStatementController::class, 'store'])->name('broker.financial-statements.entries.store');

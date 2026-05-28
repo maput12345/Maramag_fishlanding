@@ -42,21 +42,6 @@
 
 @section('content')
 <div class="w-full content-spacing">
-    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div class="rounded-xl bg-white p-5 shadow-lg">
-            <p class="text-sm font-medium text-gray-500">Buyers</p>
-            <p class="summary-stat-value text-gray-900">{{ number_format($totalBuyers) }}</p>
-        </div>
-        <div class="rounded-xl bg-white p-5 shadow-lg">
-            <p class="text-sm font-medium text-gray-500">Buyers With Balance</p>
-            <p class="summary-stat-value text-orange-600">{{ number_format($buyersWithBalance) }}</p>
-        </div>
-        <div class="rounded-xl bg-white p-5 shadow-lg">
-            <p class="text-sm font-medium text-gray-500">Selected Buyer Balance</p>
-            <p class="summary-stat-value text-right text-orange-600">₱{{ number_format($selectedBalanceTotal, 2) }}</p>
-        </div>
-    </div>
-
     <div class="mb-6 rounded-xl bg-white p-4 shadow-lg">
         <form method="GET" action="{{ route('broker.buyers.index') }}">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -76,6 +61,13 @@
                 </div>
                 <a href="{{ route('broker.buyers.index') }}" class="btn-clear w-full sm:w-auto">Clear</a>
                 <button type="submit" class="btn-search w-full sm:w-auto">Search</button>
+                @if(!$brokerViewReadOnly)
+                    <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'modal' => 'create'])) }}"
+                       class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 sm:w-auto">
+                        <x-heroicon-o-plus class="h-4 w-4" />
+                        Add Buyer
+                    </a>
+                @endif
             </div>
         </form>
     </div>
@@ -121,6 +113,13 @@
                                            title="View buyer ledger">
                                             <x-heroicon-o-eye class="h-5 w-5" />
                                         </a>
+                                        @if(!$brokerViewReadOnly)
+                                            <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => $buyer->id, 'modal' => 'edit'])) }}"
+                                               class="text-slate-600 transition-colors hover:text-slate-900"
+                                               title="Edit buyer details">
+                                                <x-heroicon-o-pencil-square class="h-5 w-5" />
+                                            </a>
+                                        @endif
                                         @if(!$brokerViewReadOnly && (float) $buyer->balance > 0)
                                             <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => $buyer->id, 'modal' => 'payment'])) }}"
                                                class="text-blue-600 transition-colors hover:text-blue-900"
@@ -149,15 +148,13 @@
                 </table>
             </div>
 
-            @if($buyers->hasPages())
-                <div class="border-t border-gray-100 px-4 py-4">
-                    {{ $buyers->appends(array_filter(['search' => $search]))->links('components.pagination') }}
-                </div>
-            @endif
+            <div class="border-t border-gray-100 px-4 py-4">
+                {{ $buyers->appends(array_filter(['search' => $search]))->links('components.pagination') }}
+            </div>
         </section>
     </div>
 
-    @if($selectedBuyer && !in_array(request('modal'), ['payment', 'print'], true))
+    @if($selectedBuyer && !in_array(request('modal'), ['edit', 'payment', 'print'], true))
         <x-app-modal
             title="Buyer Ledger"
             :subtitle="$selectedBuyer->name . ' · ' . ($selectedBuyer->contact ?: 'No contact number')"
@@ -174,11 +171,20 @@
             <div class="space-y-6">
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <div class="mb-4 flex items-center">
-                            <div class="mr-3 rounded-lg bg-blue-100 p-2">
-                                <x-heroicon-o-user class="h-5 w-5 text-blue-600" />
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <div class="flex items-center">
+                                <div class="mr-3 rounded-lg bg-blue-100 p-2">
+                                    <x-heroicon-o-user class="h-5 w-5 text-blue-600" />
+                                </div>
+                                <h4 class="text-lg font-semibold text-gray-900">Buyer Profile</h4>
                             </div>
-                            <h4 class="text-lg font-semibold text-gray-900">Buyer Profile</h4>
+                            @if(!$brokerViewReadOnly)
+                                <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => $selectedBuyer->id, 'modal' => 'edit'])) }}"
+                                   class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50">
+                                    <x-heroicon-o-pencil-square class="h-4 w-4" />
+                                    Edit
+                                </a>
+                            @endif
                         </div>
                         <div class="space-y-3">
                             <div class="flex items-center justify-between border-b border-gray-100 py-2">
@@ -333,6 +339,211 @@
                 </div>
 
             </div>
+        </x-app-modal>
+    @endif
+
+    @if(request('modal') === 'create')
+        <x-app-modal
+            title="Add Buyer"
+            subtitle="Create a buyer profile before any transaction is made."
+            :close-url="route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page')]))"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm">
+                    <x-heroicon-o-user-plus class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            @if($brokerViewReadOnly)
+                <div class="space-y-5">
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Buyer details are read-only in this broker workspace.
+                    </div>
+                    <div class="flex justify-end border-t border-gray-100 pt-5">
+                        <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page')])) }}"
+                           class="inline-flex rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                            Back
+                        </a>
+                    </div>
+                </div>
+            @else
+                <form action="{{ route('broker.buyers.store') }}" method="POST" class="space-y-5">
+                    @csrf
+                    <input type="hidden" name="buyer_search" value="{{ $search }}">
+                    <input type="hidden" name="buyer_page" value="{{ request('page') }}">
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="buyer_create_first_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                First Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="buyer_create_first_name"
+                                   name="first_name"
+                                   required
+                                   value="{{ old('first_name') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('first_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_create_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
+                            <input type="text"
+                                   id="buyer_create_middle_name"
+                                   name="middle_name"
+                                   value="{{ old('middle_name') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('middle_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_create_last_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                Last Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="buyer_create_last_name"
+                                   name="last_name"
+                                   required
+                                   value="{{ old('last_name') }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('last_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_create_contact" class="mb-2 block text-sm font-medium text-gray-700">Contact Number</label>
+                            <input type="text"
+                                   id="buyer_create_contact"
+                                   name="contact"
+                                   value="{{ old('contact') }}"
+                                   placeholder="09XXXXXXXXX"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('contact')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                        <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page')])) }}"
+                           class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 sm:w-auto">
+                            Add Buyer
+                        </button>
+                    </div>
+                </form>
+            @endif
+        </x-app-modal>
+    @endif
+
+    @if(request('modal') === 'edit' && $selectedBuyer)
+        <x-app-modal
+            title="Edit Buyer Details"
+            :subtitle="$selectedBuyer->name . ' · ' . ($selectedBuyer->contact ?: 'No contact number')"
+            :close-url="route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => request('buyer')]))"
+        >
+            <x-slot:icon>
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-700 text-white shadow-sm">
+                    <x-heroicon-o-pencil-square class="h-5 w-5" />
+                </div>
+            </x-slot:icon>
+
+            @if($brokerViewReadOnly)
+                <div class="space-y-5">
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Buyer details are read-only in this broker workspace.
+                    </div>
+                    <div class="flex justify-end border-t border-gray-100 pt-5">
+                        <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => request('buyer')])) }}"
+                           class="inline-flex rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                            Back
+                        </a>
+                    </div>
+                </div>
+            @else
+                <form action="{{ route('broker.buyers.update', $selectedBuyer->id) }}" method="POST" class="space-y-5">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="buyer_search" value="{{ $search }}">
+                    <input type="hidden" name="buyer_page" value="{{ request('page') }}">
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="buyer_edit_first_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                First Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="buyer_edit_first_name"
+                                   name="first_name"
+                                   required
+                                   value="{{ old('first_name', $selectedBuyer->first_name) }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('first_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_edit_middle_name" class="mb-2 block text-sm font-medium text-gray-700">Middle Name</label>
+                            <input type="text"
+                                   id="buyer_edit_middle_name"
+                                   name="middle_name"
+                                   value="{{ old('middle_name', $selectedBuyer->middle_name) }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('middle_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_edit_last_name" class="mb-2 block text-sm font-medium text-gray-700">
+                                Last Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="buyer_edit_last_name"
+                                   name="last_name"
+                                   required
+                                   value="{{ old('last_name', $selectedBuyer->last_name) }}"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('last_name')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="buyer_edit_contact" class="mb-2 block text-sm font-medium text-gray-700">Contact Number</label>
+                            <input type="text"
+                                   id="buyer_edit_contact"
+                                   name="contact"
+                                   value="{{ old('contact', $selectedBuyer->contact) }}"
+                                   placeholder="09XXXXXXXXX"
+                                   class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500">
+                            @error('contact')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                        <a href="{{ route('broker.buyers.index', array_filter(['search' => $search, 'page' => request('page'), 'buyer' => request('buyer')])) }}"
+                           class="inline-flex w-full justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:w-auto">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 sm:w-auto">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            @endif
         </x-app-modal>
     @endif
 

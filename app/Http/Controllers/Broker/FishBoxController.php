@@ -9,9 +9,11 @@ use App\Models\FishType;
 use App\Models\FishBox;
 use App\Http\Requests\FishBoxRequest;
 use App\Models\Broker;
+use App\Models\BrokerFishTypeAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -53,9 +55,11 @@ class FishBoxController extends Controller
         $search = $request->get('search');
         $status = $request->get('status');
         $fishType = $request->get('fish_type');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
         // Filter fish boxes by current broker
-        $fishBoxes = FishBox::getPaginatedWithFilters($search, $status, $fishType, 12, $brokerId);
+        $fishBoxes = FishBox::getPaginatedWithFilters($search, $status, $fishType, 12, $brokerId, $dateFrom, $dateTo);
         $fishBoxes->getCollection()->load([
             'purchases' => function ($query) {
                 $query->select([
@@ -68,17 +72,21 @@ class FishBoxController extends Controller
                         'created_at',
                     ])
                     ->with(['fishType:id,name,description'])
+                    ->with(['inventoryLogs' => function ($logQuery) {
+                        $logQuery->orderBy('created_at')->orderBy('id');
+                    }])
                     ->orderByDesc('purchase_date')
                     ->orderByDesc('id');
             },
         ]);
-        $bulkQrFishBoxes = FishBox::getFilteredForBulkQrPrint($search, $status, $fishType, $brokerId);
+        $bulkQrFishBoxes = FishBox::getFilteredForBulkQrPrint($search, $status, $fishType, $brokerId, $dateFrom, $dateTo);
         $fishBoxSummary = FishBox::getStatusSummary($brokerId);
         $fishTypeDefaultCosts = FishBox::getDefaultCostMapForBroker($brokerId);
         $bulkRestockEligibleCount = FishBox::countEligibleForBulkRestock($brokerId);
         $bulkRestockEligibleBoxes = collect();
 
         $historyFishBox = null;
+        $historyFishBoxEvents = collect();
 
         if ($request && $request->get('modal') === 'bulk-restock') {
             $bulkRestockEligibleBoxes = FishBox::getEligibleForBulkRestock($brokerId);
@@ -115,6 +123,14 @@ class FishBoxController extends Controller
                 ])
                 ->where('broker_id', $brokerId)
                 ->find($request->get('history'));
+
+            if ($historyFishBox) {
+                $historyFishBoxEvents = $this->buildFishBoxHistoryEvents(
+                    $historyFishBox,
+                    $historyDateFrom,
+                    $historyDateTo
+                );
+            }
         }
 
         return compact(
@@ -127,8 +143,105 @@ class FishBoxController extends Controller
             'fishTypeDefaultCosts',
             'bulkRestockEligibleCount',
             'bulkRestockEligibleBoxes',
-            'historyFishBox'
+            'historyFishBox',
+            'historyFishBoxEvents'
         );
+    }
+
+    private function buildFishBoxHistoryEvents(FishBox $fishBox, ?string $dateFrom = null, ?string $dateTo = null): \Illuminate\Support\Collection
+    {
+        $dateFrom = trim((string) $dateFrom);
+        $dateTo = trim((string) $dateTo);
+        $events = collect();
+
+        $createdAt = $fishBox->created_at;
+        if ($createdAt && $this->historyDateMatches($createdAt, $dateFrom, $dateTo)) {
+            $events->push([
+                'date' => $createdAt,
+                'event' => 'Created',
+                'status' => FishBoxStatusConstant::UNASSIGNED,
+                'fish' => 'Unassigned',
+                'cost' => null,
+                'details' => 'Reusable box profile created.',
+            ]);
+        }
+
+        $purchases = $fishBox->purchases()
+            ->with([
+                'fishType:id,name,description',
+                'inventoryLogs' => function ($query) use ($dateFrom, $dateTo) {
+                    if ($dateFrom !== '') {
+                        $query->whereDate('created_at', '>=', $dateFrom);
+                    }
+
+                    if ($dateTo !== '') {
+                        $query->whereDate('created_at', '<=', $dateTo);
+                    }
+
+                    $query->orderBy('created_at')->orderBy('id');
+                },
+            ])
+            ->orderBy('purchase_date')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($purchases as $purchase) {
+            $fishName = BrokerFishTypeAssignment::resolveDisplayName($fishBox->broker_id, $purchase->fishType) ?? 'Unassigned';
+            $hasStockedLog = $purchase->inventoryLogs->contains('status', FishBoxStatusConstant::IN_STOCK);
+
+            if (!$hasStockedLog && $purchase->purchase_date && $this->historyDateMatches($purchase->purchase_date, $dateFrom, $dateTo)) {
+                $events->push([
+                    'date' => $purchase->purchase_date,
+                    'event' => 'Stocked',
+                    'status' => FishBoxStatusConstant::IN_STOCK,
+                    'fish' => $fishName,
+                    'cost' => $purchase->cost_price,
+                    'details' => 'Stock cycle recorded.',
+                ]);
+            }
+
+            foreach ($purchase->inventoryLogs as $movement) {
+                $events->push([
+                    'date' => $movement->created_at,
+                    'event' => FishBoxStatusConstant::label($movement->status),
+                    'status' => $movement->status,
+                    'fish' => $fishName,
+                    'cost' => $purchase->cost_price,
+                    'details' => $this->historyMovementDescription($movement->status),
+                ]);
+            }
+        }
+
+        return $events
+            ->sortByDesc(fn (array $event) => $event['date']?->timestamp ?? 0)
+            ->values();
+    }
+
+    private function historyDateMatches($date, string $dateFrom, string $dateTo): bool
+    {
+        $date = $date instanceof Carbon ? $date->copy() : Carbon::parse($date);
+
+        if ($dateFrom !== '' && $date->lt(Carbon::parse($dateFrom)->startOfDay())) {
+            return false;
+        }
+
+        if ($dateTo !== '' && $date->gt(Carbon::parse($dateTo)->endOfDay())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function historyMovementDescription(string $status): string
+    {
+        return match ($status) {
+            FishBoxStatusConstant::IN_STOCK => 'Marked available for sales.',
+            FishBoxStatusConstant::SOLD => 'Used in a sales transaction.',
+            FishBoxStatusConstant::RETURNED => 'Returned to the broker.',
+            FishBoxStatusConstant::MISSING => 'Marked missing for tracking.',
+            FishBoxStatusConstant::RETIRED => 'Marked inactive.',
+            default => 'Status updated.',
+        };
     }
 
     /**
