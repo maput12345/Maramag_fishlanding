@@ -50,14 +50,14 @@
                         </a>
                     </div>
             @endunless
-            <!-- Transaction -->
+            <!-- Transact -->
             <div>
                 <a href="{{ route('broker.transaction') }}"
                 class="app-shell-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-all duration-200 ease-in-out
                         {{ $isTransactionActive ? 'app-shell-link--active' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                     <x-heroicon-o-plus-circle class="h-6 w-6 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 sidebar-icon
                             {{ $isTransactionActive ? '' : 'text-gray-400 group-hover:text-gray-500' }}" />
-                    <span class="transition-all duration-200" x-show="sidebarOpen">{{ $isCashierStaff ? 'POS Terminal' : 'Transaction' }}</span>
+                    <span class="transition-all duration-200" x-show="sidebarOpen">{{ $isCashierStaff ? 'POS Terminal' : 'Transact' }}</span>
                 </a>
             </div>
             <!-- Sales -->
