@@ -1,8 +1,18 @@
 import Swal from 'sweetalert2';
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (document.documentElement.dataset.swalDelegatedBound === 'true') {
+        return;
+    }
+
     const confirmableForms = document.querySelectorAll('form[data-swal]');
     confirmableForms.forEach((form) => {
+        if (form.dataset.swalBound === 'true') {
+            return;
+        }
+
+        form.dataset.swalBound = 'true';
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const action = form.getAttribute('data-swal');

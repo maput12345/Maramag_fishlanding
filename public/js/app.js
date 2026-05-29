@@ -39444,92 +39444,95 @@ function initializeProfileDropdowns() {
  * Initialize SweetAlert form handlers
  */
 function initializeSweetAlert() {
-  var confirmableForms = document.querySelectorAll('form[data-swal]');
-  confirmableForms.forEach(function (form) {
-    var _handleSubmit = function handleSubmit(e) {
-      e.preventDefault();
-      var action = form.getAttribute('data-swal');
-      var recordName = form.getAttribute('data-record-name') || '';
-      var customTitle = form.getAttribute('data-swal-title');
-      var customText = form.getAttribute('data-swal-text');
-      var customConfirmText = form.getAttribute('data-swal-confirm');
-      var customCancelText = form.getAttribute('data-swal-cancel');
-      var customIcon = form.getAttribute('data-swal-icon');
-      var title = 'Are you sure?';
-      var text = '';
-      var confirmText = 'Yes';
-      var icon = 'warning';
-
-      // Get the record type from the form action URL
-      var recordType = getRecordTypeFromForm(form);
-      switch (action) {
-        case 'delete':
-          title = "Delete ".concat(recordType, "?");
-          text = "This will permanently delete the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', " and cannot be undone.");
-          confirmText = "Yes, delete ".concat(recordType.toLowerCase());
-          break;
-        case 'deactivate':
-          title = "Deactivate ".concat(recordType, "?");
-          text = "This will deactivate the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', ".");
-          confirmText = "Yes, deactivate";
-          break;
-        case 'activate':
-          title = "Activate ".concat(recordType, "?");
-          text = "This will activate the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', ".");
-          confirmText = "Yes, activate";
-          break;
-        case 'winner':
-          title = "Confirm ".concat(recordName || 'this applicant', " as winner?");
-          text = "Are you sure ".concat(recordName || 'this applicant', " is the winner? This will activate the broker account automatically.");
-          confirmText = "Yes, confirm winner";
-          icon = 'question';
-          break;
-        case 'mark-missing':
-          title = "Mark Fish Box as Missing?";
-          text = "Are you sure you want to mark this fish box".concat(recordName ? " \"".concat(recordName, "\"") : '', " as missing? This action cannot be undone.");
-          confirmText = "Yes, Mark as Missing";
-          icon = 'warning';
-          break;
-        case 'return-to-stock':
-          title = "Return Fish Boxes to In Stock?";
-          text = "This will change all \"Returned\" fish boxes back to \"In Stock\" status. Are you sure?";
-          confirmText = "Yes, Return to Stock";
-          icon = 'question';
-          break;
-        default:
-          title = 'Are you sure?';
-          text = 'This action cannot be undone.';
-          confirmText = 'Yes, continue';
-      }
-      title = customTitle || title;
-      text = customText || text;
-      confirmText = customConfirmText || confirmText;
-      icon = customIcon || icon;
-      sweetalert2__WEBPACK_IMPORTED_MODULE_2___default().close();
-      // Use setTimeout to ensure proper initialization
-      setTimeout(function () {
-        sweetalert2__WEBPACK_IMPORTED_MODULE_2___default().fire({
-          title: title,
-          text: text,
-          icon: icon,
-          showCancelButton: true,
-          confirmButtonColor: action === 'delete' || action === 'mark-missing' ? '#dc2626' : '#059669',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: confirmText,
-          cancelButtonText: customCancelText || 'Cancel',
-          allowOutsideClick: false,
-          allowEscapeKey: false
-        }).then(function (result) {
-          if (result.isConfirmed) {
-            // Remove the event listener to prevent infinite loop
-            form.removeEventListener('submit', _handleSubmit);
-            // Submit the form
-            form.submit();
-          }
-        });
-      }, 10);
-    };
-    form.addEventListener('submit', _handleSubmit);
+  if (document.documentElement.dataset.swalDelegatedBound === 'true') {
+    return;
+  }
+  document.documentElement.dataset.swalDelegatedBound = 'true';
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches('form[data-swal]')) {
+      return;
+    }
+    if (form.dataset.swalConfirmed === 'true') {
+      delete form.dataset.swalConfirmed;
+      return;
+    }
+    e.preventDefault();
+    var action = form.getAttribute('data-swal');
+    var recordName = form.getAttribute('data-record-name') || '';
+    var customTitle = form.getAttribute('data-swal-title');
+    var customText = form.getAttribute('data-swal-text');
+    var customConfirmText = form.getAttribute('data-swal-confirm');
+    var customCancelText = form.getAttribute('data-swal-cancel');
+    var customIcon = form.getAttribute('data-swal-icon');
+    var title = 'Are you sure?';
+    var text = '';
+    var confirmText = 'Yes';
+    var icon = 'warning';
+    var recordType = getRecordTypeFromForm(form);
+    switch (action) {
+      case 'delete':
+        title = "Delete ".concat(recordType, "?");
+        text = "This will permanently delete the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', " and cannot be undone.");
+        confirmText = "Yes, delete ".concat(recordType.toLowerCase());
+        break;
+      case 'deactivate':
+        title = "Deactivate ".concat(recordType, "?");
+        text = "This will deactivate the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', ".");
+        confirmText = "Yes, deactivate";
+        break;
+      case 'activate':
+        title = "Activate ".concat(recordType, "?");
+        text = "This will activate the ".concat(recordType.toLowerCase()).concat(recordName ? " \"".concat(recordName, "\"") : '', ".");
+        confirmText = "Yes, activate";
+        break;
+      case 'winner':
+        title = "Confirm ".concat(recordName || 'this applicant', " as winner?");
+        text = "Are you sure ".concat(recordName || 'this applicant', " is the winner? This will activate the broker account automatically.");
+        confirmText = "Yes, confirm winner";
+        icon = 'question';
+        break;
+      case 'mark-missing':
+        title = "Mark Fish Box as Missing?";
+        text = "Are you sure you want to mark this fish box".concat(recordName ? " \"".concat(recordName, "\"") : '', " as missing? This action cannot be undone.");
+        confirmText = "Yes, Mark as Missing";
+        icon = 'warning';
+        break;
+      case 'return-to-stock':
+        title = "Return Fish Boxes to In Stock?";
+        text = "This will change all \"Returned\" fish boxes back to \"In Stock\" status. Are you sure?";
+        confirmText = "Yes, Return to Stock";
+        icon = 'question';
+        break;
+      default:
+        title = 'Are you sure?';
+        text = 'This action cannot be undone.';
+        confirmText = 'Yes, continue';
+    }
+    title = customTitle || title;
+    text = customText || text;
+    confirmText = customConfirmText || confirmText;
+    icon = customIcon || icon;
+    sweetalert2__WEBPACK_IMPORTED_MODULE_2___default().close();
+    setTimeout(function () {
+      sweetalert2__WEBPACK_IMPORTED_MODULE_2___default().fire({
+        title: title,
+        text: text,
+        icon: icon,
+        showCancelButton: true,
+        confirmButtonColor: action === 'delete' || action === 'mark-missing' ? '#dc2626' : '#059669',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: confirmText,
+        cancelButtonText: customCancelText || 'Cancel',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          form.dataset.swalConfirmed = 'true';
+          form.requestSubmit();
+        }
+      });
+    }, 10);
   });
 }
 

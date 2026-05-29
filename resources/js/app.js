@@ -162,99 +162,106 @@ function initializeProfileDropdowns() {
  * Initialize SweetAlert form handlers
  */
 function initializeSweetAlert() {
-    const confirmableForms = document.querySelectorAll('form[data-swal]');
+    if (document.documentElement.dataset.swalDelegatedBound === 'true') {
+        return;
+    }
 
-    confirmableForms.forEach(function (form) {
-        const handleSubmit = function (e) {
-            e.preventDefault();
+    document.documentElement.dataset.swalDelegatedBound = 'true';
 
-            const action = form.getAttribute('data-swal');
-            const recordName = form.getAttribute('data-record-name') || '';
-            const customTitle = form.getAttribute('data-swal-title');
-            const customText = form.getAttribute('data-swal-text');
-            const customConfirmText = form.getAttribute('data-swal-confirm');
-            const customCancelText = form.getAttribute('data-swal-cancel');
-            const customIcon = form.getAttribute('data-swal-icon');
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
 
-            let title = 'Are you sure?';
-            let text = '';
-            let confirmText = 'Yes';
-            let icon = 'warning';
+        if (!(form instanceof HTMLFormElement) || !form.matches('form[data-swal]')) {
+            return;
+        }
 
-            // Get the record type from the form action URL
-            const recordType = getRecordTypeFromForm(form);
+        if (form.dataset.swalConfirmed === 'true') {
+            delete form.dataset.swalConfirmed;
+            return;
+        }
 
-            switch (action) {
-                case 'delete':
-                    title = `Delete ${recordType}?`;
-                    text = `This will permanently delete the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''} and cannot be undone.`;
-                    confirmText = `Yes, delete ${recordType.toLowerCase()}`;
-                    break;
-                case 'deactivate':
-                    title = `Deactivate ${recordType}?`;
-                    text = `This will deactivate the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''}.`;
-                    confirmText = `Yes, deactivate`;
-                    break;
-                case 'activate':
-                    title = `Activate ${recordType}?`;
-                    text = `This will activate the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''}.`;
-                    confirmText = `Yes, activate`;
-                    break;
-                case 'winner':
-                    title = `Confirm ${recordName || 'this applicant'} as winner?`;
-                    text = `Are you sure ${recordName || 'this applicant'} is the winner? This will activate the broker account automatically.`;
-                    confirmText = `Yes, confirm winner`;
-                    icon = 'question';
-                    break;
-                case 'mark-missing':
-                    title = `Mark Fish Box as Missing?`;
-                    text = `Are you sure you want to mark this fish box${recordName ? ` "${recordName}"` : ''} as missing? This action cannot be undone.`;
-                    confirmText = `Yes, Mark as Missing`;
-                    icon = 'warning';
-                    break;
-                case 'return-to-stock':
-                    title = `Return Fish Boxes to In Stock?`;
-                    text = `This will change all "Returned" fish boxes back to "In Stock" status. Are you sure?`;
-                    confirmText = `Yes, Return to Stock`;
-                    icon = 'question';
-                    break;
-                default:
-                    title = 'Are you sure?';
-                    text = 'This action cannot be undone.';
-                    confirmText = 'Yes, continue';
-            }
+        e.preventDefault();
 
-            title = customTitle || title;
-            text = customText || text;
-            confirmText = customConfirmText || confirmText;
-            icon = customIcon || icon;
+        const action = form.getAttribute('data-swal');
+        const recordName = form.getAttribute('data-record-name') || '';
+        const customTitle = form.getAttribute('data-swal-title');
+        const customText = form.getAttribute('data-swal-text');
+        const customConfirmText = form.getAttribute('data-swal-confirm');
+        const customCancelText = form.getAttribute('data-swal-cancel');
+        const customIcon = form.getAttribute('data-swal-icon');
 
-            Swal.close();
-            // Use setTimeout to ensure proper initialization
-            setTimeout(() => {
-                Swal.fire({
-                    title: title,
-                    text: text,
-                    icon: icon,
-                    showCancelButton: true,
-                    confirmButtonColor: (action === 'delete' || action === 'mark-missing') ? '#dc2626' : '#059669',
-                    cancelButtonColor: '#6b7280',
-                    confirmButtonText: confirmText,
-                    cancelButtonText: customCancelText || 'Cancel',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Remove the event listener to prevent infinite loop
-                        form.removeEventListener('submit', handleSubmit);
-                        // Submit the form
-                        form.submit();
-                    }
-                });
-            }, 10);
-        };
+        let title = 'Are you sure?';
+        let text = '';
+        let confirmText = 'Yes';
+        let icon = 'warning';
 
-        form.addEventListener('submit', handleSubmit);
+        const recordType = getRecordTypeFromForm(form);
+
+        switch (action) {
+            case 'delete':
+                title = `Delete ${recordType}?`;
+                text = `This will permanently delete the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''} and cannot be undone.`;
+                confirmText = `Yes, delete ${recordType.toLowerCase()}`;
+                break;
+            case 'deactivate':
+                title = `Deactivate ${recordType}?`;
+                text = `This will deactivate the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''}.`;
+                confirmText = `Yes, deactivate`;
+                break;
+            case 'activate':
+                title = `Activate ${recordType}?`;
+                text = `This will activate the ${recordType.toLowerCase()}${recordName ? ` "${recordName}"` : ''}.`;
+                confirmText = `Yes, activate`;
+                break;
+            case 'winner':
+                title = `Confirm ${recordName || 'this applicant'} as winner?`;
+                text = `Are you sure ${recordName || 'this applicant'} is the winner? This will activate the broker account automatically.`;
+                confirmText = `Yes, confirm winner`;
+                icon = 'question';
+                break;
+            case 'mark-missing':
+                title = `Mark Fish Box as Missing?`;
+                text = `Are you sure you want to mark this fish box${recordName ? ` "${recordName}"` : ''} as missing? This action cannot be undone.`;
+                confirmText = `Yes, Mark as Missing`;
+                icon = 'warning';
+                break;
+            case 'return-to-stock':
+                title = `Return Fish Boxes to In Stock?`;
+                text = `This will change all "Returned" fish boxes back to "In Stock" status. Are you sure?`;
+                confirmText = `Yes, Return to Stock`;
+                icon = 'question';
+                break;
+            default:
+                title = 'Are you sure?';
+                text = 'This action cannot be undone.';
+                confirmText = 'Yes, continue';
+        }
+
+        title = customTitle || title;
+        text = customText || text;
+        confirmText = customConfirmText || confirmText;
+        icon = customIcon || icon;
+
+        Swal.close();
+        setTimeout(() => {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: (action === 'delete' || action === 'mark-missing') ? '#dc2626' : '#059669',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmText,
+                cancelButtonText: customCancelText || 'Cancel',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.dataset.swalConfirmed = 'true';
+                    form.requestSubmit();
+                }
+            });
+        }, 10);
     });
 }
 

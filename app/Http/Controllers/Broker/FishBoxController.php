@@ -312,26 +312,29 @@ class FishBoxController extends Controller
      * @param int $id
      * @return RedirectResponse
      */
-    public function destroy($id): RedirectResponse
+    public function destroy(Request $request, $id): RedirectResponse
     {
         $brokerId = Broker::getBrokerIdByUserId(Auth::id());
         $fishBox = FishBox::getFishBoxByIdAndBroker($id, $brokerId);
+        $returnToFishBoxes = redirect()->to(
+            $request->headers->get('referer') ?: route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        );
 
         if ($fishBox->canBeRetired()) {
             FishBox::updateStatus($fishBox->id, FishBoxStatusConstant::RETIRED, Auth::id());
 
-            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            return $returnToFishBoxes
                 ->with('success', 'Fish box marked as damaged successfully. Its history remains available for receipts and reports.');
         }
 
         if (!$fishBox->canBeDeleted()) {
-            return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+            return $returnToFishBoxes
                 ->with('error', 'This fish box has history or is still active. Return or clear it before retiring; historical boxes are not deleted.');
         }
 
         $fishBox->delete();
 
-        return redirect()->route('broker.inventory.index', ['tab' => 'fishBoxes'])
+        return $returnToFishBoxes
             ->with('success', 'Fish box deleted successfully!');
     }
 

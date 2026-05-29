@@ -4708,8 +4708,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(sweetalert2__WEBPACK_IMPORTED_MODULE_0__);
 
 document.addEventListener('DOMContentLoaded', function () {
+  if (document.documentElement.dataset.swalDelegatedBound === 'true') {
+    return;
+  }
   var confirmableForms = document.querySelectorAll('form[data-swal]');
   confirmableForms.forEach(function (form) {
+    if (form.dataset.swalBound === 'true') {
+      return;
+    }
+    form.dataset.swalBound = 'true';
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var action = form.getAttribute('data-swal');
