@@ -171,9 +171,6 @@ $brokerViewReadOnly = auth()->check() && auth()->user()->isAdmin()
         <div class="mb-4">
             <p class="text-sm text-gray-600">
                 Showing {{ $sales->firstItem() ?? 0 }} to {{ $sales->lastItem() ?? 0 }} of {{ $sales->total() }} sales
-                @if(($dateFrom ?? null) && ($dateTo ?? null))
-                    <span class="text-gray-500">for {{ \Illuminate\Support\Carbon::parse($dateFrom)->format('M d, Y') }}{{ $dateFrom !== $dateTo ? ' - ' . \Illuminate\Support\Carbon::parse($dateTo)->format('M d, Y') : '' }}</span>
-                @endif
                 @if(request()->hasAny(['search', 'status', 'date_from', 'date_to']))
                     <span class="text-blue-600">(filtered)</span>
                 @endif

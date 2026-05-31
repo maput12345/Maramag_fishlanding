@@ -125,7 +125,7 @@
 
                     <!-- My Sales Performance -->
                     <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Daily Sales Performance</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Weekly Sales Performance</h3>
                         <div class="h-64 flex items-end justify-between space-x-2">
                             @php
                                 $maxSales = $dailySalesData->max('sales');

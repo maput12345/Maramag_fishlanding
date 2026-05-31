@@ -646,7 +646,7 @@ use Carbon\Carbon;
             <div class="panel-card__header">
                 <div>
                     <h3 class="panel-card__title">Major Expenses Analytics</h3>
-                    <p class="mt-1 text-sm text-gray-500">Gas and Ice/Cellophane daily line charts for {{ $expenseAnalytics['period_label'] }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Gas and Ice/Cellophane weekly line charts for {{ $expenseAnalytics['period_label'] }}</p>
                 </div>
                 <span class="panel-card__hint">Bottom View</span>
             </div>
@@ -709,7 +709,7 @@ use Carbon\Carbon;
                         <div class="mt-4 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white px-3 py-3">
                             <div class="mb-2 flex items-center justify-between gap-3">
                                 <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Line Trend</p>
-                                <p class="text-xs font-medium text-gray-500">7 days</p>
+                                <p class="text-xs font-medium text-gray-500">Weekly</p>
                             </div>
                         <div class="overflow-x-auto">
                             <svg viewBox="0 0 {{ $miniChartWidth }} {{ $miniChartHeight }}" role="img" aria-label="{{ $expenseSeries['label'] }} daily expense line chart" class="min-w-[340px] w-full">

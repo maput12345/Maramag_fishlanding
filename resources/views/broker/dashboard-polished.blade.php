@@ -110,7 +110,7 @@ $breadcrumbs = [
             <div class="panel-card__inner">
                 <div class="panel-card__header">
                     <div>
-                        <h3 class="panel-card__title">Daily Sales Performance</h3>
+                        <h3 class="panel-card__title">Weekly Sales Performance</h3>
                     </div>
                 </div>
 

@@ -201,7 +201,7 @@ class FinancialStatementController extends Controller
     }
 
     /**
-     * Build the line chart data for the major daily expense categories.
+     * Build the line chart data for the major expense categories in the selected calendar week.
      *
      * @return array<string, mixed>
      */
@@ -218,8 +218,8 @@ class FinancialStatementController extends Controller
             ],
         ];
 
-        $startDate = $statementDate->copy()->subDays(6)->startOfDay();
-        $endDate = $statementDate->copy()->endOfDay();
+        $startDate = $statementDate->copy()->startOfWeek(Carbon::SUNDAY)->startOfDay();
+        $endDate = $statementDate->copy()->endOfWeek(Carbon::SATURDAY)->endOfDay();
         $dates = collect(range(0, 6))
             ->map(fn (int $offset): Carbon => $startDate->copy()->addDays($offset));
 
@@ -271,8 +271,8 @@ class FinancialStatementController extends Controller
 
         return [
             'start_date' => $startDate->toDateString(),
-            'end_date' => $statementDate->toDateString(),
-            'period_label' => $startDate->format('M d') . ' - ' . $statementDate->format('M d, Y'),
+            'end_date' => $endDate->toDateString(),
+            'period_label' => $startDate->format('M d') . ' - ' . $endDate->format('M d, Y'),
             'labels' => $dates->map(fn (Carbon $date): string => $date->format('M d'))->values(),
             'series' => $series,
             'max_total' => max(1, $maxTotal),
